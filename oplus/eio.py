@@ -63,30 +63,6 @@ class Table:
         self._link_ref = link_ref
 
 
-    # def filter(self, **kwargs):
-    #     filter_a = None
-    #     for k, v in kwargs:
-    #         if filter_a is None:
-    #             filter_a = self.df[k] == v
-    #         else:
-    #             filter_a = np.logical_and(filter_a, self.df[k] == v.upper())
-    #     df = self.df[filter_a]
-    #     return Table(self.ref, df, self._link_ref)
-    #
-    # def get(self, **kwargs):
-    #     table = self.filter(**kwargs)
-    #     if len(table.df) == 0:
-    #         raise DoesNotExist()
-    #     if len(table.df) > 1:
-    #         raise MultipleObjectsReturned()
-    #
-    #     d = {}
-    #     for c in table.df.columns:
-    #         d[c] = table.df[c].iloc[0]
-    #
-    #     return d
-
-
 class HeatTransferSurfaceTable(Table):
     def get(self, surface_name):
         df = self.df[self.df["Surface Name"] == surface_name.upper()]
@@ -137,14 +113,6 @@ class Report:
         self.refs_l = []
         self.data_l2_l = []
 
-
-        # self._maintable_ref = None
-        # self._subtables_refs_l = []
-        #
-        # self._maintable_l2 = []  # maintable_l2
-        # self._subtables_l2_l_l = []  # [[t11_l2, t12_l2, ...], [t21_l2, t21_l2, ...], ...]
-
-
     @property
     def ref(self):
         return self.refs_l[0]
@@ -172,27 +140,6 @@ class Report:
         # append row at beginning. If not main table, we add a new column pointing on main table current row_num
         row_l = ([len(self.data_l2_l[0])-1] if table_num != 0 else []) + row_l[1:]
         self.data_l2_l[table_num].append(row_l)
-        # if table_num == 0:  # main table
-        #     self.data_l2_l[table_num].append(row_l[1:])
-        # else:  # child table
-        #     self.data_l2_l[table_num].append(row_l[1:] + [len(self.data_l2_l[0])-1])
-        # if self._maintable_ref is None:
-        #     self._maintable_ref = ref
-        # elif ref != self._maintable_ref and ref not in self._subtables_refs_l:
-        #     self._subtables_refs_l.append(ref)
-        #
-        # # append row
-        # if ref == self._maintable_ref:  # main table row
-        #     self._maintable_l2.append(row_l[1:])
-        #     self._subtables_l2_l_l.append([])
-        # else:  # sub table row
-        #     # table index
-        #     subtable_index = self._subtables_refs_l.index(ref)
-        #     # we create all missing tables
-        #     current_subtable_l2_l = self._subtables_l2_l_l[-1]
-        #     while len(current_subtable_l2_l) < subtable_index+1:
-        #         current_subtable_l2_l.append([])
-        #     current_subtable_l2_l[subtable_index].append(row_l[1:])
 
     def get_tables_l(self):
         """transforms data_l2 in dataframes, create tables and return them"""
@@ -208,28 +155,6 @@ class Report:
             df = pd.DataFrame(columns=columns, data=data_l2)
             tables_l.append(special_tables_classes_d.get(table_ref, Table)(table_ref, df, self.refs_l[0]))
         return tables_l
-
-
-
-
-        # # main table - no link
-        # tables_df_l = [Table(pd.DataFrame(columns=self._get_columns(self._maintable_ref), data=self._maintable_l2))]
-        #
-        # subtables_l2_d = {}
-        # for link_id, table_l2_l in enumerate(self._subtables_l2_l_l):
-        #     for subtable_key, table_l2 in enumerate(table_l2_l):
-        #         if not subtable_key in subtables_l2_d:
-        #             subtables_l2_d[subtable_key] = []
-        #         subtables_l2_d[subtable_key].append(
-        #
-        # pd.DataFrame(columns=self._get_columns(self._subtables_refs_l[index]), data=table_l2))
-        #
-        #
-        # for ref in [self._maintable_ref] + self._subtables_refs_l:
-        #     if ref in report_refs_l:
-        #
-        #         print("double: %s" % ref)
-
 
     def _get_columns(self, body_ref):
         # in header
