@@ -1,3 +1,4 @@
+import os
 import codecs
 import logging
 
@@ -9,7 +10,8 @@ from oplus.configuration import CONFIG
 
 default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
 
-# todo: recode
+# todo: refactor
+# todo: manage all eio without skipping logging errors
 
 
 class EIOError(Exception):
@@ -148,11 +150,18 @@ class Report:
             table_ref = self.refs_l[table_num]
             columns = self._get_columns(table_ref)
             if columns is None:
-                logging.getLogger(default_logger_name).error("Error while parsing table '%s'. Left aside." % table_ref)
+                # todo: user logger given in EIO
+                logging.getLogger(default_logger_name).error("Error while parsing table '%s' (columns is None). "
+                                                             "Left aside." % table_ref)
                 continue
             if table_num != 0:  # child table, add link column
                 columns = [Table.fk_col_name(self.refs_l[0])] + columns
-            df = pd.DataFrame(columns=columns, data=data_l2)
+            try:
+                df = pd.DataFrame(columns=columns, data=data_l2)
+            except AssertionError:
+                logging.getLogger(default_logger_name).error("Error while parsing table '%s' "
+                                                             "(while dataframe creation).  Left aside." % table_ref)
+                continue
             tables_l.append(special_tables_classes_d.get(table_ref, Table)(table_ref, df, self.refs_l[0]))
         return tables_l
 
@@ -178,43 +187,49 @@ class Report:
 
 
 class EIO:
-    def __init__(self, path):
-        self.path = path
-        self.tables_d = {}
-        self._parse()
+    def __init__(self, path, logger_name=None, encoding=None):
+        if not os.path.isfile(path):
+            raise EIOError("No file at given path: '%s'." % path)
+        self._path = path
+        self._logger_name = logger_name
+        self._encoding = encoding
+
+        self._tables_d = self._parse()
 
     def _parse(self):
+        tables_d = {}
         # load data
-        f = codecs.open(self.path, encoding="latin-1")
-        current_report = None
-        for row in f:
-            if row == "End of Data":
-                break
-            if len(row) == 0:
-                continue
-            if row[0] == "!":  # header
-                if current_report is None:
-                    current_report = Report()
-                if not current_report.defining_header:  # new report
-                    # save
-                    tables_l = current_report.get_tables_l()
-                    for table in tables_l:
-                        if table.ref in self.tables_d:
-                            raise EIOError("table_ref already in self.tables_d: '%s'" % table.ref)
-                        self.tables_d[table.ref] = table
+        with open(self._path, encoding=self._encoding) as f:
+            current_report = None
+            for row in f:
+                if row == "End of Data":
+                    break
+                if len(row) == 0:
+                    continue
+                if row[0] == "!":  # header
+                    if current_report is None:
+                        current_report = Report()
+                    if not current_report.defining_header:  # new report
+                        # save
+                        tables_l = current_report.get_tables_l()
+                        for table in tables_l:
+                            if table.ref in tables_d:
+                                raise EIOError("table_ref already in self.tables_d: '%s'" % table.ref)
+                            tables_d[table.ref] = table
 
-                    # create new report
-                    current_report = Report()
-                current_report.add_header_row(row)
-            else:  # body
-                if current_report is None:  # new report
-                    current_report = Report()
-                current_report.add_body_row(row)
+                        # create new report
+                        current_report = Report()
+                    current_report.add_header_row(row)
+                else:  # body
+                    if current_report is None:  # new report
+                        current_report = Report()
+                    current_report.add_body_row(row)
+            return tables_d
 
     def __call__(self, table_ref, **kwargs):
         if len(kwargs) != 0:
             raise NotImplementedError()
-        table = self.tables_d[table_ref]
+        table = self._tables_d[table_ref]
         return table
 
 

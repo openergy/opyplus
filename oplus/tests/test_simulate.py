@@ -13,7 +13,7 @@ class OneZoneEvapCooler(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
     idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
-    epw = EPW(r"C:\EnergyPlusV8-1-0\WeatherData\USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw")
+    epw = EPW(os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"))
 
     def test_temp_dir(self):
         s = Simulation(self.idf, epw_or_path=self.epw)

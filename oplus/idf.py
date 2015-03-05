@@ -516,81 +516,12 @@ def get_idf(idf_or_path, idf_cls=None, logger_name=None, encoding=None):
                    (idf_or_path, type(idf_or_path)))
 
 
-# ------------------------------------------------- idf ----------------------------------------------------------------
-class IDF():
-    # todo: replace object
-    """
-    IDF is allowed to access private keys/methods of IDFObject.
-    """
-    def __init__(self, path, idd_or_path=None, logger_name=None, encoding=None):
-        """
-        Arguments
-        ---------
-        path: idf path
-        idd_or_path: IDD object or idd path. If None, default will be chosen (most recent EPlus version installed on
-            computer)
-        logger_name: see python logging builtin module if custom logging is needed.
-        """
-        self._ = IDFManager(self, path, idd_or_path=idd_or_path, logger_name=logger_name, encoding=encoding)
-
-    def __call__(self, object_descriptor_ref=None):
-        """returns all objects of given object descriptor"""
-        if object_descriptor_ref is None:
-            return QuerySet(self._.objects_l)
-        return self._.filter_by_ref(object_descriptor_ref)
-
-    def save_as(self, file_or_path):
-        self._.save_as(file_or_path)
-
-    def remove_object(self, object_to_remove, raise_if_pointed=True):
-        """
-        Removes object from idf.
-
-        Arguments
-        ---------
-        old: object to remove
-        check: check if links have been broken. If check is True and broken links are detected, will raise an IDFError.
-            (nodes or branches checking has not been implemented)
-        """
-        return self._.remove_object(object_to_remove, raise_if_pointed=raise_if_pointed)
-
-    def add_object(self, new_str, position=None):
-        """
-        Adds new object to the idf, at required position.
-
-        Arguments
-        ---------
-        new_or_str: new object (or string describing new object) that will be added to idf
-        position: if None, will be added at the end, else will be added at asked position
-            (using 'insert' python builtin function for lists)
-        check: check if pointed objects of new object exists. If check is True and a non existing link is detected, will
-            raise an IDFError
-        """
-        return self._.add_object(new_str, position=position)
-
-    def info(self, sort_by_group=False, detailed=False):
-        """
-        Arguments
-        ---------
-        sort_by_group: will sort object descriptors by group
-        detailed: will give all object descriptors' associated tags
-
-        Returns
-        -------
-        a text describing the information on object contained in idd file
-        """
-        return self._.info(sort_by_group=sort_by_group, detailed=detailed)
-
-    @property
-    def comment(self):
-        return self._.get_comment()
-
-    @comment.setter
-    def comment(self, value):
-        self._.set_comment(value)
-
-
 # ----------------------------------------------- idf manager  ---------------------------------------------------------
+class VoidSimulation:
+    def __getattr__(self, item):
+        raise IDFError("Idf is not attached to a simulation, '%s' enhancement is not available." % item)
+
+
 class IDFManager:
     idf_object_manager_cls = IDFObjectManager  # for subclassing
 
@@ -602,6 +533,8 @@ class IDFManager:
         self._idd = get_idd(idd_or_path, logger_name=logger_name, encoding=encoding)
         self._logger_name = logger_name
         self._encoding = encoding
+        # simulation
+        self._simulation = VoidSimulation()  # must be before parsing
 
         # raw parse and parse
         self._objects_l, self._head_comments = self.parse(
@@ -616,8 +549,11 @@ class IDFManager:
     def idd(self):
         return self._idd
 
-    # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
+    @property
+    def simulation(self):
+        return self._simulation
 
+    # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
     def parse(self, file_like):
         """
         Objects are created from string. They are not attached to idf manager yet.
@@ -681,6 +617,12 @@ class IDFManager:
                 make_new_object = True
 
         return objects_l, head_comments
+
+    def attach_simulation(self, simulation):
+        # check that the simulation is correct
+        if not simulation.idf is self._idf:
+            raise IDFError("Can't set a simulation on an foreign idf.")
+        self._simulation = simulation
 
     # ----------------------------------------------- LINKS ------------------------------------------------------------
     def get_pointed_link(self, pointing_ref, pointing_index, pointing_raw_value):
@@ -871,6 +813,82 @@ class IDFManager:
 
         if is_path:
             f.close()
+
+
+# ------------------------------------------------- idf ----------------------------------------------------------------
+class IDF():
+    # todo: replace object
+    """
+    IDF is allowed to access private keys/methods of IDFObject.
+    """
+    idf_manager_cls = IDFManager  # for subclassing
+
+    def __init__(self, path, idd_or_path=None, logger_name=None, encoding=None):
+        """
+        Arguments
+        ---------
+        path: idf path
+        idd_or_path: IDD object or idd path. If None, default will be chosen (most recent EPlus version installed on
+            computer)
+        logger_name: see python logging builtin module if custom logging is needed.
+        """
+        self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, logger_name=logger_name, encoding=encoding)
+
+    def __call__(self, object_descriptor_ref=None):
+        """returns all objects of given object descriptor"""
+        if object_descriptor_ref is None:
+            return QuerySet(self._.objects_l)
+        return self._.filter_by_ref(object_descriptor_ref)
+
+    def save_as(self, file_or_path):
+        self._.save_as(file_or_path)
+
+    def remove_object(self, object_to_remove, raise_if_pointed=True):
+        """
+        Removes object from idf.
+
+        Arguments
+        ---------
+        old: object to remove
+        check: check if links have been broken. If check is True and broken links are detected, will raise an IDFError.
+            (nodes or branches checking has not been implemented)
+        """
+        return self._.remove_object(object_to_remove, raise_if_pointed=raise_if_pointed)
+
+    def add_object(self, new_str, position=None):
+        """
+        Adds new object to the idf, at required position.
+
+        Arguments
+        ---------
+        new_or_str: new object (or string describing new object) that will be added to idf
+        position: if None, will be added at the end, else will be added at asked position
+            (using 'insert' python builtin function for lists)
+        check: check if pointed objects of new object exists. If check is True and a non existing link is detected, will
+            raise an IDFError
+        """
+        return self._.add_object(new_str, position=position)
+
+    def info(self, sort_by_group=False, detailed=False):
+        """
+        Arguments
+        ---------
+        sort_by_group: will sort object descriptors by group
+        detailed: will give all object descriptors' associated tags
+
+        Returns
+        -------
+        a text describing the information on object contained in idd file
+        """
+        return self._.info(sort_by_group=sort_by_group, detailed=detailed)
+
+    @property
+    def comment(self):
+        return self._.get_comment()
+
+    @comment.setter
+    def comment(self, value):
+        self._.set_comment(value)
 
 
 # ----------------------------------------------------------------------------------------------------------------------

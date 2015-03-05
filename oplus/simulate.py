@@ -9,12 +9,16 @@ from oplus.idd import IDD
 from oplus.epw import EPW
 from oplus.standard_output import StandardOutputFile
 from oplus.mtd import MTD
+from oplus.eio import EIO
 
 
 class SimulationError(Exception):
     pass
 
 default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+
+# todo: refactor, manage return None or raise Exception when output asked before simulation
+# todo: manage cas where output already exists and new simulation can be avoided
 
 
 class Simulation:
@@ -24,6 +28,13 @@ class Simulation:
     STATUS_WAITING = -1
     STATUS_INITIALIZED = 0
     STATUS_EXITED = 1
+
+    # for subclassing
+    idf_cls = IDF
+    idd_cls = IDD
+    epw_cls = EPW
+    standard_output_file_cls = StandardOutputFile
+    mtd_cls = MTD
 
     def __init__(self, idf_or_path, epw_or_path, dir_path=None, logger_name=None, encoding=None,
                  idd_or_path=None, start=None):
@@ -45,6 +56,7 @@ class Simulation:
         self._mtr = None
         self._err = None
         self._mtd = None
+        self._eio = None
 
         # initialize if given directory mode
         if self._dir_path is not None:
@@ -64,7 +76,7 @@ class Simulation:
             if not os.path.isfile(self._idf_or_path):
                 raise SimulationError("No idf file at given path: '%s'." % self._idf_or_path)
             shutil.copy2(self._idf_or_path, self._path("idf"))
-        elif isinstance(self._idf_or_path, IDF):
+        elif isinstance(self._idf_or_path, self.idf_cls):
             self._idf_or_path.save_as(self._path("idf"))
         else:
             raise SimulationError("Unknown type for an idf: '%s'." % type(self._idf_or_path))
@@ -73,7 +85,7 @@ class Simulation:
             if not os.path.isfile(self._epw_or_path):
                 raise SimulationError("No epw file at given path: '%s'." % self._epw_or_path)
             shutil.copy2(self._epw_or_path, self._path("epw"))
-        elif isinstance(self._epw_or_path, EPW):
+        elif isinstance(self._epw_or_path, self.epw_cls):
             self._epw_or_path.save_as(self._path("epw"))
         else:
             raise SimulationError("Unknown type for an epw: '%s'." % type(self._epw_or_path))
@@ -149,14 +161,18 @@ class Simulation:
             elif isinstance(self._idd_or_path, str):
                 if not os.path.isfile(self._idd_or_path):
                     raise SimulationError("No idd file at given path: '%s'." % self._idd_or_path)
-                idd = IDD(self._idd_or_path)
+                idd = self.idd_cls(self._idd_or_path)
             # idd is an object
-            elif isinstance(self._idd_or_path, IDD):
+            elif isinstance(self._idd_or_path, self.idd_cls):
                 idd = self._idd_or_path
             else:
                 raise SimulationError("Unknown type for an idd: '%s'." % type(self._idd_or_path))
             # CREATE IDF
-            self._idf = IDF(self.path("idf"), idd_or_path=idd, logger_name=self._logger_name, encoding=self._encoding)
+            self._idf = self.idf_cls(self.path("idf"), idd_or_path=idd, logger_name=self._logger_name,
+                                     encoding=self._encoding)
+            # attach to simulation
+            self._idf._.attach_simulation(self)
+
         return self._idf
 
     @property
@@ -164,7 +180,7 @@ class Simulation:
         if self._status == self.STATUS_WAITING:
             return None
         if self._epw is None:
-            self._epw = EPW(self.path("epw"), logger_name=self._logger_name, encoding=self._encoding)
+            self._epw = self.epw_cls(self.path("epw"), logger_name=self._logger_name, encoding=self._encoding)
         return self._epw
 
     @property
@@ -175,8 +191,8 @@ class Simulation:
             _path = self.path("eso")
             if _path is None:
                 return None
-            self._eso = StandardOutputFile(_path, start=self._start, logger_name=self._logger_name,
-                                           encoding=self._encoding)
+            self._eso = self.standard_output_file_cls(_path, start=self._start, logger_name=self._logger_name,
+                                                      encoding=self._encoding)
         return self._eso
 
     @property
@@ -187,8 +203,8 @@ class Simulation:
             _path = self.path("mtr")
             if _path is None:
                 return None
-            self._mtr = StandardOutputFile(_path, start=self._start, logger_name=self._logger_name,
-                                           encoding=self._encoding)
+            self._mtr = self.standard_output_file_cls(_path, start=self._start, logger_name=self._logger_name,
+                                                      encoding=self._encoding)
         return self._mtr
 
     @property
@@ -201,6 +217,17 @@ class Simulation:
                 return None
             self._mtd = MTD(_path, logger_name=self._logger_name, encoding=self._encoding)
         return self._mtd
+
+    @property
+    def eio(self):
+        if self._status == self.STATUS_WAITING:
+            return None
+        if self._eio is None:
+            _path = self.path("eio")
+            if _path is None:
+                return None
+            self._eio = EIO(_path, logger_name=self._logger_name, encoding=self._encoding)
+        return self._eio
 
     @property
     def err(self):
