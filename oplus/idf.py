@@ -5,6 +5,7 @@ IDF or IDFObject. The _manager attributes therefore remain private to oplus user
 """
 # todo: document
 # todo: properly manage comments (None problem, for example in schedules)
+# todo: manage multiple links
 
 import io
 import datetime as dt
@@ -512,7 +513,7 @@ def get_idf(idf_or_path, idf_cls=None, logger_name=None, encoding=None):
         return idf_cls(idf_or_path, logger_name=logger_name, encoding=encoding)
     elif isinstance(idf_or_path, IDF):
         return idf_or_path
-    raise IDFError("'idf_or_path' must be a path or an IDF. Given object, type: '%s', '%s'." %
+    raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
                    (idf_or_path, type(idf_or_path)))
 
 
@@ -537,8 +538,8 @@ class IDFManager:
         self._simulation = VoidSimulation()  # must be before parsing
 
         # raw parse and parse
-        self._objects_l, self._head_comments = self.parse(
-            open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding))
+        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+            self._objects_l, self._head_comments = self.parse(f)
 
     # ----------------------------------------------- EXPOSE -----------------------------------------------------------
     @property

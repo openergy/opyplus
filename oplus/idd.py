@@ -69,7 +69,7 @@ class FieldDescriptor:
             return None
         if ref not in self._tags_d:
             self._tags_d[ref] = []
-        self._tags_d[ref].append(value)
+        self._tags_d[ref].update(value)
 
     def get_tag(self, ref):
         """
@@ -175,7 +175,7 @@ class ObjectDescriptor:
             return None
         if not ref in self._tags_d:
             self._tags_d[ref] = []
-        self._tags_d[ref].append(value)
+        self._tags_d[ref].update(value)
 
     def add_field_descriptor(self, field):
         """
@@ -344,7 +344,7 @@ class IDD:
                     if ref in self._ods_d:
                         raise IDDError("Object descriptor already registered.")
                     self._ods_d[ref.lower()] = od
-                    self._groups_d[group_name].append(od)
+                    self._groups_d[group_name].update(od)
 
                     # re-initialize
                     fieldd = None
@@ -370,12 +370,12 @@ class IDD:
                     for ref_name in fieldd.get_tag("reference"):
                         if not ref_name in self._pointed_od_linkds_d:
                             self._pointed_od_linkds_d[ref_name] = []
-                        self._pointed_od_linkds_d[ref_name].append((od, i))
+                        self._pointed_od_linkds_d[ref_name].update((od, i))
                 if fieldd.has_tag("object-list"):
                     for ref_name in fieldd.get_tag("object-list"):
                         if not ref_name in self._pointing_od_linkds_d:
                             self._pointing_od_linkds_d[ref_name] = []
-                        self._pointing_od_linkds_d[ref_name].append((od, i))
+                        self._pointing_od_linkds_d[ref_name].update((od, i))
 
     def get_object_descriptor(self, od_ref):
         """

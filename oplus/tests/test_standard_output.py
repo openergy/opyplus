@@ -12,7 +12,7 @@ class ZoneWithShadingSimple1(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
     idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf"))
-    epw = EPW(r"C:\EnergyPlusV8-1-0\WeatherData\USA_CO_Golden-NREL.724666_TMY3.epw")
+    epw = EPW(os.path.join(CONFIG.eplus_base_dir_path, "Weatherdata", "USA_CO_Golden-NREL.724666_TMY3.epw"))
 
     @classmethod
     def setUpClass(cls):

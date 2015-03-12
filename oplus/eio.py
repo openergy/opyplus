@@ -1,12 +1,9 @@
 import os
-import codecs
 import logging
 
 import pandas as pd
 
 from oplus.configuration import CONFIG
-
-
 
 default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
 
@@ -141,7 +138,7 @@ class Report:
 
         # append row at beginning. If not main table, we add a new column pointing on main table current row_num
         row_l = ([len(self.data_l2_l[0])-1] if table_num != 0 else []) + row_l[1:]
-        self.data_l2_l[table_num].append(row_l)
+        self.data_l2_l[table_num].update(row_l)
 
     def get_tables_l(self):
         """transforms data_l2 in dataframes, create tables and return them"""

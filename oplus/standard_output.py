@@ -4,11 +4,11 @@ Standard Output File
 import datetime as dt
 import logging
 import os
-import copy
 
 import pandas as pd
 
 from oplus.configuration import CONFIG
+from oplus.util import EPlusDt
 
 
 class StandardOutputFileError(Exception):
@@ -63,6 +63,7 @@ class StandardOutputFile:
         return start_dt
 
     def df(self, environment=None, time_step=None, start=None, datetime_index=None):
+        # todo: start does not always work
         """
         environment: 'RunPeriod', 'SummerDesignDay', 'WinterDesignDay' (default: first available)
         time_step: 'Detailed', 'TimeStep', 'Hourly', 'Daily', 'Monthly', 'RunPeriod' (default: first available)
@@ -125,14 +126,14 @@ class StandardOutputFile:
             return df
 
         # convert if needed
-        start_esodt = OutputDT.from_datetime(start_dt)
+        start_esodt = EPlusDt.from_datetime(start_dt)
 
         if time_step in (self.DETAILED, self.TIMESTEP, self.HOURLY):
-            row_to_esodt = lambda row: OutputDT(*row[:4])
+            row_to_esodt = lambda row: EPlusDt(*row[:4])
         elif time_step == self.DAILY:
-            row_to_esodt = lambda row: OutputDT(*(row[:2] + (1, 0)))
+            row_to_esodt = lambda row: EPlusDt(*(row[:2] + (1, 0)))
         else:  # monthly (RunPeriod has been returned)
-            row_to_esodt = lambda row: OutputDT(row, 1, 1, 0)
+            row_to_esodt = lambda row: EPlusDt(row, 1, 1, 0)
 
         def row_to_dt(row):
             esodt = row_to_esodt(row)
@@ -192,7 +193,6 @@ def parse_output(file_like, logger_name=None):
     Only parses hourly (or infra-hourly) data, but does not raise Exception if there is daily or monthly data.
     Reporting frequencies 'Detailed' and 'RunPeriod' not implemented.
     """
-    # todo: code detailed and run period
     _detailed_ = "Detailed"
     _timestep_ = "TimeStep"
     _hourly_ = "Hourly"
@@ -280,7 +280,7 @@ def parse_output(file_like, logger_name=None):
 
             # value has been parsed correctly
             try:
-                data_d[item_num].append(val)  # data_d belongs to current env
+                data_d[item_num].update(val)  # data_d belongs to current env
             except TypeError:
                 # data_d has not been initialized. Happens for first value of item_num 2, if interval is not known yet
                 # find interval
@@ -297,12 +297,12 @@ def parse_output(file_like, logger_name=None):
                 dst_l = raw_env_d[interval][_dst_l_]
 
                 # store
-                index_l.append((month_num, day_num, hour_num, end_minute_num))
-                day_types_l.append(day_type)
-                dst_l.append(dst)
+                index_l.update((month_num, day_num, hour_num, end_minute_num))
+                day_types_l.update(day_type)
+                dst_l.update(dst)
 
                 # append as tried before
-                data_d[item_num].append(val)
+                data_d[item_num].update(val)
 
         elif item_num == 5:  # run period data
             # activate env
@@ -340,9 +340,9 @@ def parse_output(file_like, logger_name=None):
             day_type = right_l[4]
 
             # store
-            index_l.append((month_num, day_num))
-            day_types_l.append(day_type)
-            dst_l.append(dst)
+            index_l.update((month_num, day_num))
+            day_types_l.update(day_type)
+            dst_l.update(dst)
 
         elif item_num == 4:  # monthly
             # activate env
@@ -356,7 +356,7 @@ def parse_output(file_like, logger_name=None):
             month_num = int(right_l[1])
 
             # store
-            index_l.append(month_num)
+            index_l.update(month_num)
 
         elif item_num == 1:  # new environment
             raw_env_d = {_begin_: line_s}
@@ -438,121 +438,6 @@ def parse_output(file_like, logger_name=None):
             envs_d[env_name][interval] = df
 
     return envs_d
-
-
-class OutputDT:
-    MONTH = 0
-    DAY = 1
-    HOUR = 2
-    MINUTE = 3
-
-    @classmethod
-    def from_datetime(cls, datetime):
-        if datetime.minute == 0:
-            datetime -= dt.timedelta(hours=1)
-            minute = 60
-        else:
-            minute = datetime.minute
-
-        return cls(datetime.month, datetime.day, datetime.hour + 1, minute)
-
-    @classmethod
-    def to_datetime(cls, year, month, day, eplus_hour, eplus_minute):
-        """
-        Arguments
-        ---------
-        month
-        day
-        hour (1 -> 24) => one hour shift
-        minute (1 -> 60) => no shift, but 0 is 60 one hour before. We tolerate minute=0 even though eplus does not
-            seem to use it.
-        """
-        hour_cor = 0
-        if eplus_minute == 60:
-            minute = 0
-            hour_cor = 1
-        else:
-            minute = eplus_minute
-
-        try:
-            my_dt = (dt.datetime(year, month, day, eplus_hour-1, minute) +
-                     dt.timedelta(hours=hour_cor))
-            my_dt.replace(year=year)  # we replace in case timedelta operation impacted year
-        except ValueError as e:
-            if (month, day) == (2, 29):
-                raise StandardOutputFileError("%s (probable leap year problem: year=%s, month=%s, day=%s)" %
-                                              (e, year, month, day))
-            raise e
-
-        return my_dt
-
-    def __init__(self, month, day, out_hour, out_minute):
-        """
-        Arguments
-        ---------
-        month
-        day
-        hour (1 -> 24) => one hour shift
-        minute (1 -> 60) => no shift, but 0 is 60 one hour before. We tolerate minute=0 even though eplus does not
-        # todo: unify hour/minute convention, if possible
-            seem to use it.
-        """
-        self._standard_dt = self.to_datetime(2000, month, day, out_hour, out_minute)  # 2000 is a leap year
-
-        # create and store value
-        _datetime = copy.copy(self._standard_dt)
-        if self._standard_dt.minute == 0:
-            _datetime -= dt.timedelta(hours=1)
-            minute = 60
-        else:
-            minute = _datetime.minute
-
-        self._value = _datetime.month, _datetime.day, _datetime.hour + 1, minute
-
-    def __lt__(self, other):
-        return self.standard_dt < other.standard_dt
-
-    def __le__(self, other):
-        return self.standard_dt <= other.standard_dt
-
-    def __eq__(self, other):
-        return self.standard_dt == other.standard_dt
-
-    def __ne__(self, other):
-        return self.standard_dt != other.standard_dt
-
-    def __gt__(self, other):
-        return self.standard_dt > other.standard_dt
-
-    def __ge__(self, other):
-        return self.standard_dt >= other.standard_dt
-
-    def __repr__(self):
-        return "<esodt: month=%s, day=%s, hour=%s, minute=%s>" % self._value
-
-    def datetime(self, year):
-        return self.to_datetime(year, self._value[self.MONTH], self._value[self.DAY],
-                                self._value[self.HOUR], self._value[self.MINUTE])
-
-    @property
-    def month(self):
-        return self._value[self.MONTH]
-
-    @property
-    def day(self):
-        return self._value[self.DAY]
-
-    @property
-    def hour(self):
-        return self._value[self.HOUR]
-
-    @property
-    def minute(self):
-        return self._value[self.MINUTE]
-
-    @property
-    def standard_dt(self):
-        return self._standard_dt
 
 
 def __parse_out_optimized1(file_like):
