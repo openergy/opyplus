@@ -102,3 +102,8 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         def raise_if_you_care():
             supply_fan["availability schedule name"] = schedule_test_object_str % name
         self.assertRaises(BrokenIDFError, raise_if_you_care)
+
+
+class FourZoneWithShadingSimple1(unittest.TestCase):
+    def test_read_idf(self):
+        self.idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf"))

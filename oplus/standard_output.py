@@ -228,13 +228,13 @@ def parse_output(file_like, logger_name=None):
 
         # store information if interesting
         if report_code > 5:
-            for (interval, pattern) in ((_detailed_, "Each Step"),
+            for (interval, pattern) in ((_detailed_, "Each Call"),
                                         (_timestep_, _timestep_),
                                         (_hourly_, _hourly_),
                                         (_daily_, _daily_),
                                         (_monthly_, _monthly_),
                                         (_run_period_, _run_period_)):
-                if interval in comment:
+                if pattern in comment:
                     break
             else:
                 raise StandardOutputFileError("Interval not found: '%s'" % line_s)
@@ -280,8 +280,8 @@ def parse_output(file_like, logger_name=None):
 
             # value has been parsed correctly
             try:
-                data_d[item_num].update(val)  # data_d belongs to current env
-            except TypeError:
+                data_d[item_num].append(val)  # data_d belongs to current env
+            except (TypeError, KeyError):
                 # data_d has not been initialized. Happens for first value of item_num 2, if interval is not known yet
                 # find interval
                 for interval in (_hourly_, _timestep_, _detailed_):
@@ -297,12 +297,12 @@ def parse_output(file_like, logger_name=None):
                 dst_l = raw_env_d[interval][_dst_l_]
 
                 # store
-                index_l.update((month_num, day_num, hour_num, end_minute_num))
-                day_types_l.update(day_type)
-                dst_l.update(dst)
+                index_l.append((month_num, day_num, hour_num, end_minute_num))
+                day_types_l.append(day_type)
+                dst_l.append(dst)
 
                 # append as tried before
-                data_d[item_num].update(val)
+                data_d[item_num].append(val)
 
         elif item_num == 5:  # run period data
             # activate env
@@ -340,9 +340,9 @@ def parse_output(file_like, logger_name=None):
             day_type = right_l[4]
 
             # store
-            index_l.update((month_num, day_num))
-            day_types_l.update(day_type)
-            dst_l.update(dst)
+            index_l.append((month_num, day_num))
+            day_types_l.append(day_type)
+            dst_l.append(dst)
 
         elif item_num == 4:  # monthly
             # activate env
@@ -356,7 +356,7 @@ def parse_output(file_like, logger_name=None):
             month_num = int(right_l[1])
 
             # store
-            index_l.update(month_num)
+            index_l.append(month_num)
 
         elif item_num == 1:  # new environment
             raw_env_d = {_begin_: line_s}
@@ -366,7 +366,7 @@ def parse_output(file_like, logger_name=None):
                 raw_env_d[interval] = dict(data_d=dict([(k, []) for k in codes_d[interval]]), index_l=[])
                 if interval == _run_period_:
                     raw_env_d[interval][_index_l_] = ["Total"]
-                if interval in (_timestep_, _hourly_, _daily_):  # dst, day type
+                if interval in (_detailed_, _timestep_, _hourly_, _daily_):  # dst, day type
                     raw_env_d[interval][_dst_l_] = []
                     raw_env_d[interval][_day_types_l_] = []
             raw_envs_l.append(raw_env_d)

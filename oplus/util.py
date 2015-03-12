@@ -46,7 +46,7 @@ class EPlusDt:
 
         try:
             my_dt = (dt.datetime(year, month, day, eplus_hour-1, minute) +
-                     dt.timedelta(hours=hour_cor))
+                     dt.timedelta(hours=hour_cor)).replace(year=year)  # we replace year for one case: y-12-31-24-60
             my_dt.replace(year=year)  # we replace in case timedelta operation impacted year
         except ValueError as e:
             if (month, day) == (2, 29):
