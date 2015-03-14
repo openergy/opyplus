@@ -2,7 +2,6 @@ import unittest
 import os
 import io
 
-import pandas as pd
 from pandas.util.testing import assert_frame_equal
 
 from oplus.configuration import CONFIG
@@ -46,7 +45,7 @@ class EPlusWeatherData(EPWTestCase):
 
             epw = EPW(file_path)
             f = io.StringIO()
-            epw.save_as(f)
+            epw.save_as(f, add_copyright=False)
 
             new_content = f.getvalue()
 

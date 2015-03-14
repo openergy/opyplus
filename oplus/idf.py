@@ -11,8 +11,10 @@ import io
 import datetime as dt
 import os
 
+
 from oplus.configuration import CONFIG
-from oplus.idd import get_idd
+from oplus.idd import IDD
+from oplus.util import get_copyright_comment
 
 
 default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
@@ -184,8 +186,8 @@ class IDFObjectManager:
 
     def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
         self._ref = ref
-        self._head_comment = "" if head_comment is None else head_comment
-        self._tail_comment = "" if tail_comment is None else tail_comment
+        self._head_comment = head_comment
+        self._tail_comment = tail_comment
         self._fields_l = []  # [[raw_value, comment], ...]
 
         self._idf_manager = idf_manager
@@ -220,6 +222,8 @@ class IDFObjectManager:
         stripped = comment.strip()
         if stripped == "":
             return None
+        if self._tail_comment is None:
+            self._tail_comment = ""
         self._tail_comment += "%s\n" % stripped
 
     def copy(self):
@@ -289,13 +293,14 @@ class IDFObjectManager:
 
     def get_field_comment(self, field_index_or_name):
         field_index = self.get_field_index(field_index_or_name)
-        return self._fields_l[field_index][self._COMMENT]
+        comment = self._fields_l[field_index][self._COMMENT]
+        return "" if comment is None else comment
 
     def get_head_comment(self):
-        return self._head_comment
+        return "" if self._head_comment is None else self._head_comment
 
     def get_tail_comment(self):
-        return self._tail_comment
+        return "" if self._tail_comment is None else self._tail_comment
 
     def get_pointing_links_l(self, field_index_or_name=None):
         index_l = (range(len(self._fields_l)) if field_index_or_name is None
@@ -425,23 +430,28 @@ class IDFObjectManager:
             if (i < old_nb) and (i < new_nb):
                 self.set_value(i, new_object._.get_raw_value(i))
             elif i < old_nb:
-                self.set_value(i, None)
+                self.remove_value(i)
             else:
                 self.add_field(new_object._.get_raw_value(i), new_object._.get_field_comment(i))
 
+        # remove all last values
+        self._fields_l = self._fields_l[:new_nb]
+
     def set_field_comment(self, field_index_or_name, comment):
         field_index = self.get_field_index(field_index_or_name)
-        comment = "" if comment is None else comment
-        self._fields_l[field_index][self._COMMENT] = str(comment).replace("\n", " ").strip()
+        comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
+        self._fields_l[field_index][self._COMMENT] = comment
 
     def set_head_comment(self, comment):
         """
         All line return will be replaced by a blank.
         """
-        self._head_comment = str(comment).replace("\n", " ").strip()
+        comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
+        self._head_comment = comment
 
     def set_tail_comment(self, comment):
-        self._tail_comment = str(comment).strip()
+        comment = None if comment.strip() == "" else str(comment).strip()
+        self._tail_comment = comment
 
     # ------------------------------------------------ COMMUNICATE -----------------------------------------------------
     def to_str(self, style="idf"):
@@ -451,7 +461,7 @@ class IDFObjectManager:
             spaces_nb = self._COMMENT_COLUMN_START - len(content)
             if spaces_nb < 0:
                 spaces_nb = self._TAB_LEN
-            comment = "" if self._head_comment == "" else "%s! %s" % (" "*spaces_nb, self._head_comment)
+            comment = "" if self._head_comment is None else "%s! %s" % (" "*spaces_nb, self._head_comment)
             s = content + comment + "\n"
 
             # fields
@@ -462,11 +472,11 @@ class IDFObjectManager:
                 spaces_nb = self._COMMENT_COLUMN_START - len(content)
                 if spaces_nb < 0:
                     spaces_nb = self._TAB_LEN
-                comment = "" if f_comment == "" else "%s! %s" % (" "*spaces_nb, f_comment)
+                comment = "" if f_comment is None else "%s! %s" % (" "*spaces_nb, f_comment)
                 s += content + comment + "\n"
 
             # tail comment
-            if self._tail_comment != "":
+            if self._tail_comment is not None:
                 s += "\n"
                 for line in self._tail_comment.strip().split("\n"):
                     s += "! %s\n" % line
@@ -498,25 +508,6 @@ class IDFObjectManager:
 # ----------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------- IDF ----------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
-def get_idf(idf_or_path, idf_cls=None, logger_name=None, encoding=None):
-    """
-    Arguments
-    ---------
-    idf_or_path: idf object or idf file path
-
-    Returns
-    -------
-    IDF object
-    """
-    idf_cls = IDF if idf_cls is None else idf_cls
-    if isinstance(idf_or_path, str):
-        return idf_cls(idf_or_path, logger_name=logger_name, encoding=encoding)
-    elif isinstance(idf_or_path, IDF):
-        return idf_or_path
-    raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
-                   (idf_or_path, type(idf_or_path)))
-
-
 # ----------------------------------------------- idf manager  ---------------------------------------------------------
 class VoidSimulation:
     def __getattr__(self, item):
@@ -531,7 +522,7 @@ class IDFManager:
         if not os.path.exists(path):
             raise IDFError("No file at given path: '%s'." % path)
         self._path = path
-        self._idd = get_idd(idd_or_path, logger_name=logger_name, encoding=encoding)
+        self._idd = IDD.get_idd(idd_or_path, logger_name=logger_name, encoding=encoding)
         self._logger_name = logger_name
         self._encoding = encoding
         # simulation
@@ -540,6 +531,10 @@ class IDFManager:
         # raw parse and parse
         with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
             self._objects_l, self._head_comments = self.parse(f)
+
+    @staticmethod
+    def copyright_comment():
+        return get_copyright_comment()
 
     # ----------------------------------------------- EXPOSE -----------------------------------------------------------
     @property
@@ -576,10 +571,10 @@ class IDFManager:
                 content, comment = split_line[0].strip(), "!".join(split_line[1:])
 
             # RAW FORMATTING
-            if content == "":
+            if content.strip() == "":
                 content = None
             if comment is not None:
-                comment = comment.strip("\n")
+                comment = comment.strip()
                 if comment == "":
                     comment = None
 
@@ -798,14 +793,19 @@ class IDFManager:
 
         return msg
 
-    def save_as(self, file_or_path):
-        # todo: manage None comments
+    def save_as(self, file_or_path, add_copyright=True):
         is_path = isinstance(file_or_path, str)
         f = (open(file_or_path, "w", encoding=CONFIG.encoding if self._encoding is None else self._encoding)
              if is_path else file_or_path)
 
         # idf comments
-        for comment in self._head_comments.split("\n"):
+        idf_comment = self._head_comments
+        if add_copyright:  # todo: attach to class
+            msg = self.copyright_comment()
+            if not msg in idf_comment:
+                idf_comment = msg + idf_comment
+
+        for comment in idf_comment.split("\n"):
             f.write("!%s\n" % comment)
 
         # idf objects
@@ -823,6 +823,24 @@ class IDF():
     IDF is allowed to access private keys/methods of IDFObject.
     """
     idf_manager_cls = IDFManager  # for subclassing
+
+    @classmethod
+    def get_idf(cls, idf_or_path, logger_name=None, encoding=None):
+        """
+        Arguments
+        ---------
+        idf_or_path: idf object or idf file path
+
+        Returns
+        -------
+        IDF object
+        """
+        if isinstance(idf_or_path, str):
+            return cls(idf_or_path, logger_name=logger_name, encoding=encoding)
+        elif isinstance(idf_or_path, cls):
+            return idf_or_path
+        raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
+                       (idf_or_path, type(idf_or_path)))
 
     def __init__(self, path, idd_or_path=None, logger_name=None, encoding=None):
         """
@@ -910,8 +928,8 @@ class QuerySet:
 
         Arguments
         ---------
-        field_index_or_name: field index or name
-        field_value: value on which to be matched
+        field_index_or_name: field index or name. Can access children with tuple or list.
+        field_value_or_values: value on which to be matched.
         condition: "=" (equality)
 
         Returns
@@ -920,7 +938,18 @@ class QuerySet:
         """
         if not condition in ("=",):
             raise IDFError("Unknown condition: '%s'." % condition)
-        return QuerySet([o for o in self._objects_l if o._.get_value(field_index_or_name) == field_value])
+
+        search_tuple = (field_index_or_name,) if isinstance(field_index_or_name, str) else field_index_or_name
+
+        result_l = []
+        for o in self._objects_l:
+            current_value = o
+            for level in search_tuple:
+                current_value = current_value._.get_value(level)
+            if current_value == field_value:
+                result_l.append(o)
+
+        return QuerySet(result_l)
 
     @property
     def one(self):

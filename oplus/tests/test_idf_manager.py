@@ -163,4 +163,4 @@ For: AllDays,            !- Field 2
 Until: 12:00,20.0;       !- Field 3"""
 
         sch._.replace_values(new_str)
-        self.assertEqual((None, None), (sch[-1], sch[-2]))
+        self.assertEqual(len(sch), 6)

@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 from oplus.configuration import CONFIG
-from oplus.util import EPlusDt
+from oplus.util import EPlusDt, get_start_dt
 
 
 class StandardOutputFileError(Exception):
@@ -20,7 +20,7 @@ default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_
 
 class StandardOutputFile:
     DETAILED = "Detailed"
-    TIMESTEP = "TimeStep"
+    TIME_STEP = "TimeStep"
     HOURLY = "Hourly"
     DAILY = "Daily"
     MONTHLY = "Monthly"
@@ -29,6 +29,9 @@ class StandardOutputFile:
     SUMMER_DESIGN_DAY = "SummerDesignDay"
     WINTER_DESIGN_DAY = "WinterDesignDay"
 
+    ENVIRONMENTS = (RUN_PERIOD, SUMMER_DESIGN_DAY, WINTER_DESIGN_DAY)
+    TIME_STEPS = (DETAILED, TIME_STEP, HOURLY, DAILY, MONTHLY, RUN_PERIOD)
+
     def __init__(self, path, logger_name=None, encoding=None, start=None):
         if not os.path.exists(path):
             raise StandardOutputFileError("No file at given path: '%s'." % path)
@@ -36,31 +39,19 @@ class StandardOutputFile:
         self._logger_name = logger_name
         self._encoding = encoding
 
-        self._start_dt = None if start is None else self._get_start_dt(start)
+        self._start_dt = None if start is None else get_start_dt(start)
 
         # {run_period: {hourly: df, daily: df, monthly: df}, summer_design: df, winter_design: df}
         # datetime indexes are not managed here
         self._envs_d = self._parse()
 
     def set_start(self, start):
-        self._start_dt = self._get_start_dt(start)
+        self._start_dt = get_start_dt(start)
 
     def _parse(self):
         # todo: optimize (maybe readvarseso)
         with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
             return parse_output(f)
-
-    @staticmethod
-    def _get_start_dt(start):
-        if isinstance(start, dt.datetime):  # must first test datetime because date is datetime...
-            start_dt = start
-        elif isinstance(start, dt.date):
-            start_dt = dt.datetime(start.year, start.month, start.day)
-        elif isinstance(start, int):
-            start_dt = dt.datetime(start, 1, 1)
-        else:
-            raise StandardOutputFileError("Unknown start type: '%s'." % type(start))
-        return start_dt
 
     def df(self, environment=None, time_step=None, start=None, datetime_index=None):
         # todo: start does not always work
@@ -71,55 +62,56 @@ class StandardOutputFile:
         start: explain mechanism (can have been set with 'set_start' or while initialization)
         """
         # ------------------------------------ manage arguments --------------------------------------------------------
-        # environment
+        # ENVIRONMENT
+        # set environment if needed
         if environment is None:
-            for environment in (self.RUN_PERIOD, self.SUMMER_DESIGN_DAY, self.WINTER_DESIGN_DAY):
+            for environment in self.ENVIRONMENTS:
                 if environment in self._envs_d:
                     break
-            else:  # no available environment
-                return None
-        else:
-            if not environment in (self.RUN_PERIOD, self.SUMMER_DESIGN_DAY, self.WINTER_DESIGN_DAY):
-                raise StandardOutputFileError("Unknown environment: '%s'." % environment)
-            if not environment in self._envs_d:  # no available environment
-                return None
+
+        # check if environment is ok
+        if not environment in self.ENVIRONMENTS:
+            raise StandardOutputFileError("Unknown environment: '%s'." % environment)
+
+        # check availability
+        if not environment in self._envs_d:  # no available environment
+            return None
+
+        # set environment
         env_d = self._envs_d[environment]
 
-        # time step
+        # TIME STEP
+        # set time step if needed
         if time_step is None:
-            for time_step in (self.DETAILED, self.TIMESTEP, self.HOURLY, self.DAILY, self.MONTHLY, self.RUN_PERIOD):
+            for time_step in self.TIME_STEPS:
                 if time_step in env_d:
                     break
-            else:  # not available time step
-                return None
-        else:
-            if not time_step in (self.DETAILED, self.TIMESTEP, self.HOURLY, self.DAILY, self.MONTHLY, self.RUN_PERIOD):
-                raise StandardOutputFileError("Unknown time_step: '%s'." % time_step)
-            if not time_step in env_d:  # no available time step
-                return None
+
+        # check if time step is ok
+        if not time_step in self.TIME_STEPS:
+            raise StandardOutputFileError("Unknown time_step: '%s' (must be: %s)." %
+                                          (time_step, ", ".join(self.TIME_STEPS)))
+
+        # check availability
+        if not time_step in env_d:  # no available time step
+            return None
 
         # start_dt
-        start_dt = self._start_dt if start is None else self._get_start_dt(start)
+        start_dt = self._start_dt if start is None else get_start_dt(start)
 
+        # datetime_index
         if datetime_index is None:
             datetime_index = start_dt is not None
-        if datetime_index and start_dt is None:
+        if (datetime_index is True) and (start_dt is None):
             raise StandardOutputFileError("datetime_index mode can only be used if you indicated start. Use tuple "
                                           "index mode or registered start (set_start, on initialization of Output "
                                           "object or as df method argument.")
-        if not time_step in (self.DETAILED, self.TIMESTEP, self.HOURLY, self.DAILY, self.MONTHLY, self.RUN_PERIOD):
-            raise StandardOutputFileError("Unknown time_step: '%s'." % time_step)
-        if not environment in (self.RUN_PERIOD, self.SUMMER_DESIGN_DAY, self.WINTER_DESIGN_DAY):
-            raise StandardOutputFileError("Unknown run_period: '%s'." % environment)
 
-        # fetch env
-        if not environment in self._envs_d:
-            return None
-        df_d = self._envs_d[environment]
+        # ------------------------------------ manage data frame -------------------------------------------------------
         # fetch dataframe
-        if not time_step in df_d:
+        if not time_step in env_d:
             return None
-        df = df_d[time_step]
+        df = env_d[time_step]
 
         # return if no conversion needed
         if not datetime_index or (time_step == self.RUN_PERIOD):
@@ -128,7 +120,7 @@ class StandardOutputFile:
         # convert if needed
         start_esodt = EPlusDt.from_datetime(start_dt)
 
-        if time_step in (self.DETAILED, self.TIMESTEP, self.HOURLY):
+        if time_step in (self.DETAILED, self.TIME_STEP, self.HOURLY):
             row_to_esodt = lambda row: EPlusDt(*row[:4])
         elif time_step == self.DAILY:
             row_to_esodt = lambda row: EPlusDt(*(row[:2] + (1, 0)))
@@ -144,7 +136,7 @@ class StandardOutputFile:
         df.index = df.index.map(row_to_dt)
         df.sort(inplace=True)
         freq = None
-        if time_step in (self.TIMESTEP, self.DETAILED):
+        if time_step in (self.TIME_STEP, self.DETAILED):
             freq = None
             for year, year_df in df.groupby(lambda x: x.year):
                 freq = year_df.index.inferred_freq
@@ -167,9 +159,9 @@ class StandardOutputFile:
         df = df.reindex(index=pd.date_range(df.index[0], df.index[-1], freq=freq))
         null_nb = (df.notnull().sum(axis=1) == 0).sum()
         if len(df) != before_nb + null_nb:
-            logger = logging.getLogger(self._logger_name)
-            logger.error("BUG: Some values were lost during reindex (before reindex: %i, after: %i (%i full, %i empty)."
-                         % (before_nb, len(df), len(df)-null_nb, null_nb))
+            logging.getLogger(self._logger_name).error(
+                "BUG: Some values were lost during reindex (before reindex: %i, after: %i (%i full, %i empty)."
+                % (before_nb, len(df), len(df)-null_nb, null_nb))
 
         return df
 

@@ -4,7 +4,7 @@ import os
 from oplus.idf import IDF
 from oplus.epw import EPW
 from oplus.standard_output import StandardOutputFile
-from oplus.simulate import Simulation
+from oplus.simulation import Simulation
 from oplus.configuration import CONFIG
 
 

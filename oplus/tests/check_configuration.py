@@ -17,7 +17,7 @@ from oplus.idd import IDD
 # check current idd
 idd = IDD()
 print(idd.path)
-set_configuration(eplus_base_dir=r"C:\EnergyPlusV7-2-0")
+set_configuration(eplus_base_dir_path=r"C:\EnergyPlusV7-2-0")
 idd = IDD()
 print(idd.path)
 

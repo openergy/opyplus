@@ -36,17 +36,6 @@ def get_idd_path():
     return os.path.join(CONFIG.eplus_base_dir_path, "Energy+.idd")
 
 
-def get_idd(idd_or_path, logger_name=None, encoding=None):
-    if idd_or_path is None:
-        return IDD()
-    if isinstance(idd_or_path, str):
-        return IDD(path=idd_or_path, logger_name=logger_name, encoding=encoding)
-    elif isinstance(idd_or_path, IDD):
-        return idd_or_path
-    raise IDDError("'idd_or_path' must be a path or an IDD. Given object, type: '%s', '%s'." %
-                   (idd_or_path, type(idd_or_path)))
-
-
 class FieldDescriptor:
     """
     No checks implemented (idf is considered as ok).
@@ -214,6 +203,17 @@ class ObjectDescriptor:
 
 
 class IDD:
+    @classmethod
+    def get_idd(cls, idd_or_path, logger_name=None, encoding=None):
+        if idd_or_path is None:
+            return cls()
+        if isinstance(idd_or_path, str):
+            return cls(path=idd_or_path, logger_name=logger_name, encoding=encoding)
+        elif isinstance(idd_or_path, cls):
+            return idd_or_path
+        raise IDDError("'idd_or_path' must be a path or an IDD. Given object: '%s', type: '%s'." %
+                       (idd_or_path, type(idd_or_path)))
+
     def __init__(self, path=None, logger_name=None, encoding=None):
         if (path is not None) and not os.path.exists(path):
             raise IDDError("No file at given path: '%s'." % path)
