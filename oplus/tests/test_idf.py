@@ -37,6 +37,15 @@ class OneZoneEvapCooler(unittest.TestCase):
         sch = self.idf.add_object(schedule_test_object_str % sch_name)
         self.assertTrue(isinstance(sch, IDFObject))
 
+    def test_multi_level_filter(self):
+        # get all building surfaces that have a zone with Z-Origin 0
+        simple_filter_l = []
+        for bsd in self.idf("BuildingSurface:Detailed"):
+            if bsd["Zone name"][4] == 0:
+                simple_filter_l.append(bsd)
+        multi_filter_l = self.idf("BuildingSurface:Detailed").filter(("Zone Name", 4), 0).objects_l
+        self.assertEqual(simple_filter_l, multi_filter_l)
+
 
 class OneZoneEvapCoolerDynamic(unittest.TestCase):
     """
@@ -103,7 +112,27 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
             supply_fan["availability schedule name"] = schedule_test_object_str % name
         self.assertRaises(BrokenIDFError, raise_if_you_care)
 
+    def test_extensible(self):
+        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+        for i in range(1500):
+            sch.add_field("12:00")
+        self.assertEqual(sch[1300], "12:00")
+
 
 class FourZoneWithShadingSimple1(unittest.TestCase):
+    """
+    Tested under EPlus 8.1.0 on Windows (Geoffroy).
+    """
     def test_read_idf(self):
         self.idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf"))
+
+
+class FiveZoneAirCooled(unittest.TestCase):
+    """
+    Tested under EPlus 8.1.0 on Windows (Geoffroy).
+    """
+    def test_multiple_branch_links(self):
+        idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
+        bl = idf("BranchList").filter("Name", "Heating Supply Side Branches").one
+        b3 = idf("Branch").filter("Name", "Heating Supply Bypass Branch").one
+        self.assertEqual(bl[3], b3)

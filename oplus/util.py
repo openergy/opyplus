@@ -167,7 +167,7 @@ def get_start_dt(start):
     return start_dt
 
 
-def run_subprocess_and_log(cmd_l, cwd=None, logger_name=None, encoding=None):
+def run_eplus_and_log(cmd_l, cwd=None, logger_name=None, encoding=None):
     logger = logging.getLogger(__name__ if logger_name is None else logger_name)
     encoding = "latin-1" if encoding is None else encoding
     p = subprocess.Popen(cmd_l, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
@@ -181,7 +181,12 @@ def run_subprocess_and_log(cmd_l, cwd=None, logger_name=None, encoding=None):
 
         err = err_reader.readline(0.1)
         if err is not None:
-            logger.error(err.decode(encoding).strip())
+            # special EPlus function
+            err_s = err.decode(encoding).strip()
+            if err_s == "EnergyPlus Completed Successfully.":  # redirect to standard output
+                logger.info(err_s)
+            else:
+                logger.error(err_s)
 
         if p.poll() is not None:
             break

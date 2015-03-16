@@ -7,3 +7,5 @@ setup(
     name='Optimized cython functions',
     ext_modules=cythonize("optimize.pyx")
 )
+
+# todo: requirements

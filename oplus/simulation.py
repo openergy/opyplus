@@ -2,7 +2,7 @@ import os
 import shutil
 
 from oplus.configuration import CONFIG
-from oplus.util import run_subprocess_and_log
+from oplus.util import run_eplus_and_log
 from oplus.idf import IDF
 from oplus.idd import IDD
 from oplus.epw import EPW
@@ -23,8 +23,8 @@ default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_
 
 def simulate(idf_or_path, epw_or_path, dir_path, start=None, simulation_control=None,
              base_name="oplus", logger_name=None, encoding=None, idd_or_path=None):
-    # make directory if doesn't exist
-    if not os.path.isdir(dir_path):
+    # make directory if does not exist
+    if not os.path.exists(dir_path):
         os.mkdir(dir_path)
 
     # simulation control
@@ -32,8 +32,8 @@ def simulate(idf_or_path, epw_or_path, dir_path, start=None, simulation_control=
         _sizing_ = "Sizing"
         _run_periods_ = "RunPeriods"
         if not simulation_control in (_sizing_, _run_periods_):
-            raise SimulationError("Unknown simulation_control: '%s' (must be 'sizing' or 'run_periods')." %
-                                  simulation_control)
+            raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
+                                  (simulation_control, (_sizing_, _run_periods_)))
         if not isinstance(idf_or_path, IDF):
             idf_or_path = IDF(idf_or_path, logger_name=logger_name, encoding=encoding, idd_or_path=idd_or_path)
 
@@ -155,7 +155,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
 
     simulation_epw_path = os.path.join(dir_path, base_name + ".epw")
     if isinstance(epw_or_path, EPW):
-        epw_or_path.save_as(epw_or_path)
+        epw_or_path.save_as(simulation_epw_path)
     else:
         shutil.copy2(epw_or_path, simulation_epw_path)
 
@@ -187,7 +187,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
     cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
 
     # launch calculation
-    run_subprocess_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
+    run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
                            logger_name=default_logger_name if logger_name is None else logger_name)
 
     # if needed, we delete temp weather data (only on Windows, see above)

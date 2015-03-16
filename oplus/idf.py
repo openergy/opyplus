@@ -4,8 +4,6 @@ _manager variable is semi-private: it can be accessed by other managers (includi
 IDF or IDFObject. The _manager attributes therefore remain private to oplus users.
 """
 # todo: document
-# todo: properly manage comments (None problem, for example in schedules)
-# todo: manage multiple links
 
 import io
 import datetime as dt
@@ -800,7 +798,7 @@ class IDFManager:
 
         # idf comments
         idf_comment = self._head_comments
-        if add_copyright:  # todo: attach to class
+        if add_copyright:
             msg = self.copyright_comment()
             if not msg in idf_comment:
                 idf_comment = msg + idf_comment
@@ -818,7 +816,6 @@ class IDFManager:
 
 # ------------------------------------------------- idf ----------------------------------------------------------------
 class IDF():
-    # todo: replace object
     """
     IDF is allowed to access private keys/methods of IDFObject.
     """

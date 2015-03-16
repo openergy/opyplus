@@ -142,6 +142,7 @@ class ObjectDescriptor:
         self.group_name = group_name
         self._fieldds_l = []
         self._tags_d = {}
+        self._extensible = [None, None]  # (cycle_nb, cycle_start)
 
     @property
     def tags(self):
@@ -166,11 +167,17 @@ class ObjectDescriptor:
             self._tags_d[ref] = []
         self._tags_d[ref].append(value)
 
+        # manage extensible
+        if "extensible" in ref:
+            self._extensible[0] = int(ref.split(":")[1])
+
     def add_field_descriptor(self, field):
         """
         Adds a new field descriptor.
         """
         self._fieldds_l.append(field)
+        if field.has_tag("begin-extensible"):
+            self._extensible[1] = len(self._fieldds_l) - 1
 
     def get_field_descriptor(self, index_or_name):
         """
@@ -179,17 +186,19 @@ class ObjectDescriptor:
         asked field descriptor.
         """
         index = self.get_field_index(index_or_name)
-        if index is not None:
-            # if Schedule:Compact, index may be higher than number of descriptors, we return last descriptor
-            return self._fieldds_l[index] if index < len(self._fieldds_l) else self._fieldds_l[-1]
+
+        if index > len(self._fieldds_l):  # extensible object, find modulo
+            index = self._extensible[1] + ((index - self._extensible[1]) % self._extensible[0])
+
+        return self._fieldds_l[index]
 
     def get_field_index(self, index_or_name):
         # if index
         if type(index_or_name) is int:
-            if index_or_name >= len(self._fieldds_l) and self.ref != "Schedule:Compact":  # derogation for schedules
+            if index_or_name >= len(self._fieldds_l) and self._extensible[0] is None:
                 raise IDDError("Index out of range : %i." % index_or_name)
             return index_or_name
-        # if name
+        # if name (extensible can not be used here)
         formatted_name = FieldDescriptor.name_to_formatted_name(index_or_name)
         for i, cur_field in enumerate(self._fieldds_l):
             cur_formatted_name = FieldDescriptor.name_to_formatted_name(cur_field.name)
