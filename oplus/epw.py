@@ -170,13 +170,15 @@ class EPW:
             return df
 
         # manage datetime df
+        start_standard_dt = EPlusDt.from_datetime(start_dt).standard_dt
+
         def index_to_dt(i):
-            eplusdt = EPlusDt(i[1], i[2], i[3], i[4]).datetime(i[0])
-            _year = start_dt.year + 1 if eplusdt.standard_dt <= eplusdt.standard_dt else start_dt.year
+            eplusdt = EPlusDt(i[1], i[2], i[3], i[4])
+            _year = start_dt.year + 1 if eplusdt.standard_dt <= start_standard_dt else start_dt.year
             return eplusdt.datetime(_year)
 
         df.index = df.index.map(index_to_dt)
-        df = df.reindex(pd.date_range(df.index[0], df.index[0], freq=self.freq))
+        df = df.reindex(pd.date_range(df.index[0], df.index[-1], freq=self.freq))
 
         return df
 
@@ -205,5 +207,3 @@ def parse_epw(file_like, encoding=None, logger_name=None):
         del df[c]
 
     return df, header
-
-
