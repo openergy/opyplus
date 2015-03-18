@@ -21,45 +21,6 @@ class WrongExtensionError(SimulationError):
 default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
 
 
-def simulate(idf_or_path, epw_or_path, dir_path, start=None, simulation_control=None,
-             base_name="oplus", logger_name=None, encoding=None, idd_or_path=None):
-    # make directory if does not exist
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
-
-    # simulation control
-    if simulation_control is not None:
-        _sizing_ = "Sizing"
-        _run_periods_ = "RunPeriods"
-        if not simulation_control in (_sizing_, _run_periods_):
-            raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
-                                  (simulation_control, (_sizing_, _run_periods_)))
-        if not isinstance(idf_or_path, IDF):
-            idf_or_path = IDF(idf_or_path, logger_name=logger_name, encoding=encoding, idd_or_path=idd_or_path)
-
-        sc = idf_or_path("SimulationControl").one
-        if simulation_control == _sizing_:
-            # prepare SimulationControl
-            sc["Do Zone Sizing Calculation"] = "Yes"
-            sc["Do System Sizing Calculation"] = "Yes"
-            sc["Do Plant Sizing Calculation"] = "Yes"
-            sc["Run Simulation for Sizing Periods"] = "Yes"
-            sc["Run Simulation for Weather File Run Periods"] = "No"
-        if simulation_control == _run_periods_:
-            sc["Do Zone Sizing Calculation"] = "Yes"
-            sc["Do System Sizing Calculation"] = "Yes"
-            sc["Do Plant Sizing Calculation"] = "Yes"
-            sc["Run Simulation for Sizing Periods"] = "No"
-            sc["Run Simulation for Weather File Run Periods"] = "Yes"
-
-    # run simulation
-    run_eplus(idf_or_path, epw_or_path, dir_path, base_name=base_name, logger_name=logger_name)
-
-    # return simulation object
-    return Simulation(dir_path, start=start, base_name=base_name, logger_name=logger_name, encoding=encoding,
-                      idd_or_path=idd_or_path)
-
-
 class Simulation:
     # for subclassing
     idf_cls = IDF
@@ -69,6 +30,46 @@ class Simulation:
     mtd_cls = MTD
     eio_cls = EIO
     EXTENSIONS = ("idf", "epw", "eso", "eio", "mdd", "mtr", "mtd", "err")
+
+    @classmethod
+    def simulate(cls, idf_or_path, epw_or_path, dir_path, start=None, simulation_control=None, base_name="oplus",
+                 logger_name=None, encoding=None, idd_or_path=None):
+        # make directory if does not exist
+        # todo: check if files and folders are deleted
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
+        # simulation control
+        if simulation_control is not None:
+            _sizing_ = "Sizing"
+            _run_periods_ = "RunPeriods"
+            if not simulation_control in (_sizing_, _run_periods_):
+                raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
+                                      (simulation_control, (_sizing_, _run_periods_)))
+            if not isinstance(idf_or_path, IDF):
+                idf_or_path = IDF(idf_or_path, logger_name=logger_name, encoding=encoding, idd_or_path=idd_or_path)
+
+            sc = idf_or_path("SimulationControl").one
+            if simulation_control == _sizing_:
+                # prepare SimulationControl
+                sc["Do Zone Sizing Calculation"] = "Yes"
+                sc["Do System Sizing Calculation"] = "Yes"
+                sc["Do Plant Sizing Calculation"] = "Yes"
+                sc["Run Simulation for Sizing Periods"] = "Yes"
+                sc["Run Simulation for Weather File Run Periods"] = "No"
+            if simulation_control == _run_periods_:
+                sc["Do Zone Sizing Calculation"] = "Yes"
+                sc["Do System Sizing Calculation"] = "Yes"
+                sc["Do Plant Sizing Calculation"] = "Yes"
+                sc["Run Simulation for Sizing Periods"] = "No"
+                sc["Run Simulation for Weather File Run Periods"] = "Yes"
+
+        # run simulation
+        run_eplus(idf_or_path, epw_or_path, dir_path, base_name=base_name, logger_name=logger_name)
+
+        # return simulation object
+        return cls(dir_path, start=start, base_name=base_name, logger_name=logger_name, encoding=encoding,
+                   idd_or_path=idd_or_path)
 
     def __init__(self, dir_path, start=None, base_name="oplus", logger_name=None, encoding=None, idd_or_path=None):
         if not os.path.isdir(dir_path):
@@ -140,6 +141,8 @@ class Simulation:
 
         return constructors_d[item](self.path(item))
 
+simulate = Simulation.simulate
+
 
 def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name=None, encoding=None):
     # check dir path
@@ -188,7 +191,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
 
     # launch calculation
     run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
-                           logger_name=default_logger_name if logger_name is None else logger_name)
+                      logger_name=default_logger_name if logger_name is None else logger_name)
 
     # if needed, we delete temp weather data (only on Windows, see above)
     if temp_epw_path is not None:
