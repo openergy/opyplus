@@ -88,7 +88,7 @@ class Simulation:
 
     @property
     def _idd(self):
-        if self._idd is None:
+        if self.__idd is None:
             self.__idd = IDD.get_idd(self._idd_or_path, logger_name=self._logger_name, encoding=self._encoding)
         return self.__idd
 

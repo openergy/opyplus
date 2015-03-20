@@ -37,7 +37,7 @@ class EIO:
         column_i = self._get_column_index(df, column_name_or_i)
         filter_column_i = self._get_column_index(df, filter_column_name_or_i)
 
-        answer_df = df[df[df.columns[filter_column_i]] == filter_criterion]
+        answer_df = df[df[df.columns[filter_column_i]].map(lambda x: x.lower() == filter_criterion.lower())]
         if len(answer_df) == 0:
             raise EIOError("Filter did not return any values.")
         if len(answer_df) > 1:
