@@ -1,4 +1,4 @@
-__version__ = "4.0.0"
+__version__ = "4.0.2"
 
 from oplus.configuration import set_configuration
 from oplus.eio import EIO

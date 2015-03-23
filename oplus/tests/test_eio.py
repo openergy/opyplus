@@ -6,7 +6,7 @@ from oplus.configuration import CONFIG
 from oplus.simulation import simulate
 from oplus.eio import EIO
 
-DEBUG_SIMUL_DIR_PATH = r"C:\Users\Geoffroy\Desktop\simul_dir"  # -> set to None to bypass
+DEBUG_SIMUL_DIR_PATH = None  # r"C:\Users\Geoffroy\Desktop\simul_dir"  # -> set to None to bypass
 
 
 class AllExamplesShouldWork(unittest.TestCase):
