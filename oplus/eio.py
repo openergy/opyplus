@@ -50,14 +50,7 @@ def parse_eio(path, encoding=None):
             if line_s == "End of Data":
                 break
             line_s = line_s.strip().strip(",")
-            line_l = []
-            for c in line_s.split(","):
-                c = c.strip()
-                try:
-                    c = float(c)
-                except ValueError:
-                    pass
-                line_l.append(c)
+            line_l = [c.strip() for c in line_s.split(",")]
             if line_s[0][0] == "!":  # header
                 headers_l2.append([line_l[0][1:].strip()] + line_l[1:])
             else:  # content
@@ -114,7 +107,7 @@ class EIOTable:
 
     @property
     def df(self):
-        _df = pd.DataFrame(data=self._data, columns=self._columns)
+        _df = pd.DataFrame(data=self._data, columns=self._columns, dtype="object")
         _df.name = self._ref
         return _df
 
