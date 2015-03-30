@@ -547,6 +547,10 @@ class IDFManager:
     def simulation(self):
         return self._simulation
 
+    @property
+    def idf(self):
+        return self._idf
+
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
     def parse(self, file_like):
         """
