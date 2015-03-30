@@ -22,9 +22,6 @@ import logging
 from oplus.configuration import CONFIG
 
 
-
-# todo: manage extensible
-
 class IDDError(Exception):
     pass
 
@@ -54,11 +51,10 @@ class FieldDescriptor:
         return sorted(self._tags_d)
 
     def add_tag(self, ref, value=None):
-        if value is None:
-            return None
         if ref not in self._tags_d:
             self._tags_d[ref] = []
-        self._tags_d[ref].append(value)
+        if value is not None:
+            self._tags_d[ref].append(value)
 
     def get_tag(self, ref):
         """
@@ -106,11 +102,10 @@ class FieldDescriptor:
         "integer", "real", "alpha", "choice", "reference", "object-list", "external_list", "node"
         """
         if self._detailed_type is None:
-            if "type" in self._tags_d:
-                if "reference" in self._tags_d:
-                    self._detailed_type = "reference"
-                else:
-                    self._detailed_type = self._tags_d["type"][0].lower()
+            if "reference" in self._tags_d:
+                self._detailed_type = "reference"
+            elif "type" in self._tags_d:
+                self._detailed_type = self._tags_d["type"][0].lower()
             elif "key" in self._tags_d:
                 self._detailed_type = "choice"
             elif "object-list" in self._tags_d:
@@ -142,7 +137,10 @@ class ObjectDescriptor:
         self.group_name = group_name
         self._fieldds_l = []
         self._tags_d = {}
-        self._extensible = [None, None]  # (cycle_nb, cycle_start)
+
+        # extensible management
+        self._extensible_cycle_len = 0  # if 0: not extensible
+        self._extensible_cycle_start = None  # will be filled first time asked
 
     @property
     def tags(self):
@@ -163,21 +161,20 @@ class ObjectDescriptor:
     def add_tag(self, ref, value=None):
         if value is None:
             return None
+
         if not ref in self._tags_d:
             self._tags_d[ref] = []
         self._tags_d[ref].append(value)
 
         # manage extensible
         if "extensible" in ref:
-            self._extensible[0] = int(ref.split(":")[1])
+            self._extensible_cycle_len = int(ref.split(":")[1])
 
     def add_field_descriptor(self, field):
         """
         Adds a new field descriptor.
         """
         self._fieldds_l.append(field)
-        if field.has_tag("begin-extensible"):
-            self._extensible[1] = len(self._fieldds_l) - 1
 
     def get_field_descriptor(self, index_or_name):
         """
@@ -187,15 +184,18 @@ class ObjectDescriptor:
         """
         index = self.get_field_index(index_or_name)
 
-        if index > len(self._fieldds_l):  # extensible object, find modulo
-            index = self._extensible[1] + ((index - self._extensible[1]) % self._extensible[0])
+        if index > len(self._fieldds_l) and (self._extensible_cycle_len != 0):  # extensible object, find modulo
+            index = self._extensible_cycle_len + ((index - self._extensible_cycle_start) % self._extensible_cycle_len)
 
         return self._fieldds_l[index]
 
     def get_field_index(self, index_or_name):
+        """
+        if index, must be >=0
+        """
         # if index
         if type(index_or_name) is int:
-            if index_or_name >= len(self._fieldds_l) and self._extensible[0] is None:
+            if index_or_name >= len(self._fieldds_l) and (self._extensible_cycle_len != 0):
                 raise IDDError("Index out of range : %i." % index_or_name)
             return index_or_name
         # if name (extensible can not be used here)
@@ -210,6 +210,21 @@ class ObjectDescriptor:
     def formatted_ref(self):
         return self.ref.replace(":", "_")
 
+    @property
+    def extensible(self):
+        """
+        Returns cycle_len, cycle_start
+        """
+        if self._extensible_cycle_len == 0:
+            return None, None
+        if self._extensible_cycle_start is None:
+            for i, fieldd in enumerate(self._fieldds_l):
+                if fieldd.has_tag("begin-extensible"):
+                    break
+            else:
+                raise IDDError("begin-extensible tag not found.")
+            self._extensible_cycle_start = i
+        return self._extensible_cycle_len, self._extensible_cycle_start
 
 class IDD:
     @classmethod

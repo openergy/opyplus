@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from oplus.idf import IDF, IDFObject
+from oplus.idf import IDF, IDFObject, IDFError
 from oplus.idf import BrokenIDFError, IsPointedError
 from oplus.configuration import CONFIG
 
@@ -117,6 +117,37 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         for i in range(1500):
             sch.add_field("12:00")
         self.assertEqual(sch[1300], "12:00")
+
+    def test_pop_end(self):
+        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+        ini_len = len(sch)
+        self.assertEqual("1", sch.pop())
+        self.assertEqual(ini_len-1, len(sch))
+
+    def test_pop_middle(self):
+        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+
+        self.assertEqual(sch.to_str(), """Schedule:Compact,
+    System Availability Schedule,  ! - Name
+    Any Number,                    ! - Schedule Type Limits Name
+    THROUGH: 12/31,                ! - Field 1
+    FOR: AllDays,                  ! - Field 2
+    UNTIL: 24:00,                  ! - Field 3
+    1;                             ! - Field 3
+""")
+
+        self.assertEqual("THROUGH: 12/31", sch.pop(2))
+        self.assertEqual(sch.to_str(), """Schedule:Compact,
+    System Availability Schedule,  ! - Name
+    Any Number,                    ! - Schedule Type Limits Name
+    FOR: AllDays,                  ! - Field 2
+    UNTIL: 24:00,                  ! - Field 3
+    1;                             ! - Field 3
+""")
+
+    def test_pop_raises(self):
+        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+        self.assertRaises(IDFError, lambda: sch.pop(1))
 
 
 class FourZoneWithShadingSimple1(unittest.TestCase):

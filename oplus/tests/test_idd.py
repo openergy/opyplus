@@ -15,4 +15,3 @@ class IDDTest(unittest.TestCase):
     def test_eplus810_parse(self):
         IDD(path=EPLUS_810_IDD_PATH)
         self.assertTrue(True)
-

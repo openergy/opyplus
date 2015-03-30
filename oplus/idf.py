@@ -149,6 +149,23 @@ class IDFObject:
         """
         self._.replace_values(new_object_str)
 
+    def pop(self, index=-1):
+        """
+        Removes field from idf object and shift following rows upwards (value and comment will be removed).
+        Can only be applied on extensible fields (for now, only extensible:1).
+
+        #todo: manage extensible > 1
+
+        Arguments
+        ---------
+        index: index of field to remove (default -1)
+
+        Returns
+        -------
+        Value of poped field.
+        """
+        return self._.pop(index)
+
     def field_comment(self, field_index_or_name, comment=None):
         if comment is None:
             return self._.get_field_comment(field_index_or_name)
@@ -242,10 +259,6 @@ class IDFObjectManager:
         return self._idf_manager.add_object_from_parsed(new_object_manager)
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
-    def remove_value(self, field_index_or_name):
-        field_index = self.get_field_index(field_index_or_name)
-        self._fields_l[field_index][self._RAW_VALUE] = ""
-
     def remove_values_that_point(self, pointed_object=None):
         """
         Removes all fields that point at pointed_object if not None (if you want a specific index, use remove_value).
@@ -254,7 +267,7 @@ class IDFObjectManager:
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "object-list":
                 if (pointed_object is None) or (self.get_value(i) is pointed_object):
-                    self.remove_value(i)
+                    self.set_value(i, None)
 
     def neutralize(self):
         """
@@ -263,13 +276,38 @@ class IDFObjectManager:
         self._idf_manager = None
         self._descriptor = None
 
+    def pop(self, field_index_or_name=-1):
+        """
+        Remove item at given position and return it. All rows will be shifted upwards to fill the blank. May only be
+        used on extensible fields.
+        For the moment, only extensible=1 is coded.
+        """
+        # check extensible
+        extensible_cycle_len, extensible_start_index = self._descriptor.extensible
+        if extensible_cycle_len != 1:
+            raise IDFError("Can only use pop on fields defined as 'extensible:1'.")
+
+        # check index
+        pop_index = self.get_field_index(field_index_or_name)
+        if pop_index < extensible_start_index:
+            raise IDFError("Can only use pop on extensible fields (pop index must be > than extensible start index).")
+
+        # store value
+        pop_value = self.get_value(pop_index)
+
+        # remove field
+        self._fields_l.pop(field_index_or_name)
+
+        return pop_value
+
     # ------------------------------------------------ GET -------------------------------------------------------------
     def get_field_index(self, field_index_or_name):
+        """
+        Returns field index (>=0).
+        """
         if isinstance(field_index_or_name, int):
-            field_index = field_index_or_name if field_index_or_name >= 0 else self.fields_nb + field_index_or_name
-        #     if field_index >= len(self._descriptor.field_descriptors_l):
-        #         raise IDFError("Index out of range : %i." % field_index)
-            return field_index
+            field_index_or_name = (field_index_or_name if field_index_or_name >= 0 else
+                                   self.fields_nb + field_index_or_name)
         return self._descriptor.get_field_index(field_index_or_name)
 
     def get_raw_value(self, field_index_or_name):
@@ -345,7 +383,7 @@ class IDFObjectManager:
             # remove all pointing
             pointing_links_l = self.get_pointing_links_l(field_index)
             for pointing_object, pointing_index in pointing_links_l:
-                pointing_object._.remove_value(pointing_index)
+                pointing_object._.set_value(pointing_index, None)
             # store and parse
             raw_value = "" if raw_value_or_value is None else str(raw_value_or_value).strip()
             self._fields_l[field_index][self._RAW_VALUE] = raw_value
@@ -357,7 +395,7 @@ class IDFObjectManager:
         elif fieldd.detailed_type == "object-list":  # detailed type
             # convert to object if necessary
             if raw_value_or_value is None:
-                self.remove_value(field_index)
+                self._fields_l[field_index][self._RAW_VALUE] = ""
             else:
                 if isinstance(raw_value_or_value, str):
                     try:
@@ -397,7 +435,7 @@ class IDFObjectManager:
                 raw_value = value._.get_raw_value(pointed_index)
 
                 # now we checked everything was ok, we remove old field (so pointed object unlinks correctly)
-                self.remove_value(field_index)
+                self._fields_l[field_index][self._RAW_VALUE] = ""
 
                 # store and parse
                 self._fields_l[field_index][self._RAW_VALUE] = raw_value
@@ -428,7 +466,7 @@ class IDFObjectManager:
             if (i < old_nb) and (i < new_nb):
                 self.set_value(i, new_object._.get_raw_value(i))
             elif i < old_nb:
-                self.remove_value(i)
+                self.set_value(i, None)
             else:
                 self.add_field(new_object._.get_raw_value(i), new_object._.get_field_comment(i))
 
