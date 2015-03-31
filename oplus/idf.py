@@ -338,7 +338,7 @@ class IDFObjectManager(Cached):
         """
         Cached
         ------
-        for object-list: ('get_value', ref, index, raw_value)
+        for object-list: ('get_value', index)
         """
         # parsed value and/or object
         index = self.get_field_index(field_index_or_name)
@@ -349,7 +349,7 @@ class IDFObjectManager(Cached):
         elif fieldd.detailed_type == "object-list":
             # cached
             value, pointed_index = self._cache_get(
-                ("get_value", self._ref, index, raw_value),
+                ("get_value", index),
                 lambda: self._idf_manager.get_pointed_link(self._ref, index, raw_value))
         else:
             raise NotImplementedError("Unknown field type : '%s'." % fieldd.detailed_type)
@@ -729,7 +729,7 @@ class IDFManager(Cached):
                             return idf_object, field_index
             raise IDFError("Link not found. Field 'object-list' tag values: %s, field value : '%s'" %
                            (str(link_names_l), pointing_raw_value))
-        return self._cache_get(("get_pointed_link", "pointing_ref", "pointing_index", "pointing_raw_value"),
+        return self._cache_get(("get_pointed_link", pointing_ref, pointing_index, pointing_raw_value),
                                _get_pointed_link)
 
     def get_pointing_links_l(self, pointed_ref, pointed_index, pointed_raw_value):
@@ -1078,7 +1078,8 @@ class QuerySet(Cached):
                     result_l.append(o)
 
             return QuerySet(result_l, use_cache=self.is_cached)
-        return self._cache_get(("filter", field_index_or_name, field_value, condition), _filter)
+        temp = self._cache_get(("filter", field_index_or_name, field_value, condition), _filter)
+        return temp
 
     @property
     def one(self):
