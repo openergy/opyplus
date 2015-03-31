@@ -296,7 +296,7 @@ class IDFObjectManager:
         pop_value = self.get_value(pop_index)
 
         # remove field
-        self._fields_l.pop(field_index_or_name)
+        self._fields_l.pop(pop_index)
 
         return pop_value
 
