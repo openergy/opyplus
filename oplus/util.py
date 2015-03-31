@@ -223,3 +223,30 @@ class NonBlockingStreamReader:
             return self._q.get(block=timeout is not None, timeout=timeout)
         except Empty:
             return None
+
+
+class Cached:
+    def __init__(self, use_cache):
+        self._cache_d = {} if use_cache else None
+
+    def activate_cache(self):
+        if self._cache_d is None:
+            self._cache_d = {}
+
+    def deactivate_cache(self):
+        self._cache_d = None
+
+    def clear_cache(self):
+        if self._cache_d is not None:
+            self._cache_d = {}
+
+    @property
+    def is_cached(self):
+        return self._cache_d is not None
+
+    def _cache_get(self, key, variable_callable):
+        if not self.is_cached:
+            return variable_callable()
+        if not key in self._cache_d:
+            self._cache_d[key] = variable_callable()
+        return self._cache_d[key]
