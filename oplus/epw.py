@@ -178,6 +178,7 @@ class EPW:
             return eplusdt.datetime(_year)
 
         df.index = df.index.map(index_to_dt)
+        df.sort(inplace=True)
         df = df.reindex(pd.date_range(df.index[0], df.index[-1], freq=self.freq))
 
         return df
