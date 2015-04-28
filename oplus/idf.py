@@ -479,6 +479,10 @@ class IDFObjectManager(Cached):
         else:
             raise IDFError("Unknown detailed type: '%s'." % fieldd.detailed_type)
 
+        # remove if last field and emptied
+        if (len(self._fields_l) == (field_index+1)) and self._fields_l[-1][self._RAW_VALUE] == "":
+            self._fields_l.pop()
+
     def replace_values(self, new_object_str):
         """
         Purpose: keep old pointed links
