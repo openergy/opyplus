@@ -105,7 +105,10 @@ class Simulation:
         if CONFIG.os_name == "windows":
             return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
         elif CONFIG.os_name == "osx":
-            return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
+            if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+                return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
+            else:
+                return os.path.join(self._dir_path, "eplusout.%s" % extension)
         else:
             raise NotImplementedError("Linux not implemented yet.")
 
@@ -174,11 +177,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
     if CONFIG.os_name == "windows":
         last_name = "RunEPlus.bat"
     elif CONFIG.os_name == "osx":
-        version = [int(num) for num in platform.mac_ver()[0].split(";")]
-        if version[:2] <= (10, 10):
+        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             last_name = "runenergyplus"
         else:
-            last_name = "energyplus"  # since El Capitan (10.11.x)
+            last_name = "energyplus"
     elif CONFIG.os_name == "linux":
         last_name = "bin/runenergyplus"
     else:
