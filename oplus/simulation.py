@@ -108,7 +108,10 @@ class Simulation:
             if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
                 return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
             else:
-                return os.path.join(self._dir_path, "eplusout.%s" % extension)
+                if extension in ("idf", "epw"):
+                    return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
+                else:
+                    return os.path.join(self._dir_path, "eplusout.%s" % extension)
         else:
             raise NotImplementedError("Linux not implemented yet.")
 
@@ -210,9 +213,6 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONFIG.os_name)
-
-
-
 
     # launch calculation
     run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
