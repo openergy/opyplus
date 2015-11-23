@@ -198,7 +198,21 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         "linux": simulation_epw_path
     }[CONFIG.os_name]
 
-    cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+    # command list
+    if CONFIG.os_name == "windows":
+        cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+    elif CONFIG.os_name == "osx":
+        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+        else:
+            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", simulation_idf_base_path]
+    elif CONFIG.os_name == "linux":
+        cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+    else:
+        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+
+
+
 
     # launch calculation
     run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
