@@ -192,7 +192,17 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
     eplus_cmd = os.path.join(CONFIG.eplus_base_dir_path, last_name)
 
     # idf
-    simulation_idf_base_path = os.path.join(dir_path, base_name)
+    if CONFIG.os_name == "windows":
+        idf_file_cmd = os.path.join(dir_path, base_name)
+    elif CONFIG.os_name == "osx":
+        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            idf_file_cmd = os.path.join(dir_path, base_name)
+        else:
+            idf_file_cmd = simulation_idf_path
+    elif CONFIG.os_name == "linux":
+        idf_file_cmd = simulation_idf_path
+    else:
+        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
 
     # epw
     epw_file_cmd = {
@@ -203,14 +213,14 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
 
     # command list
     if CONFIG.os_name == "windows":
-        cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     elif CONFIG.os_name == "osx":
         if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
         else:
-            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", simulation_idf_base_path]
+            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     elif CONFIG.os_name == "linux":
-        cmd_l = [eplus_cmd, simulation_idf_base_path, epw_file_cmd]
+        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONFIG.os_name)
 
