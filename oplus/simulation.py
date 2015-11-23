@@ -1,5 +1,6 @@
 import os
 import shutil
+import platform
 
 from oplus.configuration import CONFIG
 from oplus.util import run_eplus_and_log
@@ -170,12 +171,20 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         temp_epw_path = None
 
     # prepare command
-    # eplus
-    eplus_cmd = {
-        "windows": os.path.join(CONFIG.eplus_base_dir_path, "RunEPlus.bat"),
-        "osx": os.path.join(CONFIG.eplus_base_dir_path, "runenergyplus"),
-        "linux": os.path.join(CONFIG.eplus_base_dir_path, "bin/runenergyplus")
-    }[CONFIG.os_name]
+    if CONFIG.os_name == "windows":
+        last_name = "RunEPlus.bat"
+    elif CONFIG.os_name == "osx":
+        version = [int(num) for num in platform.mac_ver()[0].split(";")]
+        if version[:2] <= (10, 10):
+            last_name = "runenergyplus"
+        else:
+            last_name = "energyplus"  # since El Capitan (10.11.x)
+    elif CONFIG.os_name == "linux":
+        last_name = "bin/runenergyplus"
+    else:
+        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+
+    eplus_cmd = os.path.join(CONFIG.eplus_base_dir_path, last_name)
 
     # idf
     simulation_idf_base_path = os.path.join(dir_path, base_name)
