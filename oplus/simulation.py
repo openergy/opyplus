@@ -225,10 +225,8 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         raise SimulationError("unknown os name: %s" % CONFIG.os_name)
 
     # launch calculation
-    print("before run and log: %s, %s" % (cmd_l, dir_path))
     run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
                       logger_name=default_logger_name if logger_name is None else logger_name)
-    print("after")
 
     # if needed, we delete temp weather data (only on Windows, see above)
     if temp_epw_path is not None:

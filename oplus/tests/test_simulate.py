@@ -1,6 +1,7 @@
 import unittest
 import os
 import tempfile
+import logging
 
 from oplus.idf import IDF
 from oplus.epw import EPW
@@ -29,3 +30,4 @@ class OneZoneEvapCooler(unittest.TestCase):
                 self.assertIsInstance(s.mtr, StandardOutputFile)
                 self.assertEqual(set(s.eso.environments), expected_environments)
                 self.assertEqual(set(s.mtr.environments), expected_environments)
+                break
