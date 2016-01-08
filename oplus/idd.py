@@ -184,7 +184,7 @@ class ObjectDescriptor:
         """
         index = self.get_field_index(index_or_name)
 
-        if index > len(self._fieldds_l) and (self._extensible_cycle_len != 0):  # extensible object, find modulo
+        if index >= len(self._fieldds_l) and (self._extensible_cycle_len != 0):  # extensible object, find modulo
             index = self._extensible_cycle_len + ((index - self._extensible_cycle_start) % self._extensible_cycle_len)
 
         return self._fieldds_l[index]
@@ -195,7 +195,7 @@ class ObjectDescriptor:
         """
         # if index
         if type(index_or_name) is int:
-            if index_or_name >= len(self._fieldds_l) and (self._extensible_cycle_len != 0):
+            if index_or_name >= len(self._fieldds_l) and (self._extensible_cycle_len == 0):
                 raise IDDError("Index out of range : %i." % index_or_name)
             return index_or_name
         # if name (extensible can not be used here)

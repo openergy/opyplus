@@ -118,6 +118,12 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
             sch.add_field("12:00")
         self.assertEqual(sch[1300], "12:00")
 
+    def test_big_extensible(self):
+        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+        for i in range(4560):  # 4500 is the limit of idd
+            sch.add_field("12:00")
+        self.assertEqual(4560, len(sch))
+
     def test_pop_end(self):
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
         ini_len = len(sch)
@@ -192,3 +198,9 @@ class FiveZoneAirCooled(unittest.TestCase):
         bl = idf("BranchList").filter("Name", "Heating Supply Side Branches").one
         b3 = idf("Branch").filter("Name", "Heating Supply Bypass Branch").one
         self.assertEqual(bl[3], b3)
+
+
+    """
+    Tested under EPlus 8.1.0 on Mac (Antoine).
+    """
+    idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
