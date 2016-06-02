@@ -929,7 +929,7 @@ class IDFManager(Cached):
 
 
 # ------------------------------------------------- idf ----------------------------------------------------------------
-class IDF():
+class IDF:
     """
     IDF is allowed to access private keys/methods of IDFObject.
     """

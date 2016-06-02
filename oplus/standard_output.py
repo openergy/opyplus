@@ -127,9 +127,11 @@ class StandardOutputFile:
         else:  # monthly (RunPeriod has been returned)
             row_to_esodt = lambda row: EPlusDt(row, 1, 1, 0)
 
+        start_standard_dt = start_esodt.standard_dt
+
         def row_to_dt(row):
             esodt = row_to_esodt(row)
-            _year = start_dt.year + 1 if esodt.standard_dt <= start_esodt.standard_dt else start_dt.year
+            _year = start_dt.year + 1 if esodt.standard_dt <= start_standard_dt else start_dt.year
             return esodt.datetime(_year)
 
         df = df.copy()
@@ -137,12 +139,11 @@ class StandardOutputFile:
         df.sort(inplace=True)
         freq = None
         if time_step in (self.TIME_STEP, self.DETAILED):
-            freq = None
             for year, year_df in df.groupby(lambda x: x.year):
                 freq = year_df.index.inferred_freq
                 if freq is not None:
                     break
-            if freq is None:
+            else:
                 logger = logging.getLogger(self._logger_name)
                 logger.warning("Could not find freq for sub-hourly data (not enough values). Did not reindex.")
                 return df

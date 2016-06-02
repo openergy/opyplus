@@ -66,10 +66,19 @@ class EPWHeader:
                 l2.append(row)
         else:
             l2 = self._l2
-        return "\n".join([", ".join(row) for row in l2])
+        return "\n".join([",".join(row) for row in l2])
 
     @property
-    def start(self):
+    def start_day_of_week(self):
+        return self._l2[self.DATA_PERIODS][4].strip()
+
+    @start_day_of_week.setter
+    def start_day_of_week(self, value):
+        # TODO: check given value is ok
+        self._l2[self.DATA_PERIODS][4] = value
+
+    @property
+    def start(self):  # TODO: rename to start day
         """
         (month, day)
         """
@@ -80,7 +89,7 @@ class EPWHeader:
         self._l2[self.DATA_PERIODS][5] = "%s/%s" % value
 
     @property
-    def end(self):
+    def end(self):  # TODO: rename to end_day
         """
         (month, day)
         """
