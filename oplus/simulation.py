@@ -185,7 +185,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         else:
             last_name = "energyplus"
     elif CONFIG.os_name == "linux":
-        last_name = "bin/runenergyplus"
+        if CONFIG.eplus_version[:2] <= (8, 2):  # todo: check this limit is right
+            last_name = "bin/runenergyplus"
+        else:
+            last_name = "runenergyplus"
     else:
         raise SimulationError("unknown os name: %s" % CONFIG.os_name)
 

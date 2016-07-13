@@ -13,7 +13,7 @@ import logging
 
 from oplus.configuration import CONFIG
 from oplus.idd import IDD
-from oplus.util import get_copyright_comment, Cached
+from oplus.util import get_copyright_comment, Cached, check_cache_is_off, cached
 
 
 default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
@@ -36,10 +36,6 @@ class ObjectDoesNotExist(IDFError):
 
 
 class MultipleObjectsReturned(IDFError):
-    pass
-
-
-class IDFModifiedAlthoughCacheError(IDFError):
     pass
 
 
@@ -116,9 +112,9 @@ class IDFObject:
         return self._.ref
 
     @property
+    @cached
     def pointing_objects(self):
-        return QuerySet([pointing_object for pointing_object, pointing_index in self._.get_pointing_links_l()],
-                        use_cache=self._.is_cached)
+        return QuerySet([pointing_object for pointing_object, pointing_index in self._.get_pointing_links_l()])
 
     def to_str(self, style="idf"):
         return self._.to_str(style=style)
@@ -205,7 +201,7 @@ class IDFObjectManager(Cached):
     _RAW_VALUE = 0
     _COMMENT = 1
 
-    def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None, logger_name=None, use_cache=False):
+    def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None, logger_name=None):
         self._ref = ref
         self._head_comment = head_comment
         self._tail_comment = tail_comment
@@ -217,8 +213,6 @@ class IDFObjectManager(Cached):
         self._idf_object = self.idf_object_cls(self)
 
         self._logger_name = default_logger_name if logger_name is None else logger_name
-
-        Cached.__init__(self, use_cache=use_cache)
 
     # ---------------------------------------------- EXPOSE ------------------------------------------------------------
     @property
@@ -237,20 +231,15 @@ class IDFObjectManager(Cached):
     def idf_manager(self):
         return self._idf_manager
 
-    # ----------------------------------------- MANAGE CACHE -----------------------------------------------------------
-    def _idf_modified_check_cache(self):
-        if self.is_cached:
-            raise IDFModifiedAlthoughCacheError("Can't modify idf if cache is activated. Deactivate cache.")
-
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
+    @check_cache_is_off
     def add_field(self, raw_value, comment=""):
-        self._idf_modified_check_cache()
         if not isinstance(raw_value, str):
             raise IDFError("'raw_value' must be a string.")
         self._fields_l.append([raw_value, comment])
 
+    @check_cache_is_off
     def add_tail_comment(self, comment):
-        self._idf_modified_check_cache()
         stripped = comment.strip()
         if stripped == "":
             return None
@@ -276,32 +265,32 @@ class IDFObjectManager(Cached):
         return self._idf_manager.add_object_from_parsed(new_object_manager)
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
+    @check_cache_is_off
     def remove_values_that_point(self, pointed_object=None):
         """
         Removes all fields that point at pointed_object if not None (if you want a specific index, use remove_value).
         """
-        self._idf_modified_check_cache()
         for i in range(len(self._fields_l)):
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "object-list":
                 if (pointed_object is None) or (self.get_value(i) is pointed_object):
                     self.set_value(i, None)
 
+    @check_cache_is_off
     def neutralize(self):
         """
         remove values and links of fields, idf_manager, descriptor, pointing_d.
         """
-        self._idf_modified_check_cache()
         self._idf_manager = None
         self._descriptor = None
 
+    @check_cache_is_off
     def pop(self, field_index_or_name=-1):
         """
         Remove item at given position and return it. All rows will be shifted upwards to fill the blank. May only be
         used on extensible fields.
         For the moment, only extensible=1 is coded.
         """
-        self._idf_modified_check_cache()
         # check extensible
         extensible_cycle_len, extensible_start_index = self._descriptor.extensible
         if extensible_cycle_len != 1:
@@ -334,12 +323,8 @@ class IDFObjectManager(Cached):
         field_index = self.get_field_index(field_index_or_name)
         return self._fields_l[field_index][self._RAW_VALUE]
 
+    @cached
     def get_value(self, field_index_or_name):
-        """
-        Cached
-        ------
-        for object-list: ('get_value', index)
-        """
         # parsed value and/or object
         index = self.get_field_index(field_index_or_name)
         raw_value = self._fields_l[index][self._RAW_VALUE]
@@ -347,10 +332,7 @@ class IDFObjectManager(Cached):
         if fieldd.detailed_type in ("integer", "real", "alpha", "choice", "node", "reference", "external-list"):
             value, pointed_index = fieldd.basic_parse(raw_value), None
         elif fieldd.detailed_type == "object-list":
-            # cached
-            value, pointed_index = self._cache_get(
-                ("get_value", index),
-                lambda: self._idf_manager.get_pointed_link(self._ref, index, raw_value))
+            value, pointed_index = self._idf_manager.get_pointed_link(self._ref, index, raw_value)
         else:
             raise NotImplementedError("Unknown field type : '%s'." % fieldd.detailed_type)
         return value
@@ -366,25 +348,19 @@ class IDFObjectManager(Cached):
     def get_tail_comment(self):
         return "" if self._tail_comment is None else self._tail_comment
 
+    @cached
     def get_pointing_links_l(self, field_index_or_name=None):
-        """
-        Cached
-        ------
-        ('get_pointing_links_l', field_index_or_name)
-        """
-        def _get_links():
-            index_l = (range(len(self._fields_l)) if field_index_or_name is None
-                       else [self.get_field_index(field_index_or_name)])
-            links_l = []
-            for i in index_l:
-                fieldd = self._descriptor.get_field_descriptor(i)
-                if fieldd.detailed_type != "reference":
-                    continue
-                links_l.extend(self.idf_manager.get_pointing_links_l(self._ref, i, self.get_raw_value(i)))
+        index_l = (range(len(self._fields_l)) if field_index_or_name is None
+                   else [self.get_field_index(field_index_or_name)])
 
-            return links_l
+        links_l = []
+        for i in index_l:
+            fieldd = self._descriptor.get_field_descriptor(i)
+            if fieldd.detailed_type != "reference":
+                continue
+            links_l.extend(self.idf_manager.get_pointing_links_l(self._ref, i, self.get_raw_value(i)))
 
-        return self._cache_get(("get_pointing_links_l", field_index_or_name), _get_links)
+        return links_l
 
     # def get_pointed_links_l(self, field_index_or_name=None):
     #     """
@@ -401,8 +377,8 @@ class IDFObjectManager(Cached):
     #     return links_l
 
     # ------------------------------------------------ SET -------------------------------------------------------------
+    @check_cache_is_off
     def set_value(self, field_index_or_name, raw_value_or_value, raise_if_pointed=False):
-        self._idf_modified_check_cache()
         field_index = self.get_field_index(field_index_or_name)
         fieldd = self._descriptor.get_field_descriptor(field_index)
 
@@ -483,11 +459,11 @@ class IDFObjectManager(Cached):
         if (len(self._fields_l) == (field_index+1)) and self._fields_l[-1][self._RAW_VALUE] == "":
             self._fields_l.pop()
 
+    @check_cache_is_off
     def replace_values(self, new_object_str):
         """
         Purpose: keep old pointed links
         """
-        self._idf_modified_check_cache()
         # create object (but it will not be linked to idf)
         objects_l, comments = self._idf_manager.parse(io.StringIO(new_object_str))  # comments not used
         if len(objects_l) != 1:
@@ -515,22 +491,22 @@ class IDFObjectManager(Cached):
         # remove all last values
         self._fields_l = self._fields_l[:new_nb]
 
+    @check_cache_is_off
     def set_field_comment(self, field_index_or_name, comment):
-        self._idf_modified_check_cache()
         field_index = self.get_field_index(field_index_or_name)
         comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
         self._fields_l[field_index][self._COMMENT] = comment
 
+    @check_cache_is_off
     def set_head_comment(self, comment):
         """
         All line return will be replaced by a blank.
         """
-        self._idf_modified_check_cache()
         comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
         self._head_comment = comment
 
+    @check_cache_is_off
     def set_tail_comment(self, comment):
-        self._idf_modified_check_cache()
         comment = None if comment.strip() == "" else str(comment).strip()
         self._tail_comment = comment
 
@@ -598,7 +574,7 @@ class VoidSimulation:
 class IDFManager(Cached):
     idf_object_manager_cls = IDFObjectManager  # for subclassing
 
-    def __init__(self, idf, path, idd_or_path=None, logger_name=None, encoding=None, use_cache=False):
+    def __init__(self, idf, path, idd_or_path=None, logger_name=None, encoding=None):
         self._idf = idf
         if not os.path.exists(path):
             raise IDFError("No file at given path: '%s'." % path)
@@ -613,17 +589,9 @@ class IDFManager(Cached):
         with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
             self._objects_l, self._head_comments = self.parse(f)
 
-        # cache
-        Cached.__init__(self, use_cache=use_cache)
-
     @staticmethod
     def copyright_comment():
         return get_copyright_comment()
-
-    # ----------------------------------------- MANAGE CACHE -----------------------------------------------------------
-    def _idf_modified_check_cache(self):
-        if self.is_cached:
-            raise IDFModifiedAlthoughCacheError("Can't modify idf if cache is activated. Deactivate cache.")
 
     # ----------------------------------------------- EXPOSE -----------------------------------------------------------
     @property
@@ -708,62 +676,48 @@ class IDFManager(Cached):
         return objects_l, head_comments
 
     # ----------------------------------------------- LINKS ------------------------------------------------------------
+    @cached
     def get_pointed_link(self, pointing_ref, pointing_index, pointing_raw_value):
-        """
-        Cached
-        ------
-        ("get_pointed_link", pointing_ref, pointing_index, pointing_raw_value)
-        """
-        def _get_pointed_link():
-            # get field descriptor
-            fieldd = self._idd.get_object_descriptor(pointing_ref).get_field_descriptor(pointing_index)
-            # check if object-list
-            if fieldd.detailed_type != "object-list":
-                raise IDFError("Only 'object-list' fields can point on an object. Wrong field given. Ref: '%s', "
-                               "index: '%i'." % (pointing_ref, pointing_index))
-            # check if an object is pointed
-            if pointing_raw_value == "":  # no object pointed
-                return None, None
-            # iter through link possibilities and return if found
-            link_names_l = fieldd.get_tag("object-list")
-            for link_name in link_names_l:
-                for od, field_index in self._idd.pointed_links(link_name):
-                    for idf_object in self.filter_by_ref(od.ref):
-                        if idf_object._.get_raw_value(field_index) == pointing_raw_value:
-                            return idf_object, field_index
-            raise IDFError("Link not found. Field 'object-list' tag values: %s, field value : '%s'" %
-                           (str(link_names_l), pointing_raw_value))
-        return self._cache_get(("get_pointed_link", pointing_ref, pointing_index, pointing_raw_value),
-                               _get_pointed_link)
+        # get field descriptor
+        fieldd = self._idd.get_object_descriptor(pointing_ref).get_field_descriptor(pointing_index)
+        # check if object-list
+        if fieldd.detailed_type != "object-list":
+            raise IDFError("Only 'object-list' fields can point on an object. Wrong field given. Ref: '%s', "
+                           "index: '%i'." % (pointing_ref, pointing_index))
+        # check if an object is pointed
+        if pointing_raw_value == "":  # no object pointed
+            return None, None
+        # iter through link possibilities and return if found
+        link_names_l = fieldd.get_tag("object-list")
+        for link_name in link_names_l:
+            for od, field_index in self._idd.pointed_links(link_name):
+                for idf_object in self.filter_by_ref(od.ref):
+                    if idf_object._.get_raw_value(field_index) == pointing_raw_value:
+                        return idf_object, field_index
+        raise IDFError("Link not found. Field 'object-list' tag values: %s, field value : '%s'" %
+                       (str(link_names_l), pointing_raw_value))
 
+    @cached
     def get_pointing_links_l(self, pointed_ref, pointed_index, pointed_raw_value):
-        """
-        Cached
-        ------
-        ("get_pointing_links_l", pointed_ref, pointed_index, pointed_raw_value)
-        """
-        def _get_pointing_links_l():
-            # get field descriptor
-            fieldd = self.idd.get_object_descriptor(pointed_ref).get_field_descriptor(pointed_index)
-            # check if reference
-            if fieldd.detailed_type != "reference":
-                raise IDFError("Only 'reference' fields can be pointed by an object. Wrong field given. Ref: '%s', "
-                               "index: '%i'." % (pointed_ref, pointed_index))
-            # check if an object can be pointing
-            if pointed_raw_value == "":
-                return []
-            # fetch links
-            links_l = []
-            for link_name in fieldd.get_tag("reference"):
-                for object_descriptor, pointing_index in self.idd.pointing_links(link_name):
-                    for idf_object in self.filter_by_ref(object_descriptor.ref):
-                        if pointing_index >= idf_object._.fields_nb:
-                            continue
-                        if idf_object._.get_raw_value(pointing_index) == pointed_raw_value:
-                            links_l.append([idf_object, pointing_index])
-            return links_l
-        return self._cache_get(("get_pointing_links_l", pointed_ref, pointed_index, pointed_raw_value),
-                               _get_pointing_links_l)
+        # get field descriptor
+        fieldd = self.idd.get_object_descriptor(pointed_ref).get_field_descriptor(pointed_index)
+        # check if reference
+        if fieldd.detailed_type != "reference":
+            raise IDFError("Only 'reference' fields can be pointed by an object. Wrong field given. Ref: '%s', "
+                           "index: '%i'." % (pointed_ref, pointed_index))
+        # check if an object can be pointing
+        if pointed_raw_value == "":
+            return []
+        # fetch links
+        links_l = []
+        for link_name in fieldd.get_tag("reference"):
+            for object_descriptor, pointing_index in self.idd.pointing_links(link_name):
+                for idf_object in self.filter_by_ref(object_descriptor.ref):
+                    if pointing_index >= idf_object._.fields_nb:
+                        continue
+                    if idf_object._.get_raw_value(pointing_index) == pointed_raw_value:
+                        links_l.append([idf_object, pointing_index])
+        return links_l
 
     def check_new_reference(self, new_object_ref, new_object_index, reference):
         if reference == "":
@@ -786,11 +740,11 @@ class IDFManager(Cached):
     def has_object(self, idf_object):
         return idf_object in self._objects_l
 
+    @check_cache_is_off
     def add_object(self, new_str, position=None):
         """
         From str
         """
-        self._idf_modified_check_cache()
         # create object
         objects_l, comments_l = self.parse(io.StringIO(new_str))  # comments not used (only for global idf parse)
         if len(objects_l) != 1:
@@ -798,9 +752,9 @@ class IDFManager(Cached):
         new_object = objects_l[0]
         return self.add_object_from_parsed(new_object._, position=position)
 
+    @check_cache_is_off
     def add_object_from_parsed(self, raw_parsed_object_manager, position=None):
         """checks references uniqueness"""
-        self._idf_modified_check_cache()
         new_object = raw_parsed_object_manager.idf_object  # change name since no more raw parsed
 
         # check reference uniqueness
@@ -819,6 +773,7 @@ class IDFManager(Cached):
         # return new object
         return new_object
 
+    @check_cache_is_off
     def remove_object(self, idf_object, raise_if_pointed=True):
         """
         Arguments
@@ -826,7 +781,6 @@ class IDFManager(Cached):
         raise_if_pointed: raises Exception if is pointed by other objects.
             Else, sets all pointing object fields to None.
         """
-        self._idf_modified_check_cache()
         # check if object is pointed, if asked
         pointing_links_l = idf_object._.get_pointing_links_l()
         if raise_if_pointed and len(pointing_links_l) > 0:
@@ -849,20 +803,16 @@ class IDFManager(Cached):
 
         return index
 
+    @cached
     def filter_by_ref(self, ref):
-        """
-        Cached
-        ------
-        ("filter_by_ref", ref)
-        """
-        return self._cache_get(("filter_by_ref", ref), lambda: QuerySet(self._objects_l, use_cache=self.is_cached)(ref))
+        return QuerySet(self._objects_l)(ref)
 
     # ------------------------------------------ MANAGE COMMENTS -------------------------------------------------------
     def get_comment(self):
         return self._head_comments
 
+    @check_cache_is_off
     def set_comment(self, value):
-        self._idf_modified_check_cache()
         self._head_comments = str(value).strip()
 
     # ------------------------------------------------ COMMUNICATE -----------------------------------------------------
@@ -953,7 +903,7 @@ class IDF:
         raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
                        (idf_or_path, type(idf_or_path)))
 
-    def __init__(self, path, idd_or_path=None, logger_name=None, encoding=None, use_cache=False):
+    def __init__(self, path, idd_or_path=None, logger_name=None, encoding=None):
         """
         Arguments
         ---------
@@ -961,15 +911,14 @@ class IDF:
         idd_or_path: IDD object or idd path. If None, default will be chosen (most recent EPlus version installed on
             computer)
         logger_name: see python logging builtin module if custom logging is needed.
-        use_cache: if activated, queries will be cached and idf can't be changed.
         """
-        self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, logger_name=logger_name, encoding=encoding,
-                                      use_cache=use_cache)
+        self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, logger_name=logger_name, encoding=encoding)
 
+    @cached
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""
         if object_descriptor_ref is None:
-            return QuerySet(self._.objects_l, use_cache=self._.is_cached)
+            return QuerySet(self._.objects_l)
         return self._.filter_by_ref(object_descriptor_ref)
 
     def save_as(self, file_or_path):
@@ -1041,12 +990,10 @@ class IDF:
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------- QuerySet ---------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
-class QuerySet(Cached):
+class QuerySet:
     """Contains object, and enables filtering or other operations. Is allowed to access object._."""
-    def __init__(self, objects_l, use_cache=False):
+    def __init__(self, objects_l):
         self._objects_l = objects_l
-
-        Cached.__init__(self, use_cache=use_cache)
 
     @property
     def objects_l(self):
@@ -1066,24 +1013,20 @@ class QuerySet(Cached):
         -------
         QuerySet containing filtered objects.
         """
-        ## cached: ("filter", field_index_or_name, field_value, condition)
-        def _filter():
-            if not condition in ("=",):
-                raise IDFError("Unknown condition: '%s'." % condition)
+        if condition not in ("=",):
+            raise IDFError("Unknown condition: '%s'." % condition)
 
-            search_tuple = (field_index_or_name,) if isinstance(field_index_or_name, str) else field_index_or_name
+        search_tuple = (field_index_or_name,) if isinstance(field_index_or_name, str) else field_index_or_name
 
-            result_l = []
-            for o in self._objects_l:
-                current_value = o
-                for level in search_tuple:
-                    current_value = current_value._.get_value(level)
-                if current_value == field_value:
-                    result_l.append(o)
+        result_l = []
+        for o in self._objects_l:
+            current_value = o
+            for level in search_tuple:
+                current_value = current_value._.get_value(level)
+            if current_value == field_value:
+                result_l.append(o)
 
-            return QuerySet(result_l, use_cache=self.is_cached)
-        temp = self._cache_get(("filter", field_index_or_name, field_value, condition), _filter)
-        return temp
+        return QuerySet(result_l)
 
     @property
     def one(self):
@@ -1107,21 +1050,13 @@ class QuerySet(Cached):
 
     def __call__(self, object_descriptor_ref=None):
         """Returns all objects having given object descriptor ref (not case sensitive)."""
-        ## Cached ("__call__", object_descriptor_ref)
-        def _call():
-            if object_descriptor_ref is None:
-                return self
-            return QuerySet([o for o in self._objects_l if o._.ref.lower() == object_descriptor_ref.lower()],
-                            use_cache=self.is_cached)
-        return self._cache_get(("__call__", object_descriptor_ref), _call)
+        return QuerySet([o for o in self._objects_l if o._.ref.lower() == object_descriptor_ref.lower()])
 
+    @check_cache_is_off
     def __add__(self, other):
         """
         Add new query set to query set (only new objects will be added).
         """
-        if self.is_cached:
-            raise IDFModifiedAlthoughCacheError("Query set is cached, can't modify it.")
-
         self_set = set(self._objects_l)
         other_set = set(other.objects_l)
         intersect_set = self_set.intersection(other_set)

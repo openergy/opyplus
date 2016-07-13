@@ -12,6 +12,10 @@ class UtilError(Exception):
     pass
 
 
+class CachingNotAllowedError(Exception):
+    pass
+
+
 def get_copyright_comment(multi_lines=True):
     if multi_lines:
 #         return """----------------------------------------------------------------------------------------
@@ -225,28 +229,47 @@ class NonBlockingStreamReader:
             return None
 
 
+def check_cache_is_off(method):
+    def wrapper(self, *args, **kwargs):
+        assert isinstance(self, Cached), "decorator can only be applied to a method or property of a Cached class"
+        if self.is_cached:
+            raise CachingNotAllowedError("Must turn off cache to perform action.")
+        return method(*args, **kwargs)
+
+
+def cached(method):
+    def wrapper(self, *args, **kwargs):
+        assert isinstance(self, Cached), "decorator can only be applied to a method or property of a Cached class"
+        if not self.is_cached:
+            return method(*args, **kwargs)
+        key = (method, args, kwargs)
+        if key not in self.cache:
+            self.cache[key] = method(*args, **kwargs)
+        return self.cache[key]
+    return wrapper
+
+
 class Cached:
-    def __init__(self, use_cache):
-        self._cache_d = {} if use_cache else None
+    cache = None
 
     def activate_cache(self):
-        if self._cache_d is None:
-            self._cache_d = {}
+        if self.cache is None:
+            self.cache = {}
 
     def deactivate_cache(self):
-        self._cache_d = None
+        self.cache = None
 
     def clear_cache(self):
-        if self._cache_d is not None:
-            self._cache_d = {}
+        if self.cache is not None:
+            self.cache = {}
 
     @property
     def is_cached(self):
-        return self._cache_d is not None
+        return self.cache is not None
 
-    def _cache_get(self, key, variable_callable):
-        if not self.is_cached:
-            return variable_callable()
-        if not key in self._cache_d:
-            self._cache_d[key] = variable_callable()
-        return self._cache_d[key]
+    # def _cache_get(self, key, variable_callable):
+    #     if not self.is_cached:
+    #         return variable_callable()
+    #     if key in self.cache:
+    #         self.cache[key] = variable_callable()
+    #     return self.cache[key]

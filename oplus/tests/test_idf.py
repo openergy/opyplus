@@ -1,7 +1,8 @@
 import unittest
 import os
 
-from oplus.idf import IDF, IDFObject, IDFError, IDFModifiedAlthoughCacheError
+from oplus.idf import IDF, IDFObject, IDFError
+from oplus.util import CachingNotAllowedError
 from oplus.idf import BrokenIDFError, IsPointedError
 from oplus.configuration import CONFIG
 
@@ -158,7 +159,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
     def test_cache_with_modification_raises(self):
         self.idf.activate_cache()
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertRaises(IDFModifiedAlthoughCacheError, lambda: sch.pop(1))
+        self.assertRaises(CachingNotAllowedError, lambda: sch.pop(1))
 
     def test_cache_on_filter(self):
         # activate
