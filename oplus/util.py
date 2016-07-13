@@ -229,28 +229,45 @@ class NonBlockingStreamReader:
             return None
 
 
+class CacheKey:
+    """
+    emulated a dict that can store hashable types
+    """
+    def __init__(self, method, *args, **kwargs):
+        self._value = tuple([method] + list(args) + [(k, v) for k, v in sorted(kwargs.items())])
+
+    def __hash__(self):
+        return self._value.__hash__()
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+
 def check_cache_is_off(method):
     def wrapper(self, *args, **kwargs):
-        assert isinstance(self, Cached), "decorator can only be applied to a method or property of a Cached class"
+        assert isinstance(self, Cached), "decorator was applied to a non-cached class (%s)" % method
         if self.is_cached:
             raise CachingNotAllowedError("Must turn off cache to perform action.")
-        return method(*args, **kwargs)
+        return method(self, *args, **kwargs)
+    return wrapper
 
 
 def cached(method):
     def wrapper(self, *args, **kwargs):
-        assert isinstance(self, Cached), "decorator can only be applied to a method or property of a Cached class"
+        assert isinstance(self, Cached), "decorator was applied to a non-cached class (%s)" % method
         if not self.is_cached:
-            return method(*args, **kwargs)
-        key = (method, args, kwargs)
+            return method(self, *args, **kwargs)
+        key = CacheKey(method, *args, **kwargs)
         if key not in self.cache:
-            self.cache[key] = method(*args, **kwargs)
-        return self.cache[key]
+            self.cache[key] = dict(value=method(self, *args, **kwargs), hits=0)
+        else:
+            self.cache[key]["hits"] += 1
+        return self.cache[key]["value"]
     return wrapper
 
 
 class Cached:
-    cache = None
+    cache = None  # dict(key: dict(value=v, hits=0))  (hits for testing)
 
     def activate_cache(self):
         if self.cache is None:

@@ -165,21 +165,27 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         # activate
         self.idf.activate_cache()
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertEqual(1, len(self.idf._._cache_d))
-        self.assertEqual(1, len(self.idf("Schedule:Compact")._cache_d))
+        self.assertEqual(1, len(self.idf._.cache))
+        k = list(self.idf._.cache.keys())[0]
+        self.assertEqual(0, self.idf._.cache[k]["hits"])
 
         # clear
         self.idf.clear_cache()
-        self.assertEqual(0, len(self.idf._._cache_d))
+        self.assertEqual(0, len(self.idf._.cache))
 
         # retry
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertEqual(1, len(self.idf._._cache_d))
-        self.assertEqual(1, len(self.idf("Schedule:Compact")._cache_d))
+        self.assertEqual(1, len(self.idf._.cache))
+        k = list(self.idf._.cache.keys())[0]
+        self.assertEqual(0, self.idf._.cache[k]["hits"])
+
+        # check 1 hit
+        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+        self.assertEqual(1, self.idf._.cache[k]["hits"])
 
         # deactivate
         self.idf.deactivate_cache()
-        self.assertIs(None, self.idf._._cache_d)
+        self.assertIs(None, self.idf._.cache)
 
 
 class FourZoneWithShadingSimple1(unittest.TestCase):

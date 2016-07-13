@@ -8,7 +8,6 @@ IDF or IDFObject. The _manager attributes therefore remain private to oplus user
 import io
 import datetime as dt
 import os
-import logging
 
 
 from oplus.configuration import CONFIG
@@ -112,9 +111,8 @@ class IDFObject:
         return self._.ref
 
     @property
-    @cached
     def pointing_objects(self):
-        return QuerySet([pointing_object for pointing_object, pointing_index in self._.get_pointing_links_l()])
+        return self._.pointing_objects
 
     def to_str(self, style="idf"):
         return self._.to_str(style=style)
@@ -361,6 +359,11 @@ class IDFObjectManager(Cached):
             links_l.extend(self.idf_manager.get_pointing_links_l(self._ref, i, self.get_raw_value(i)))
 
         return links_l
+
+    @property
+    @cached
+    def pointing_objects(self):
+        return QuerySet([pointing_object for pointing_object, pointing_index in self.get_pointing_links_l()])
 
     # def get_pointed_links_l(self, field_index_or_name=None):
     #     """
@@ -804,7 +807,9 @@ class IDFManager(Cached):
         return index
 
     @cached
-    def filter_by_ref(self, ref):
+    def filter_by_ref(self, ref=None):
+        if ref is None:
+            return QuerySet(self.objects_l)
         return QuerySet(self._objects_l)(ref)
 
     # ------------------------------------------ MANAGE COMMENTS -------------------------------------------------------
@@ -914,11 +919,8 @@ class IDF:
         """
         self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, logger_name=logger_name, encoding=encoding)
 
-    @cached
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""
-        if object_descriptor_ref is None:
-            return QuerySet(self._.objects_l)
         return self._.filter_by_ref(object_descriptor_ref)
 
     def save_as(self, file_or_path):
