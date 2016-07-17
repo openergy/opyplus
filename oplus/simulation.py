@@ -1,6 +1,5 @@
 import os
 import shutil
-import platform
 
 from oplus.configuration import CONF
 from oplus.util import run_eplus_and_log
