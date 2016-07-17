@@ -8,6 +8,9 @@ import subprocess
 from oplus import __version__
 
 
+logger = logging.getLogger(__name__)
+
+
 class UtilError(Exception):
     pass
 
@@ -171,8 +174,7 @@ def get_start_dt(start):
     return start_dt
 
 
-def run_eplus_and_log(cmd_l, cwd=None, logger_name=None, encoding=None):
-    logger = logging.getLogger(__name__ if logger_name is None else logger_name)
+def run_eplus_and_log(cmd_l, cwd=None, encoding=None):
     encoding = "latin-1" if encoding is None else encoding
     p = subprocess.Popen(cmd_l, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
     out_reader = NonBlockingStreamReader(p.stdout)

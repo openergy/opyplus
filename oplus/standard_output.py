@@ -7,15 +7,15 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt
+
+
+logger = logging.getLogger(__name__)
 
 
 class StandardOutputFileError(Exception):
     pass
-
-
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
 
 
 class StandardOutputFile:
@@ -32,11 +32,10 @@ class StandardOutputFile:
     ENVIRONMENTS = (RUN_PERIOD, SUMMER_DESIGN_DAY, WINTER_DESIGN_DAY)
     TIME_STEPS = (DETAILED, TIME_STEP, HOURLY, DAILY, MONTHLY, RUN_PERIOD)
 
-    def __init__(self, path, logger_name=None, encoding=None, start=None):
+    def __init__(self, path, encoding=None, start=None):
         if not os.path.exists(path):
             raise StandardOutputFileError("No file at given path: '%s'." % path)
         self._path = path
-        self._logger_name = logger_name
         self._encoding = encoding
 
         self._start_dt = None if start is None else get_start_dt(start)
@@ -50,7 +49,7 @@ class StandardOutputFile:
 
     def _parse(self):
         # todo: optimize (maybe readvarseso)
-        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             return parse_output(f)
 
     def df(self, environment=None, time_step=None, start=None, datetime_index=None):
@@ -144,7 +143,6 @@ class StandardOutputFile:
                 if freq is not None:
                     break
             else:
-                logger = logging.getLogger(self._logger_name)
                 logger.warning("Could not find freq for sub-hourly data (not enough values). Did not reindex.")
                 return df
         elif time_step == self.HOURLY:
@@ -160,7 +158,7 @@ class StandardOutputFile:
         df = df.reindex(index=pd.date_range(df.index[0], df.index[-1], freq=freq))
         null_nb = (df.notnull().sum(axis=1) == 0).sum()
         if len(df) != before_nb + null_nb:
-            logging.getLogger(self._logger_name).error(
+            logger.error(
                 "BUG: Some values were lost during reindex (before reindex: %i, after: %i (%i full, %i empty)."
                 % (before_nb, len(df), len(df)-null_nb, null_nb))
 
@@ -181,7 +179,7 @@ class StandardOutputFile:
         return self._envs_d.keys()
 
 
-def parse_output(file_like, logger_name=None):
+def parse_output(file_like):
     """
     Only parses hourly (or infra-hourly) data, but does not raise Exception if there is daily or monthly data.
     Reporting frequencies 'Detailed' and 'RunPeriod' not implemented.
@@ -373,7 +371,6 @@ def parse_output(file_like, logger_name=None):
     elif len(raw_envs_l) == 3:
         env_names_l = ["SummerDesignDay", "WinterDesignDay", "RunPeriod"]
     else:
-        logger = logging.getLogger(default_logger_name if logger_name is None else logger_name)
         logger.error("More than three environments were found, unhandled situation. Only first three will be used.")
         env_names_l = ["SummerDesignDay", "WinterDesignDay", "RunPeriod"]
     for env_name, raw_env_d in zip(env_names_l, raw_envs_l[:3]):
@@ -426,7 +423,6 @@ def parse_output(file_like, logger_name=None):
             if not env_name in envs_d:
                 envs_d[env_name] = {}
             if interval in envs_d[env_name]:
-                logger = logging.getLogger(default_logger_name if logger_name is None else logger_name)
                 logger.error("Same environment has two identical time steps: '%s'." % raw_env_d[1])
             envs_d[env_name][interval] = df
 

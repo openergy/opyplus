@@ -7,15 +7,15 @@ from oplus.idf import IDF
 from oplus.epw import EPW
 from oplus.standard_output import StandardOutputFile
 from oplus.simulation import simulate
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 
 
 class OneZoneEvapCooler(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
-    idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
-    epw = EPW(os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"))
+    idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+    epw = EPW(os.path.join(CONF.eplus_base_dir_path, "WeatherData", "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"))
 
     def test_simulation_control(self):
         for (simulation_control, expected_environments) in (

@@ -2,7 +2,7 @@ import unittest
 import os
 
 from oplus.idf import BrokenIDFError, IsPointedError, IDF, IDFObject
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 
 
 schedule_test_object_str = """Schedule:Compact,
@@ -21,7 +21,7 @@ class OneZoneEvapCooler(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls.idf_manager = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
+        cls.idf_manager = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
 
     def test_idf_call(self):
         qs = self.idf_manager.filter_by_ref("Construction")
@@ -69,7 +69,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
     Here are tests that modify idf.
     """
     def setUp(self):
-        self.idf_manager = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
+        self.idf_manager = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
 
     def test_idf_add_object(self):
         sch_name = "NEW TEST SCHEDULE"

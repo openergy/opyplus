@@ -1,7 +1,7 @@
 import tempfile
 import os
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus import simulate, EIO
 
 MAX_TESTS_NB = 500
@@ -14,9 +14,9 @@ def check():
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
     # !! CAN BE VERY LONG
-    epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData",
+    epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData",
                             "USA_VA_Sterling-Washington.Dulles.Intl.AP.724030_TMY3.epw")
-    idf_dir_path = os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles")
+    idf_dir_path = os.path.join(CONF.eplus_base_dir_path, "ExampleFiles")
     test_num = 0
     for file_num, file_name in enumerate(os.listdir(idf_dir_path)):
         if file_num < START_FILE_NUM:

@@ -10,12 +10,9 @@ import datetime as dt
 import os
 
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.idd import IDD
 from oplus.util import get_copyright_comment, Cached, check_cache_is_off, cached
-
-
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
 
 
 class IDFError(Exception):
@@ -199,7 +196,7 @@ class IDFObjectManager(Cached):
     _RAW_VALUE = 0
     _COMMENT = 1
 
-    def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None, logger_name=None):
+    def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
         self._ref = ref
         self._head_comment = head_comment
         self._tail_comment = tail_comment
@@ -209,8 +206,6 @@ class IDFObjectManager(Cached):
         self._descriptor = self._idf_manager.idd.get_object_descriptor(ref)
 
         self._idf_object = self.idf_object_cls(self)
-
-        self._logger_name = default_logger_name if logger_name is None else logger_name
 
     # ---------------------------------------------- EXPOSE ------------------------------------------------------------
     @property
@@ -577,19 +572,18 @@ class VoidSimulation:
 class IDFManager(Cached):
     idf_object_manager_cls = IDFObjectManager  # for subclassing
 
-    def __init__(self, idf, path, idd_or_path=None, logger_name=None, encoding=None):
+    def __init__(self, idf, path, idd_or_path=None, encoding=None):
         self._idf = idf
         if not os.path.exists(path):
             raise IDFError("No file at given path: '%s'." % path)
         self._path = path
-        self._idd = IDD.get_idd(idd_or_path, logger_name=logger_name, encoding=encoding)
-        self._logger_name = logger_name
+        self._idd = IDD.get_idd(idd_or_path, encoding=encoding)
         self._encoding = encoding
         # simulation
         self._simulation = VoidSimulation()  # must be before parsing
 
         # raw parse and parse
-        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             self._objects_l, self._head_comments = self.parse(f)
 
     @staticmethod
@@ -862,7 +856,7 @@ class IDFManager(Cached):
 
     def save_as(self, file_or_path, add_copyright=True):
         is_path = isinstance(file_or_path, str)
-        f = (open(file_or_path, "w", encoding=CONFIG.encoding if self._encoding is None else self._encoding)
+        f = (open(file_or_path, "w", encoding=CONF.encoding if self._encoding is None else self._encoding)
              if is_path else file_or_path)
 
         # idf comments
@@ -891,7 +885,7 @@ class IDF:
     idf_manager_cls = IDFManager  # for subclassing
 
     @classmethod
-    def get_idf(cls, idf_or_path, logger_name=None, encoding=None):
+    def get_idf(cls, idf_or_path, encoding=None):
         """
         Arguments
         ---------
@@ -902,13 +896,13 @@ class IDF:
         IDF object
         """
         if isinstance(idf_or_path, str):
-            return cls(idf_or_path, logger_name=logger_name, encoding=encoding)
+            return cls(idf_or_path, encoding=encoding)
         elif isinstance(idf_or_path, cls):
             return idf_or_path
         raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
                        (idf_or_path, type(idf_or_path)))
 
-    def __init__(self, path, idd_or_path=None, logger_name=None, encoding=None):
+    def __init__(self, path, idd_or_path=None, encoding=None):
         """
         Arguments
         ---------
@@ -917,7 +911,7 @@ class IDF:
             computer)
         logger_name: see python logging builtin module if custom logging is needed.
         """
-        self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, logger_name=logger_name, encoding=encoding)
+        self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, encoding=encoding)
 
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""

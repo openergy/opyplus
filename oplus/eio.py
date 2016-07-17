@@ -2,9 +2,7 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONFIG
-
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+from oplus.configuration import CONF
 
 
 class EIOError(Exception):
@@ -16,11 +14,10 @@ class EndOfReportError(EIOError):
 
 
 class EIO:
-    def __init__(self, path, logger_name=None, encoding=None):
+    def __init__(self, path, encoding=None):
         if not os.path.isfile(path):
             raise EIOError("No file at given path: '%s'." % path)
         self._path = path
-        self._logger_name = logger_name
         self._encoding = encoding
 
         self._tables_d = parse_eio(self._path, encoding=encoding)
@@ -45,7 +42,7 @@ def parse_eio(path, encoding=None):
 
     # _header_ref_pattern_ = "^([^<.]*)<([^>.]*)>(.*)$"
 
-    with open(path, encoding=CONFIG.encoding if encoding is None else encoding) as f:
+    with open(path, encoding=CONF.encoding if encoding is None else encoding) as f:
         for line_s in f:
             if line_s == "End of Data":
                 break

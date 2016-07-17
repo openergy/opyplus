@@ -1,10 +1,7 @@
 import os
 import re
 
-from oplus.configuration import CONFIG
-
-
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+from oplus.configuration import CONF
 
 
 class MTDError(Exception):
@@ -12,11 +9,10 @@ class MTDError(Exception):
 
 
 class MTD:
-    def __init__(self, path, logger_name=None, encoding=None):
+    def __init__(self, path, encoding=None):
         if not os.path.isfile(path):
             raise MTDError("No file at given path: '%s'." % path)
         self._path = path
-        self._logger_name = logger_name
         self._encoding = encoding
 
         self._variables_d, self._meters_d = self._parse()
@@ -30,7 +26,7 @@ class MTD:
         meter_pattern = r"^ For Meter=([^\[\]]*) \[([\w\d]*)],(.*)$"
 
         # build variables and meters
-        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             for line_s in f:
                 if line_s == "\n":
                     if output_l is None:  # initialize

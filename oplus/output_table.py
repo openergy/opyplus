@@ -2,22 +2,18 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 
 
 class OutputTableError(Exception):
     pass
 
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
-
-
 class OutputTable:
-    def __init__(self, path, logger_name=None, encoding=None):
+    def __init__(self, path, encoding=None):
         if not os.path.isfile(path):
             raise OutputTableError("No file at given path: '%s'." % path)
         self._path = path
-        self._logger_name = logger_name
         self._encoding = encoding
 
         self._reports_d = self._parse()  # {report_name: {table_name: df, ...}, ...}
@@ -45,7 +41,7 @@ class OutputTable:
                     return s
 
         # loop
-        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             while True:
                 # next line
                 try:

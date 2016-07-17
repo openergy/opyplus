@@ -2,7 +2,7 @@ import os
 import shutil
 import platform
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.util import run_eplus_and_log
 from oplus.idf import IDF
 from oplus.idd import IDD
@@ -19,8 +19,6 @@ class SimulationError(Exception):
 class WrongExtensionError(SimulationError):
     pass
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
-
 
 class Simulation:
     # for subclassing
@@ -34,7 +32,7 @@ class Simulation:
 
     @classmethod
     def simulate(cls, idf_or_path, epw_or_path, dir_path, start=None, simulation_control=None, base_name="oplus",
-                 logger_name=None, encoding=None, idd_or_path=None):
+                 encoding=None, idd_or_path=None):
         # make directory if does not exist
         # todo: check if files and folders are deleted
         if not os.path.exists(dir_path):
@@ -48,7 +46,7 @@ class Simulation:
                 raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
                                       (simulation_control, (_sizing_, _run_periods_)))
             if not isinstance(idf_or_path, IDF):
-                idf_or_path = IDF(idf_or_path, logger_name=logger_name, encoding=encoding, idd_or_path=idd_or_path)
+                idf_or_path = IDF(idf_or_path, encoding=encoding, idd_or_path=idd_or_path)
 
             sc = idf_or_path("SimulationControl").one
             if simulation_control == _sizing_:
@@ -66,19 +64,18 @@ class Simulation:
                 sc["Run Simulation for Weather File Run Periods"] = "Yes"
 
         # run simulation
-        run_eplus(idf_or_path, epw_or_path, dir_path, base_name=base_name, logger_name=logger_name)
+        run_eplus(idf_or_path, epw_or_path, dir_path, base_name=base_name)
 
         # return simulation object
-        return cls(dir_path, start=start, base_name=base_name, logger_name=logger_name, encoding=encoding,
+        return cls(dir_path, start=start, base_name=base_name, encoding=encoding,
                    idd_or_path=idd_or_path)
 
-    def __init__(self, dir_path, start=None, base_name="oplus", logger_name=None, encoding=None, idd_or_path=None):
+    def __init__(self, dir_path, start=None, base_name="oplus", encoding=None, idd_or_path=None):
         if not os.path.isdir(dir_path):
             raise SimulationError("Simulation directory does not exist: '%s'." % dir_path)
         self._dir_path = dir_path
         self._base_name = base_name
         self._start = start
-        self._logger_name = logger_name
         self._encoding = encoding
         self._idd_or_path = idd_or_path
         self.__idd = None
@@ -90,7 +87,7 @@ class Simulation:
     @property
     def _idd(self):
         if self.__idd is None:
-            self.__idd = IDD.get_idd(self._idd_or_path, logger_name=self._logger_name, encoding=self._encoding)
+            self.__idd = IDD.get_idd(self._idd_or_path, encoding=self._encoding)
         return self.__idd
 
     def _check_extension(self, extension):
@@ -102,10 +99,10 @@ class Simulation:
         if extension in ("idf", "epw"):  # input files
             return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
 
-        if CONFIG.os_name == "windows":
+        if CONF.os_name == "windows":
             return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
-        elif CONFIG.os_name == "osx":
-            if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+        elif CONF.os_name == "osx":
+            if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
                 return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
             else:
                 if extension in ("idf", "epw"):
@@ -133,16 +130,12 @@ class Simulation:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
 
         constructors_d = {
-            "idf": lambda path: self.idf_cls(path, idd_or_path=self._idd, logger_name=self._logger_name,
-                                             encoding=self._encoding),
-            "epw": lambda path: self.epw_cls(path, logger_name=self._logger_name, encoding=self._encoding,
-                                             start=self._start),
-            "eso": lambda path: self.standard_output_file_cls(path, logger_name=self._logger_name,
-                                                              encoding=self._encoding, start=self._start),
-            "mtr": lambda path: self.standard_output_file_cls(path, logger_name=self._logger_name,
-                                                              encoding=self._encoding, start=self._start),
-            "mtd": lambda path: self.mtd_cls(path, logger_name=self._logger_name, encoding=self._encoding),
-            "eio": lambda path: self.eio_cls(path, logger_name=self._logger_name, encoding=self._encoding),
+            "idf": lambda path: self.idf_cls(path, idd_or_path=self._idd, encoding=self._encoding),
+            "epw": lambda path: self.epw_cls(path, encoding=self._encoding, start=self._start),
+            "eso": lambda path: self.standard_output_file_cls(path, encoding=self._encoding, start=self._start),
+            "mtr": lambda path: self.standard_output_file_cls(path, encoding=self._encoding, start=self._start),
+            "mtd": lambda path: self.mtd_cls(path, encoding=self._encoding),
+            "eio": lambda path: self.eio_cls(path, encoding=self._encoding),
             "err": lambda path: open(path, encoding=self._encoding).read()
         }
 
@@ -151,7 +144,7 @@ class Simulation:
 simulate = Simulation.simulate
 
 
-def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name=None, encoding=None):
+def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", encoding=None):
     # check dir path
     if not os.path.isdir(dir_path):
         raise SimulationError("Simulation directory does not exist: '%s'." % dir_path)
@@ -170,66 +163,65 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         shutil.copy2(epw_or_path, simulation_epw_path)
 
     # copy epw on windows (on linux or osx, epw may remain in current directory)
-    if CONFIG.os_name == "windows":
-        temp_epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "%s.epw" % base_name)
+    if CONF.os_name == "windows":
+        temp_epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "%s.epw" % base_name)
         shutil.copy2(simulation_epw_path, temp_epw_path)
     else:
         temp_epw_path = None
 
     # prepare command
-    if CONFIG.os_name == "windows":
+    if CONF.os_name == "windows":
         last_name = "RunEPlus.bat"
-    elif CONFIG.os_name == "osx":
-        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+    elif CONF.os_name == "osx":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             last_name = "runenergyplus"
         else:
             last_name = "energyplus"
-    elif CONFIG.os_name == "linux":
-        if CONFIG.eplus_version[:2] <= (8, 2):  # todo: check this limit is right
+    elif CONF.os_name == "linux":
+        if CONF.eplus_version[:2] <= (8, 2):  # todo: check this limit is right
             last_name = "bin/runenergyplus"
         else:
             last_name = "runenergyplus"
     else:
-        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
-    eplus_cmd = os.path.join(CONFIG.eplus_base_dir_path, last_name)
+    eplus_cmd = os.path.join(CONF.eplus_base_dir_path, last_name)
 
     # idf
-    if CONFIG.os_name == "windows":
+    if CONF.os_name == "windows":
         idf_file_cmd = os.path.join(dir_path, base_name)
-    elif CONFIG.os_name == "osx":
-        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+    elif CONF.os_name == "osx":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             idf_file_cmd = os.path.join(dir_path, base_name)
         else:
             idf_file_cmd = simulation_idf_path
-    elif CONFIG.os_name == "linux":
+    elif CONF.os_name == "linux":
         idf_file_cmd = simulation_idf_path
     else:
-        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # epw
     epw_file_cmd = {
         "windows": base_name,  # only weather data name
         "osx": simulation_epw_path,
         "linux": simulation_epw_path
-    }[CONFIG.os_name]
+    }[CONF.os_name]
 
     # command list
-    if CONFIG.os_name == "windows":
+    if CONF.os_name == "windows":
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
-    elif CONFIG.os_name == "osx":
-        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+    elif CONF.os_name == "osx":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
         else:
             cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
-    elif CONFIG.os_name == "linux":
+    elif CONF.os_name == "linux":
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     else:
-        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # launch calculation
-    run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
-                      logger_name=default_logger_name if logger_name is None else logger_name)
+    run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding)
 
     # if needed, we delete temp weather data (only on Windows, see above)
     if temp_epw_path is not None:

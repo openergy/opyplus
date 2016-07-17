@@ -1,11 +1,11 @@
 import os
 import tempfile
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.idf import IDF
 
 
-idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 zone = idf("Zone").filter("name", "Main Zone").one
 building = idf("Building").filter("name", "Bldg").one
 

@@ -5,10 +5,8 @@ import re
 import pandas as pd
 from pandas.util.testing import assert_index_equal
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt, get_copyright_comment
-
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
 
 
 class EPWError(Exception):
@@ -108,22 +106,21 @@ class EPW:
     epw_header_cls = EPWHeader
 
     @classmethod
-    def get_epw_or_path(cls, epw_or_path, logger_name=None, encoding=None):
+    def get_epw_or_path(cls, epw_or_path, encoding=None):
         if isinstance(epw_or_path, str):
-            return cls(epw_or_path, logger_name=logger_name, encoding=encoding)
+            return cls(epw_or_path, encoding=encoding)
         elif isinstance(epw_or_path, cls):
             return epw_or_path
         raise EPWError("'epw_or_path' must be an EPW or path.  Given object: '%s', type: '%s'." %
                        (epw_or_path, type(epw_or_path)))
 
-    def __init__(self, path_or_buffer, logger_name=None, encoding=None, start=None):
-        self._logger_name = logger_name
+    def __init__(self, path_or_buffer, encoding=None, start=None):
         self._encoding = encoding
         if isinstance(path_or_buffer, str):
-            with open(path_or_buffer, encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
-                self._df, self._header = parse_epw(f, logger_name=logger_name, encoding=encoding)
+            with open(path_or_buffer, encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
+                self._df, self._header = parse_epw(f, encoding=encoding)
         else:
-            self._df, self._header = parse_epw(path_or_buffer, logger_name=logger_name, encoding=encoding)
+            self._df, self._header = parse_epw(path_or_buffer, encoding=encoding)
 
         self._start_dt = None if start is None else get_start_dt(start)
 
@@ -147,7 +144,7 @@ class EPW:
         content += "\n" + _f.getvalue()
 
         # write to f
-        f = (open(file_or_path, "w", encoding=CONFIG.encoding if self._encoding is None else self._encoding)
+        f = (open(file_or_path, "w", encoding=CONF.encoding if self._encoding is None else self._encoding)
              if is_path else file_or_path)
 
         f.write(content)
@@ -199,7 +196,7 @@ class EPW:
         assert_index_equal(value.columns, self._df.columns)
 
 
-def parse_epw(file_like, encoding=None, logger_name=None):
+def parse_epw(file_like, encoding=None):
     header_s = ""
 
     # header

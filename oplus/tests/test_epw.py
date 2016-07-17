@@ -4,10 +4,10 @@ import io
 
 from pandas.util.testing import assert_frame_equal
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.epw import parse_epw, EPW
 
-weather_dir = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData")
+weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
 resources_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), "resources", "epw")
 
 

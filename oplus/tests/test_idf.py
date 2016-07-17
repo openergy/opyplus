@@ -4,7 +4,7 @@ import os
 from oplus.idf import IDF, IDFObject, IDFError
 from oplus.util import CachingNotAllowedError
 from oplus.idf import BrokenIDFError, IsPointedError
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 
 
 schedule_test_object_str = """Schedule:Compact,
@@ -23,7 +23,7 @@ class OneZoneEvapCooler(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls.idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+        cls.idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 
     def test_idf_call(self):
         qs = self.idf("Construction")
@@ -54,7 +54,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
     Here are tests that modify idf.
     """
     def setUp(self):
-        self.idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+        self.idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 
     def test_idf_add_object(self):
         sch_name = "NEW TEST SCHEDULE"
@@ -193,7 +193,7 @@ class FourZoneWithShadingSimple1(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
     def test_read_idf(self):
-        self.idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf"))
+        self.idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf"))
 
 
 class FiveZoneAirCooled(unittest.TestCase):
@@ -201,7 +201,7 @@ class FiveZoneAirCooled(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
     def test_multiple_branch_links(self):
-        idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
+        idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
         bl = idf("BranchList").filter("Name", "Heating Supply Side Branches").one
         b3 = idf("Branch").filter("Name", "Heating Supply Bypass Branch").one
         self.assertEqual(bl[3], b3)
@@ -210,4 +210,4 @@ class FiveZoneAirCooled(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Mac (Antoine).
     """
-    idf = IDF(os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
+    idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
