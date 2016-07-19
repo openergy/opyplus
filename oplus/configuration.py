@@ -58,10 +58,10 @@ else:
 
 # find most recent version of EnergyPlus
 for file_name in os.listdir(apps_dir):
-        match = pattern.search(file_name)
-        if match is not None:
-            version_tuple = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
-            CONF.eplus_available_versions[version_tuple] = os.path.join(apps_dir, file_name)
+    match = pattern.search(file_name)
+    if match is not None:
+        version_tuple = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        CONF.eplus_available_versions[version_tuple] = os.path.join(apps_dir, file_name)
 
 if len(CONF.eplus_available_versions) == 0:
     logger.warning("Base directory was not found. You must provide the path with 'set_configuration'.")
