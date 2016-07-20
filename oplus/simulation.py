@@ -108,6 +108,12 @@ class Simulation:
                     return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
                 else:
                     return os.path.join(self._dir_path, "eplusout.%s" % extension)
+        if CONF.os_name == "linux":
+            # todo : code properly
+            if extension in ("idf", "epw"):
+                return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
+            else:
+                return os.path.join(self._dir_path, "eplusout.%s" % extension)
         else:
             raise NotImplementedError("Linux not implemented yet.")
 
