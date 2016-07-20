@@ -108,6 +108,9 @@ class Simulation:
                     return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
                 else:
                     return os.path.join(self._dir_path, "eplusout.%s" % extension)
+        if CONF.os_name == "linux":
+            # todo : check all versions of Energyplus
+            return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
         else:
             raise NotImplementedError("Linux not implemented yet.")
 
@@ -177,7 +180,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", encoding=No
         else:
             last_name = "energyplus"
     elif CONF.os_name == "linux":
-        if CONF.eplus_version[:2] <= (8, 2):  # todo: check this limit is right
+        if CONF.eplus_version[:2] < (8, 1):  # todo: check this limit is right
             last_name = "bin/runenergyplus"
         else:
             last_name = "runenergyplus"

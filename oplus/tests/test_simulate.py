@@ -24,6 +24,7 @@ class OneZoneEvapCooler(unittest.TestCase):
                 ("Sizing", {"SummerDesignDay", "WinterDesignDay"})
         ):
             with tempfile.TemporaryDirectory() as dir_path:
+                dir_path = "/var/lib/jenkins/temp"
                 s = simulate(self.idf, self.epw, dir_path, simulation_control=simulation_control)
 
                 self.assertIsInstance(s.eso, StandardOutputFile)
