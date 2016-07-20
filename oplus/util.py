@@ -244,6 +244,9 @@ class CacheKey:
     def __eq__(self, other):
         return self.__hash__() == other.__hash__()
 
+    def __str__(self):
+        return "<CacheKey: %s>" % str(self._value)
+
 
 def check_cache_is_off(method):
     def wrapper(self, *args, **kwargs):
