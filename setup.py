@@ -41,5 +41,3 @@ setup(
         "Topic :: Scientific/Engineering :: Data processing",
     ]
 )
-
-# todo: requirements
