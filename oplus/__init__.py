@@ -1,5 +1,3 @@
-__version__ = "4.3.2"
-
 from oplus.configuration import CONF
 from oplus.eio import EIO
 from oplus.epw import EPW
