@@ -16,7 +16,7 @@ setup(
 
     version=__version__,
 
-    packages=['unittest', 'pandas'],
+    packages=['pandas'],
 
     author="Geoffroy d'Estaintot",
 
