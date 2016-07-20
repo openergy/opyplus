@@ -26,7 +26,7 @@ setup(
 
     install_requires=[
         'pandas'
-        ]
+        ],
 
     url='https://github.com/Openergy/oplus',
 
