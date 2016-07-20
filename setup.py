@@ -16,7 +16,7 @@ setup(
 
     version=__version__,
 
-    packages=['pandas'],
+    packages=['oplus'],
 
     author="Geoffroy d'Estaintot",
 
@@ -24,7 +24,9 @@ setup(
 
     long_description=open('README.md').read(),
 
-    # install_requires= ,$
+    install_requires=[
+        'pandas'
+        ]
 
     url='https://github.com/Openergy/oplus',
 
