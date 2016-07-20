@@ -13,7 +13,7 @@ if sys.argv[-1] == 'tag':
     sys.exit()
 
 setup(
-    name='Optimized cython functions',
+    name='Openergy oplus',
 
     version=version,
 
@@ -40,9 +40,6 @@ setup(
         "Programming Language :: Python :: 3.4",
         "Topic :: Scientific/Engineering :: Data processing",
     ]
-
-    #    entry_points={
-    #    }
 )
 
 # todo: requirements
