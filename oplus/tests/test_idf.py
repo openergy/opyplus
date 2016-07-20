@@ -1,10 +1,14 @@
 import unittest
 import os
+import logging
 
 from oplus.idf import IDF, IDFObject, IDFError
 from oplus.util import CachingNotAllowedError
 from oplus.idf import BrokenIDFError, IsPointedError
 from oplus.configuration import CONF
+
+
+logger = logging.getLogger(__name__)
 
 
 schedule_test_object_str = """Schedule:Compact,
@@ -124,6 +128,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         Doesn't work but bypassed !!! todo: repair
 
         """
+        logger.error("TEST BIG EXTENSIBLE MUST BE RUN CORRECTLY.")
         return
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
         for i in range(4560):  # 4500 is the limit of idd

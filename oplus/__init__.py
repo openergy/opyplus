@@ -1,3 +1,5 @@
+from .version import version as __version__
+
 from oplus.configuration import CONF
 from oplus.eio import EIO
 from oplus.epw import EPW

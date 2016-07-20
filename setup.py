@@ -1,12 +1,13 @@
 from setuptools import setup, find_packages
 
-import sys, os
-from version import __version__
+import sys
+import os
+from oplus.version import version
 
 
 if sys.argv[-1] == 'tag':
-    print(__version__)
-    os.system('git tag -a %s -m "version %s" ' % (__version__, __version__))
+    print(version)
+    os.system('git tag -a %s -m "version %s" ' % (version, version))
     #    os.system('git commit -m "version updated via setup.py tag"')
     os.system('git push https://EloiLBV:Cython971@github.com/Openergy/oplus.git --tags')
     sys.exit()
@@ -14,7 +15,7 @@ if sys.argv[-1] == 'tag':
 setup(
     name='Optimized cython functions',
 
-    version=__version__,
+    version=version,
 
     packages=['oplus'],
 
