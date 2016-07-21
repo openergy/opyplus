@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 import sys, os
-from version import __version__
+from oplus.version import version as __version__
 
 
 if sys.argv[-1] == 'tag':
