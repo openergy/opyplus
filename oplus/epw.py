@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.util.testing import assert_index_equal
 
 from oplus.configuration import CONF
-from oplus.util import EPlusDt, get_start_dt, get_copyright_comment
+from oplus.util import EPlusDt, get_start_dt, get_copyright_comment, get_string_buffer
 
 
 class EPWError(Exception):
@@ -115,12 +115,17 @@ class EPW:
                        (epw_or_path, type(epw_or_path)))
 
     def __init__(self, path_or_buffer, encoding=None, start=None):
-        self._encoding = encoding
-        if isinstance(path_or_buffer, str):
-            with open(path_or_buffer, encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
-                self._df, self._header = parse_epw(f, encoding=encoding)
-        else:
-            self._df, self._header = parse_epw(path_or_buffer, encoding=encoding)
+        """
+        if path_or_buffer is a path, it must end by .epw
+        """
+        self._encoding = CONF.encoding if encoding is None else encoding
+        buffer, path = get_string_buffer(path_or_buffer, "epw", self._encoding)
+
+        try:
+            self._df, self._header = parse_epw(buffer)
+        except Exception as e:
+            raise EPWError("Error while parsing epw. First check that given file exists"
+                           "(if not, given path will have been considered as an idf content.\n%s" % e)
 
         self._start_dt = None if start is None else get_start_dt(start)
 
@@ -132,22 +137,27 @@ class EPW:
     def freq(self):
         return self._header.freq
 
-    def save_as(self, file_or_path, add_copyright=True):
-        is_path = isinstance(file_or_path, str)
-
+    def to_str(self, add_copyright=True):
         # header
-        content = self._header.to_str(add_copyright=add_copyright)
+        _content = self._header.to_str(add_copyright=add_copyright)
 
         # data
         _f = io.StringIO()
         self._df.reset_index().to_csv(_f, header=False, index=False)
-        content += "\n" + _f.getvalue()
+        _content += "\n" + _f.getvalue()
+
+        return _content
+
+    def save_as(self, file_or_path, add_copyright=True):
+        is_path = isinstance(file_or_path, str)
 
         # write to f
-        f = (open(file_or_path, "w", encoding=CONF.encoding if self._encoding is None else self._encoding)
+        f = (open(file_or_path, "w", encoding=self._encoding)
              if is_path else file_or_path)
+        f.write(self.to_str(add_copyright=add_copyright))
 
-        f.write(content)
+        if is_path:
+            f.close()
 
     def set_start(self, start):
         self._start_dt = get_start_dt(start)

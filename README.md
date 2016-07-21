@@ -10,7 +10,9 @@ A python package for working with Energy Plus
 * new configuration system
 * CONF functions changed
 
-### 4.4.0
+### next
 * simulation api changed
 * summary table object implemented
 * err object implemented
+* can create idf and epw from path, content or buffer
+* can copy idf

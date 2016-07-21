@@ -12,7 +12,7 @@ import os
 
 from oplus.configuration import CONF
 from oplus.idd import IDD
-from oplus.util import get_copyright_comment, Cached, check_cache_is_off, cached
+from oplus.util import get_copyright_comment, Cached, check_cache_is_off, cached, get_string_buffer
 
 
 class IDFError(Exception):
@@ -572,25 +572,32 @@ class VoidSimulation:
 class IDFManager(Cached):
     idf_object_manager_cls = IDFObjectManager  # for subclassing
 
-    def __init__(self, idf, path, idd_or_path=None, encoding=None):
+    # ----------------------------------------------- INITIALIZE -------------------------------------------------------
+    def __init__(self, idf, path_or_content, idd_or_path=None, encoding=None):
         self._idf = idf
-        if not os.path.exists(path):
-            raise IDFError("No file at given path: '%s'." % path)
-        self._path = path
         self._idd = IDD.get_idd(idd_or_path, encoding=encoding)
-        self._encoding = encoding
+        self._encoding = CONF.encoding if encoding is None else encoding
+
         # simulation
         self._simulation = VoidSimulation()  # must be before parsing
 
-        # raw parse and parse
-        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
-            self._objects_l, self._head_comments = self.parse(f)
+        # get string buffer and store path (for info)
+        buffer, path = get_string_buffer(path_or_content, "idf", self._encoding)
+        self._path = path_or_content
 
+        # raw parse and parse
+        with buffer as f:
+            try:
+                self._objects_l, self._head_comments = self.parse(f)
+            except Exception as e:
+                raise IDFError("Error while parsing idf. First check that given file exists "
+                               "(if not, given path will have been considered as an idf content.\n%s" % e)
+
+    # ----------------------------------------------- EXPOSE -----------------------------------------------------------
     @staticmethod
     def copyright_comment():
         return get_copyright_comment()
 
-    # ----------------------------------------------- EXPOSE -----------------------------------------------------------
     @property
     def objects_l(self):
         return self._objects_l
@@ -854,27 +861,35 @@ class IDFManager(Cached):
 
         return msg
 
-    def save_as(self, file_or_path, add_copyright=True):
-        is_path = isinstance(file_or_path, str)
-        f = (open(file_or_path, "w", encoding=CONF.encoding if self._encoding is None else self._encoding)
-             if is_path else file_or_path)
+    def to_str(self, add_copyright=True):
+        content = ""
 
         # idf comments
         idf_comment = self._head_comments
         if add_copyright:
             msg = self.copyright_comment()
-            if not msg in idf_comment:
+            if msg not in idf_comment:
                 idf_comment = msg + idf_comment
 
         for comment in idf_comment.split("\n"):
-            f.write("!%s\n" % comment)
+            content += "!%s\n" % comment
 
         # idf objects
         for idf_object in self._objects_l:
-            f.write("\n%s" % idf_object._.to_str(style="idf"))
+            content += "\n%s" % idf_object._.to_str(style="idf")
 
+        return content
+
+    def save_as(self, file_or_path, add_copyright=True):
+        is_path = isinstance(file_or_path, str)
+        f = open(file_or_path, "w", encoding=self._encoding) if is_path else file_or_path
+        f.write(self.to_str(add_copyright=add_copyright))
         if is_path:
             f.close()
+
+    def copy(self, add_copyright=True):
+        content = self.to_str(add_copyright=add_copyright)
+        return self.idf.__class__(content, self.idd, encoding=self._encoding)
 
 
 # ------------------------------------------------- idf ----------------------------------------------------------------
@@ -902,23 +917,28 @@ class IDF:
         raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
                        (idf_or_path, type(idf_or_path)))
 
-    def __init__(self, path, idd_or_path=None, encoding=None):
+    def __init__(self, path_or_content, idd_or_path=None, encoding=None):
         """
         Arguments
         ---------
-        path: idf path
+        path_or_content: idf path, content str, content bts or file_like. If path, must end by .idf.
         idd_or_path: IDD object or idd path. If None, default will be chosen (most recent EPlus version installed on
             computer)
-        logger_name: see python logging builtin module if custom logging is needed.
         """
-        self._ = self.idf_manager_cls(self, path, idd_or_path=idd_or_path, encoding=encoding)
+        self._ = self.idf_manager_cls(self, path_or_content, idd_or_path=idd_or_path, encoding=encoding)
 
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""
         return self._.filter_by_ref(object_descriptor_ref)
 
+    def to_str(self, add_copyright=True):
+        return self._.to_str(add_copyright=add_copyright)
+
     def save_as(self, file_or_path):
         self._.save_as(file_or_path)
+
+    def copy(self, add_copyright=True):
+        return self._.copy(add_copyright=add_copyright)
 
     def remove_object(self, object_to_remove, raise_if_pointed=True):
         """

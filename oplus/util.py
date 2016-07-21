@@ -5,6 +5,8 @@ from queue import Queue, Empty
 import logging
 import subprocess
 import collections
+import os
+import io
 
 from oplus import __version__
 
@@ -300,3 +302,39 @@ class Enum(collections.UserDict):
         if (key == "data") or (key[0] == "_"):
             super().__setattr__(key, value)
         self[key] = value
+
+
+def get_string_buffer(path_or_content, expected_extension, encoding):
+    """
+    path_or_content: path or content_str or content_bts or string_io or bytes_io
+
+    Returns
+    -------
+    string_buffer, path
+
+    path will be None if input was not a path
+    """
+    buffer, path = None, None
+
+    # path or content string
+
+    if isinstance(path_or_content, str):
+        if path_or_content[-len(expected_extension)-1:] == ".%s" % expected_extension:
+            assert os.path.isfile(path_or_content), "No file at given path: '%s'." % path_or_content
+            buffer, path = open(path_or_content), path_or_content
+        else:
+            buffer = io.StringIO(path_or_content)
+
+    # text io
+    elif isinstance(path_or_content, io.TextIOBase):
+        buffer = path_or_content
+
+    # bytes
+    elif isinstance(path_or_content, bytes):
+        buffer = io.StringIO(path_or_content.decode(encoding=encoding))
+    elif isinstance(path_or_content, io.BufferedIOBase):
+        buffer = io.StringIO(path_or_content.read().decode(encoding=encoding))
+    else:
+        raise UtilError("path_or_content type could not be identified")
+
+    return buffer, path
