@@ -112,8 +112,11 @@ class Simulation:
                     return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
                 else:
                     return os.path.join(self._dir_path, "eplusout.%s" % extension)
+        if CONFIG.os_name == "linux":
+            # todo : check all versions of Energyplus
+            return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
         else:
-            raise NotImplementedError("Linux not implemented yet.")
+            raise NotImplementedError("Not implemented yet for your os.")
 
     def exists(self, extension):
         return os.path.isfile(self._path(extension))

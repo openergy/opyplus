@@ -42,6 +42,4 @@ setup(
         "Topic :: Scientific/Engineering :: Data processing",
     ]
 
-    #    entry_points={
-    #    }
 )
