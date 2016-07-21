@@ -5,11 +5,13 @@ import os
 from oplus.version import version
 
 
-if sys.argv[-1] == 'tag':
+if sys.argv[-3] == 'tag':
+    user = sys.argv[-2]
+    pwd = sys.argv[-1]
     print(version)
     os.system('git tag -a %s -m "version %s" ' % (version, version))
     #    os.system('git commit -m "version updated via setup.py tag"')
-    os.system('git push https://EloiLBV:Cython971@github.com/Openergy/oplus.git --tags')
+    os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
     sys.exit()
 
 setup(
