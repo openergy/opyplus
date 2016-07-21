@@ -9,3 +9,8 @@ A python package for working with Energy Plus
 * new cache system
 * new configuration system
 * CONF functions changed
+
+### 4.4.0
+* simulation api changed
+* summary table object implemented
+* err object implemented

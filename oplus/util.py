@@ -4,6 +4,7 @@ from threading import Thread
 from queue import Queue, Empty
 import logging
 import subprocess
+import collections
 
 from oplus import __version__
 
@@ -289,9 +290,13 @@ class Cached:
     def is_cached(self):
         return self.cache is not None
 
-    # def _cache_get(self, key, variable_callable):
-    #     if not self.is_cached:
-    #         return variable_callable()
-    #     if key in self.cache:
-    #         self.cache[key] = variable_callable()
-    #     return self.cache[key]
+
+class Enum(collections.UserDict):
+    def __getattr__(self, item):
+        return self[item]
+
+    def __setattr__(self, key, value):
+        # we bypass 'data' (used by parent class) and all private keys (in case used by parent class)
+        if (key == "data") or (key[0] == "_"):
+            super().__setattr__(key, value)
+        self[key] = value

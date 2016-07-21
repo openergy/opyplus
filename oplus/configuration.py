@@ -17,6 +17,7 @@ class _Config:
         self.eplus_available_versions = {}  # # {version: base_dir_path, ...
         self.eplus_version = None  # (i1, i2, i3)
         self.encoding = "latin-1"
+        self.simulation_base_name = "oplus"
 
     @property
     def eplus_base_dir_path(self):
