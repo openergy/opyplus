@@ -42,8 +42,9 @@ if CONFIG.os_name == "windows":
 elif CONFIG.os_name == "osx":  # mac osx
     apps_dir, pattern = "/Applications", re.compile("EnergyPlus-(\d*)-(\d*)-(\d*)")
 elif CONFIG.os_name == "linux":  # linux
-    logging.getLogger(CONFIG.logger_name).warning("Default config not implemented for Linux yet. You must provide the "
-                                                  "EnergyPlus base path with 'set_configuration'.")
+    apps_dir, pattern = "/usr/local", re.compile("EnergyPlus-(\d*)-(\d*)-(\d*)")
+else:
+    raise ConfigurationError("Unknown os_name: '%s'" % CONFIG.os_name)
 
 # find most recent version of EnergyPlus
 paths_d = {}  # {version_tuple: file_path, ...}
