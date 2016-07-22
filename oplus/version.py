@@ -1,1 +1,2 @@
-version = "4.4.0"
+with open("version.txt") as f:
+    version = f.read().strip()
