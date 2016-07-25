@@ -68,7 +68,8 @@ def get_summary_table_file_path(dir_path):
             return os.path.join(dir_path, "eplusouttbl.csv")
 
     elif CONF.os_name == "linux":
-        raise NotImplemented()
+        # todo : check all versions of Energyplus
+        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
     raise NotImplemented()
 
 
