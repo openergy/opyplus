@@ -1,8 +1,10 @@
 import os
 import shutil
+from threading import Thread
+import logging
 
 from oplus.configuration import CONF
-from oplus.util import run_eplus_and_log, Enum
+from oplus.util import run_subprocess, Enum, LoggerStreamWriter
 from oplus.idf import IDF
 from oplus.idd import IDD
 from oplus.epw import EPW
@@ -94,10 +96,14 @@ class Simulation:
             start=None,
             simulation_control=None,
             encoding=None,
-            idd_or_path=None):
+            idd_or_path=None,
+            stdout=None,
+            stderr=None
+    ):
         """
         simulation will be done in os.path.join(base_dir_path, simulation_name) if simulation has a name, else in
             base_dir_path
+        default stdout and stderr are logger.info and logger.error
         """
         # manage simulation dir path
         assert os.path.isdir(base_dir_path), "Base dir path not found: '%s'" % base_dir_path
@@ -112,7 +118,7 @@ class Simulation:
         if simulation_control is not None:
             _sizing_ = "Sizing"
             _run_periods_ = "RunPeriods"
-            if not simulation_control in (_sizing_, _run_periods_):
+            if simulation_control not in (_sizing_, _run_periods_):
                 raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
                                       (simulation_control, (_sizing_, _run_periods_)))
             if not isinstance(idf_or_path, IDF):
@@ -134,7 +140,16 @@ class Simulation:
                 sc["Run Simulation for Weather File Run Periods"] = "Yes"
 
         # run simulation
-        run_eplus(idf_or_path, epw_or_path, simulation_dir_path)
+        stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
+        stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
+        run_eplus(
+            idf_or_path,
+            epw_or_path,
+            simulation_dir_path,
+            stdout=stdout,
+            stderr=stderr,
+            encoding=encoding
+        )
 
         # return simulation object
         return cls(
@@ -142,17 +157,26 @@ class Simulation:
             simulation_name=None,
             start=start,
             encoding=encoding,
-            idd_or_path=idd_or_path)
+            idd_or_path=idd_or_path
+        )
 
-    def __init__(self, base_dir_path, simulation_name=None, start=None, encoding=None, idd_or_path=None):
+    def __init__(
+            self,
+            base_dir_path,
+            simulation_name=None,
+            start=None,
+            encoding=None,
+            idd_or_path=None
+    ):
         self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
-        if not os.path.isdir(self._dir_path):
-            raise SimulationError("Simulation directory does not exist: '%s'." % self._dir_path)
         self._start = start
         self._encoding = encoding
         self._idd_or_path = idd_or_path
         self.__idd = None
         self._file_refs = None
+
+        # check simulation directory path exists
+        assert os.path.isdir(self._dir_path), "Simulation directory does not exist: '%s'." % self._dir_path
 
     @property
     def file_refs(self):
@@ -252,7 +276,10 @@ class Simulation:
 simulate = Simulation.simulate
 
 
-def run_eplus(idf_or_path, epw_or_path, dir_path, encoding=None):
+def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, encoding=None):
+    # work with absolute paths
+    dir_path = os.path.abspath(dir_path)
+
     # check dir path
     if not os.path.isdir(dir_path):
         raise SimulationError("Simulation directory does not exist: '%s'." % dir_path)
@@ -329,7 +356,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, encoding=None):
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # launch calculation
-    run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding)
+    run_subprocess(cmd_l=cmd_l, cwd=dir_path, encoding=encoding, stdout=stdout, stderr=stderr)
 
     # if needed, we delete temp weather data (only on Windows, see above)
     if temp_epw_path is not None:

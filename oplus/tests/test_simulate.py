@@ -1,7 +1,7 @@
 import unittest
 import os
 import tempfile
-import logging
+import io
 
 from oplus.idf import IDF
 from oplus.epw import EPW
@@ -31,3 +31,17 @@ class OneZoneEvapCooler(unittest.TestCase):
                 self.assertEqual(set(s.eso.environments), expected_environments)
                 self.assertEqual(set(s.mtr.environments), expected_environments)
                 break
+
+    def test_redirect_output(self):
+        with tempfile.TemporaryDirectory() as dir_path:
+            out_f, err_f = io.StringIO(), io.StringIO()
+
+            s = simulate(
+                self.idf,
+                self.epw,
+                dir_path,
+                stdout=out_f,
+                stderr=err_f
+            )
+            self.assertGreater(len(out_f.getvalue()), 0)
+            self.assertGreater(len(err_f.getvalue()), 0)

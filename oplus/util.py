@@ -7,8 +7,9 @@ import subprocess
 import collections
 import os
 import io
+import sys
 
-from oplus import __version__
+from oplus import __version__, CONF
 
 
 logger = logging.getLogger(__name__)
@@ -177,61 +178,94 @@ def get_start_dt(start):
     return start_dt
 
 
-def run_eplus_and_log(cmd_l, cwd=None, encoding=None):
-    encoding = "latin-1" if encoding is None else encoding
-    p = subprocess.Popen(cmd_l, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
-    out_reader = NonBlockingStreamReader(p.stdout)
-    err_reader = NonBlockingStreamReader(p.stderr)
+def _redirect_subprocess_streams(sub_p, stdout, stderr, encoding=None, timeout=0.1):
+    """
+    subprocess stdout and stderr must have been set to subprocess.PIPE
+    this function will block until p finishes
+    """
+
+
+def run_subprocess(cmd_l, cwd=None, stdout=None, stderr=None, encoding=None):
+    """
+    Parameters
+    ----------
+    cmd_l: command
+    cwd: current working directory
+    stdout: output info stream (must have 'write' method)
+    stderr: output error stream (must have 'write' method)
+    encoding: encoding
+    """
+    # prepare variables
+    stdout = sys.stdout if stdout is None else stdout
+    stderr = sys.stderr if stderr is None else stderr
+
+    # run subprocess
+    with subprocess.Popen(cmd_l, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd) as sub_p:
+        # prepare encoding
+        encoding = CONF.encoding if encoding is None else encoding
+
+        # link output streams
+        out_reader = _NonBlockingStreamReader(sub_p.stdout)
+        err_reader = _NonBlockingStreamReader(sub_p.stderr)
+        while True:
+            out = out_reader.get(timeout=0.1)
+            if out is not None:
+                stdout.write(out.decode(encoding).strip())
+
+            err = err_reader.get(timeout=0.1)
+            if err is not None:
+                # special EPlus function
+                err_s = err.decode(encoding).strip()
+                if err_s == "EnergyPlus Completed Successfully.":  # redirect to standard output
+                    stdout.write(err_s)
+                else:
+                    stderr.write(err_s)
+
+            if sub_p.poll() is not None:
+                break
+
+
+def _populate_queue(stream, queue):
+    """
+    Collect lines from 'stream' and put them in 'queue'.
+    """
 
     while True:
-        out = out_reader.readline(0.1)
-        if out is not None:
-            logger.info(out.decode(encoding).strip())
-
-        err = err_reader.readline(0.1)
-        if err is not None:
-            # special EPlus function
-            err_s = err.decode(encoding).strip()
-            if err_s == "EnergyPlus Completed Successfully.":  # redirect to standard output
-                logger.info(err_s)
-            else:
-                logger.error(err_s)
-
-        if p.poll() is not None:
+        line = stream.readline()
+        if line:
+            queue.put(line)
+        else:
             break
 
 
-class NonBlockingStreamReader:
+class _NonBlockingStreamReader:
     def __init__(self, stream):
         """
         stream: the stream to read from.
                 Usually a process' stdout or stderr.
         """
-
         self._s = stream
         self._q = Queue()
-
-        def _populate_queue(stream, queue):
-            """
-            Collect lines from 'stream' and put them in 'quque'.
-            """
-
-            while True:
-                line = stream.readline()
-                if line:
-                    queue.put(line)
-                else:
-                    break
-
         self._t = Thread(target=_populate_queue, args=(self._s, self._q))
         self._t.daemon = True
         self._t.start()  # start collecting lines from the stream
 
-    def readline(self, timeout=None):
+    def get(self, timeout=0.1):
         try:
-            return self._q.get(block=timeout is not None, timeout=timeout)
+            return self._q.get(block=False, timeout=timeout)
         except Empty:
             return None
+
+
+class LoggerStreamWriter:
+    def __init__(self, logger_name, level):
+        self._logger = logging.getLogger(logger_name)
+        self._level = level
+
+    def write(self, message):
+        message = message.strip()
+        if message != "":
+            self._logger.log(self._level, message)
 
 
 class CacheKey:
