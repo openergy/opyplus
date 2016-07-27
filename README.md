@@ -16,3 +16,6 @@ A python package for working with Energy Plus
 * err object implemented
 * can create idf and epw from path, content or buffer
 * can copy idf
+
+### 4.4.1
+* simulation debug: simulate failed to return Simulation object if simulation_name was not none. Corrected.

@@ -154,7 +154,7 @@ class Simulation:
         # return simulation object
         return cls(
             base_dir_path,
-            simulation_name=None,
+            simulation_name=simulation_name,
             start=start,
             encoding=encoding,
             idd_or_path=idd_or_path
