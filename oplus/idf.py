@@ -1065,6 +1065,8 @@ class QuerySet:
         return "<QuerySet: %s>" % str(self._objects_l)
 
     def __call__(self, object_descriptor_ref=None):
+        if object_descriptor_ref is None:
+            return self
         """Returns all objects having given object descriptor ref (not case sensitive)."""
         return QuerySet([o for o in self._objects_l if o._.ref.lower() == object_descriptor_ref.lower()])
 
