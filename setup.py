@@ -29,7 +29,8 @@ setup(
     long_description=open('README.md').read(),
 
     install_requires=[
-        'pandas'
+        'pandas',
+        'plotly'
         ],
 
     url='https://github.com/Openergy/oplus',

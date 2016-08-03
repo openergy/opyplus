@@ -34,7 +34,7 @@ class OneZoneEvapCooler(unittest.TestCase):
 
     def test_redirect_output(self):
         with tempfile.TemporaryDirectory() as dir_path:
-            out_f, err_f = io.StringIO(), io.StringIO()
+            out_f, err_f = io.StringIO("hey"), io.StringIO("ho")
 
             s = simulate(
                 self.idf,
