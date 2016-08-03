@@ -44,7 +44,7 @@ setup(
         "Topic :: Scientific/Engineering :: Data processing",
     ],
 
-    data_files=[
-        ('oplus', ['version.txt'])
-    ]
+    package_data={'oplus': ['*.txt']},
+
+    include_package_data=True
 )
