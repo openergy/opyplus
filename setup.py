@@ -42,5 +42,9 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.4",
         "Topic :: Scientific/Engineering :: Data processing",
+    ],
+
+    data_files=[
+        ('oplus', ['version.txt'])
     ]
 )
