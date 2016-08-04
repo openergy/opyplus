@@ -17,7 +17,7 @@ if sys.argv[-3] == 'tag':
 
 
 setup(
-    name='Optimized cython functions',
+    name='oplus',
 
     version=__version__,
 
