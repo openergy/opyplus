@@ -16,7 +16,7 @@ if sys.argv[-3] == 'tag':
     sys.exit()
 
 setup(
-    name='Openergy oplus',
+    name='oplus',
 
     version=version,
 
