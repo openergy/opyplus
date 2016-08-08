@@ -3,8 +3,11 @@ from setuptools import setup, find_packages
 import sys, os
 from oplus.version import version as __version__
 
+if sys.argv[-1] == 'untag':
+    os.system('git tag -d %s' % __version__)
+    os.system('git push origin :refs/tags/%s' % __version__)
 
-if sys.argv[-3] == 'tag':
+elif sys.argv[-3] == 'tag':
     user = sys.argv[-2]
     pwd = sys.argv[-1]
     print(__version__)
