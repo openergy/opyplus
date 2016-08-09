@@ -1,13 +1,9 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import sys, os
 from oplus.version import version as __version__
 
-if sys.argv[-1] == 'untag':
-    os.system('git tag -d %s' % __version__)
-    os.system('git push origin :refs/tags/%s' % __version__)
-
-elif sys.argv[-3] == 'tag':
+if sys.argv[-3] == 'tag':
     user = sys.argv[-2]
     pwd = sys.argv[-1]
     print(__version__)
@@ -17,7 +13,7 @@ elif sys.argv[-3] == 'tag':
     sys.exit()
 
 setup(
-    name='Optimized cython functions',
+    name='oplus',
 
     version=__version__,
 
