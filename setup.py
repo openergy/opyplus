@@ -3,14 +3,16 @@ from setuptools import setup
 import sys, os
 from oplus.version import version as __version__
 
-if sys.argv[-3] == 'tag':
-    user = sys.argv[-2]
-    pwd = sys.argv[-1]
-    print(__version__)
-    os.system('git tag -a %s -m "version %s" ' % (__version__, __version__))
-    #    os.system('git commit -m "version updated via setup.py tag"')
-    os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
-    sys.exit()
+
+def abcdert():
+    if sys.argv[-3] == 'tag':
+        user = sys.argv[-2]
+        pwd = sys.argv[-1]
+        print(__version__)
+        os.system('git tag -a %s -m "version %s" ' % (__version__, __version__))
+        #    os.system('git commit -m "version updated via setup.py tag"')
+        os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
+        sys.exit()
 
 setup(
     name='oplus',
