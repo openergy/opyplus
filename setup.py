@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import sys
 import os
@@ -11,6 +11,7 @@ if sys.argv[-3] == 'tag':
     pwd = sys.argv[-1]
     print(version)
     os.system('git tag -a %s -m "version %s" ' % (version, version))
+    os.system('git tag -d $(git tag --list "jenkins*")')
     #    os.system('git commit -m "version updated via setup.py tag"')
     os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
     sys.exit()
