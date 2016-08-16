@@ -46,6 +46,8 @@ setup(
         "Topic :: Scientific/Engineering :: Data processing",
     ],
 
+    keywords=['data', 'simulation'],
+
     package_data={'oplus': ['*.txt']},
 
     include_package_data=True
