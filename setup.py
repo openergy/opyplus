@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 
 from setuptools import setup
 
@@ -9,9 +10,12 @@ from version import __version__
 if sys.argv[-3] == 'tag':
     user = sys.argv[-2]
     pwd = sys.argv[-1]
-    print(__version__)
-    os.system('git tag -a %s -m "version %s" ' % (__version__, __version__))
+    output = subprocess.Popen('git tag -a %s -m "version %s" ' % (__version__, __version__), shell=True, stderr=subprocess.PIPE)
+    os.system('git tag -d $(git tag --list "jenkins*")')
     #    os.system('git commit -m "version updated via setup.py tag"')
+    err = output.communicate()[1]
+    if err != b'':
+        raise ValueError('"git tag" failed, the tag might already exist')
     os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
     sys.exit()
 
