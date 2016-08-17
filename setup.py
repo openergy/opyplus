@@ -28,7 +28,7 @@ setup(
 
     author_email="geoffroy.destaintot@openergy.fr",
 
-    long_description=open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
+    long_description=open('README.md').read(),
 
     install_requires=[
         'pandas',
