@@ -39,7 +39,6 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Research & Development",
         "Natural Language :: French",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.4",
