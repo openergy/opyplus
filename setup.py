@@ -6,6 +6,7 @@ import os
 with open(os.path.join(os.path.dirname(__file__), "oplus", "version.txt")) as f:
     version = f.read().strip()
 
+
 if sys.argv[-3] == 'tag':
     user = sys.argv[-2]
     pwd = sys.argv[-1]
@@ -27,7 +28,7 @@ setup(
 
     author_email="geoffroy.destaintot@openergy.fr",
 
-    long_description=open('README.md').read(),
+    long_description=open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
 
     install_requires=[
         'pandas',
