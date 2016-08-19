@@ -67,7 +67,7 @@ def get_summary_table_file_path(dir_path):
         if CONF.eplus_version[:2] <= (8, 1):
             return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
         else:
-            return os.path.join(dir_path, "eplusouttbl.csv")
+            return os.path.join(dir_path, "eplustbl.csv")
 
     elif CONF.os_name == "linux":
         # todo : check all versions of Energyplus
