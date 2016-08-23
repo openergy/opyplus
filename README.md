@@ -9,6 +9,8 @@ A python package for working with Energy Plus
 
 ## Releases
 
+(p): patch, (m): minor, (M): major
+
 ### 4.3.0
 * new cache system
 * new configuration system
@@ -21,11 +23,8 @@ A python package for working with Energy Plus
 * can create idf and epw from path, content or buffer
 * can copy idf
 
-### 4.4.1
-* simulation debug: simulate failed to return Simulation object if simulation_name was not none. Corrected.
-
-
 ### next
-* new filter condition added : 'in'
-* filter with no condition: debug
-* osx summary table file name debug
+* **(p)simulation.py**:
+    * debug: simulate failed to return Simulation object if simulation_name was not none. Corrected.
+    * debug: osx summary table file name was wrong
+* **(m) idf.py**: new filter condition added : 'in', debug of filter with no condition
