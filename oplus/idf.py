@@ -1024,12 +1024,13 @@ class QuerySet:
         field_index_or_name: field index or name. Can access children with tuple or list.
         field_value_or_values: value on which to be matched.
         condition: "=" (equality)
+        condition: 'in' (include in string field)
 
         Returns
         -------
         QuerySet containing filtered objects.
         """
-        if condition not in ("=",):
+        if condition not in ("=", 'in'):
             raise IDFError("Unknown condition: '%s'." % condition)
 
         search_tuple = (field_index_or_name,) if isinstance(field_index_or_name, str) else field_index_or_name
@@ -1039,8 +1040,20 @@ class QuerySet:
             current_value = o
             for level in search_tuple:
                 current_value = current_value._.get_value(level)
-            if current_value == field_value:
-                result_l.append(o)
+            if condition == '=':
+                if isinstance(current_value, str):
+                    if current_value.lower() == field_value.lower():
+                        result_l.append(o)
+                else:
+                    if current_value == field_value:
+                        result_l.append(o)
+            elif condition == 'in':
+                if not isinstance(current_value, str):
+                    raise IDFError("condition 'in' can not been performed on field_value  of type %s." % type(field_value))
+                if field_value.lower() in current_value.lower():
+                    result_l.append(o)
+            else:
+                raise IDFError("unknown condition : '%s'" % condition)
 
         return QuerySet(result_l)
 
@@ -1066,6 +1079,8 @@ class QuerySet:
 
     def __call__(self, object_descriptor_ref=None):
         """Returns all objects having given object descriptor ref (not case sensitive)."""
+        if object_descriptor_ref is None:  # return a copy
+            return QuerySet([o for o in self._objects_l])
         return QuerySet([o for o in self._objects_l if o._.ref.lower() == object_descriptor_ref.lower()])
 
     @check_cache_is_off
