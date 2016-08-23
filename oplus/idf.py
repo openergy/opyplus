@@ -1052,6 +1052,8 @@ class QuerySet:
                     raise IDFError("condition 'in' can not been performed on field_value  of type %s." % type(field_value))
                 if field_value.lower() in current_value.lower():
                     result_l.append(o)
+            else:
+                raise IDFError("unknown condition : '%s'" % condition)
 
         return QuerySet(result_l)
 
@@ -1076,9 +1078,9 @@ class QuerySet:
         return "<QuerySet: %s>" % str(self._objects_l)
 
     def __call__(self, object_descriptor_ref=None):
-        if object_descriptor_ref is None:
-            return self
         """Returns all objects having given object descriptor ref (not case sensitive)."""
+        if object_descriptor_ref is None:  # return a copy
+            return QuerySet([o for o in self._objects_l])
         return QuerySet([o for o in self._objects_l if o._.ref.lower() == object_descriptor_ref.lower()])
 
     @check_cache_is_off
