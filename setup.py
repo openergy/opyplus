@@ -1,10 +1,6 @@
 from setuptools import setup
-
+from oplus.version import version
 import os
-
-
-with open(os.path.join(os.path.dirname(__file__), "oplus", "version.txt")) as f:
-    version = f.read().strip()
 
 try:
     import pypandoc
