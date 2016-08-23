@@ -19,3 +19,9 @@ A python package for working with Energy Plus
 
 ### 4.4.1
 * simulation debug: simulate failed to return Simulation object if simulation_name was not none. Corrected.
+
+
+### next
+* new filter condition added : 'in'
+* filter with no condition: debug
+* osx summary table file name debug
