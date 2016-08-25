@@ -106,6 +106,13 @@ class ERR:
                     # information to add to error
                     step_df[category].loc[index_nb] += '\n' + line_s.split('**   ~~~   **')[1]
 
+             # add last one
+            iterables = [simulation_step, step_df.columns]
+            columns = pd.MultiIndex.from_product(iterables)
+            multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
+            multi_step_df[simulation_step] = step_df
+            self.df = self.df.join(multi_step_df)
+
             self.info = pd.Series(self.info, index=self.info.keys())
 
     def get(self, simulation_step=None, error_category=None):
