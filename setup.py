@@ -40,7 +40,8 @@ setup(
     long_description=open('README.md').read(),  # long_description,
 
     install_requires=[
-        'plotly>=1.9.6,<2.0.0'
+        'plotly>=1.9.6,<2.0.0',
+        "nose-exclude>=0.4.1,<1.0.0"  # for tests
         ],
 
     url='https://github.com/Openergy/oplus',
