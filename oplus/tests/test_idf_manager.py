@@ -15,7 +15,6 @@ schedule_test_object_str = """Schedule:Compact,
 
 
 
-@unittest.skip("temporarily for jenkins")
 class OneZoneEvapCooler(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
@@ -66,7 +65,6 @@ class OneZoneEvapCooler(unittest.TestCase):
 
 
 
-@unittest.skip("temporarily for jenkins")
 class OneZoneEvapCoolerDynamic(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).

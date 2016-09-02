@@ -8,7 +8,6 @@ from oplus.simulation import simulate
 DEBUG_SIMUL_DIR_PATH = None  # r"C:\Users\Geoffroy\Desktop\simul_dir"  # -> set to None to bypass
 
 
-@unittest.skip("temporarily for jenkins")
 class TestValues(unittest.TestCase):
     def test_1ZoneUncontrolled(self):
         idf_path = os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneUncontrolled.idf")

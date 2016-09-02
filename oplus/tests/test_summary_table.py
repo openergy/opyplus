@@ -5,8 +5,6 @@ import tempfile
 from oplus import CONF, IDF, simulate
 
 
-
-@unittest.skip("temporarily for jenkins")
 class ZoneWithShadingSimple1(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).

@@ -25,7 +25,6 @@ class EPWTestCase(unittest.TestCase):
                                      (r, c))
 
 
-@unittest.skip("temporarily for jenkins")
 class EPlusWeatherData(EPWTestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).

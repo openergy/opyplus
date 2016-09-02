@@ -10,8 +10,6 @@ from oplus.simulation import simulate
 from oplus.configuration import CONF
 
 
-
-@unittest.skip("temporarily for jenkins")
 class OneZoneEvapCooler(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).

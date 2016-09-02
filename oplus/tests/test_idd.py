@@ -9,7 +9,6 @@ logger.setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO)
 
 
-@unittest.skip("temporarily for jenkins")
 class IDDTest(unittest.TestCase):
     def test_current_idd(self):
         IDD(path=os.path.join(CONF.eplus_base_dir_path, "Energy+.idd"))
