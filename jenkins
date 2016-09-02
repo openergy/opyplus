@@ -1,2 +1,3 @@
 package_name=oplus
 repository_host=github.com
+send_to_pypi=True
