@@ -9,7 +9,10 @@ A python package for working with Energy Plus
 
 ## Releases
 
-(p): patch, (m): minor, (M): major
+*(M): major, (m): minor, (p): patch*
+
+### 4.5.1
+* **(p) conda-requirements.txt added, setup.py enhanced**
 
 ### 4.5.0
 * **(p)simulation.py**:
