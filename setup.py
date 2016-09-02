@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 from setuptools.command.install import install
+from setuptools.command.develop import develop
 import os
 import subprocess
 
@@ -8,16 +9,19 @@ with open(os.path.join("oplus", "version.py")) as f:
     version = f.read().split("=")[1].strip().strip("'").strip('"')
 
 
+_cmd = "conda install -y --file conda-requirements.txt".split(" ")
+
+
 class OInstall(install):
     def run(self):
         subprocess.call("conda install -y --file conda-requirements.txt".split(" "))
         install.run(self)
 
-# try:
-#     import pypandoc
-#     long_description = pypandoc.convert('README.md', 'rst')
-# except(IOError, ImportError):
-#     long_description = open('README.md').read()
+
+class ODevelop(develop):
+    def run(self):
+        subprocess.call(_cmd)
+        develop.run(self)
 
 
 setup(
@@ -55,5 +59,5 @@ setup(
 
     include_package_data=True,
 
-    cmdclass=dict(install=OInstall)
+    cmdclass=dict(install=OInstall, develop=ODevelop)
 )
