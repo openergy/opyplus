@@ -1,4 +1,5 @@
 recursive-include oplus/tests/resources *
 include README.md
 include LICENSE.txt
-include conda-requirements.txt
+include requirements-conda.txt
+include requirements-pip.txt

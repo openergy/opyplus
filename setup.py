@@ -1,27 +1,15 @@
 from setuptools import setup, find_packages
-from setuptools.command.install import install
-from setuptools.command.develop import develop
+from pkg_resources import parse_requirements
 import os
-import subprocess
 
 
 with open(os.path.join("oplus", "version.py")) as f:
     version = f.read().split("=")[1].strip().strip("'").strip('"')
 
 
-_cmd = "conda install -y --file conda-requirements.txt".split(" ")
-
-
-class OInstall(install):
-    def run(self):
-        subprocess.call("conda install -y --file conda-requirements.txt".split(" "))
-        install.run(self)
-
-
-class ODevelop(develop):
-    def run(self):
-        subprocess.call(_cmd)
-        develop.run(self)
+def _get_req_list(file_name):
+    with open(file_name) as f:
+        return [str(r) for r in parse_requirements(f.read())]
 
 
 setup(
@@ -39,10 +27,7 @@ setup(
 
     long_description=open('README.md').read(),  # long_description,
 
-    install_requires=[
-        'plotly>=1.9.6,<2.0.0',
-        "nose-exclude>=0.4.1,<1.0.0"  # for tests
-        ],
+    install_requires=_get_req_list("requirements-conda.txt") + _get_req_list("requirements-pip.txt"),
 
     url='https://github.com/Openergy/oplus',
 
@@ -58,7 +43,5 @@ setup(
 
     package_data={'oplus': ['*.txt']},
 
-    include_package_data=True,
-
-    cmdclass=dict(install=OInstall, develop=ODevelop)
+    include_package_data=True
 )
