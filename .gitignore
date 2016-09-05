@@ -55,3 +55,6 @@ target/
 
 # .pypirc for PyPi
 .pypirc
+/.eggs/
+.eggs/
+.idea/

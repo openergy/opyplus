@@ -20,9 +20,15 @@ class OneZoneEvapCooler(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     !!! Only tests that do not modify IDF (avoid loading idf several times) - else use OneZoneEvapCoolerDynamic.
     """
+    idf_manager = None
+
     @classmethod
     def setUpClass(cls):
         cls.idf_manager = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.idf_manager
 
     def test_idf_call(self):
         qs = self.idf_manager.filter_by_ref("Construction")
@@ -64,12 +70,17 @@ class OneZoneEvapCooler(unittest.TestCase):
         self.assertEqual(len(zone._.get_pointing_links_l(3)), 0)  # no pointing
 
 
-
 class OneZoneEvapCoolerDynamic(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     Here are tests that modify idf.
     """
+    idf_manager = None
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.idf_manager
+
     def setUp(self):
         self.idf_manager = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
 
