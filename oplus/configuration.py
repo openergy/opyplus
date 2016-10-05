@@ -49,7 +49,7 @@ else:
 
 # get systems specific configurations
 if os_name == "windows":
-    apps_dir, pattern = r"C:/", re.compile("EnergyPlusV(\d*)-(\d*)-(\d*)")
+    apps_dir, pattern = r"C:\\", re.compile("EnergyPlusV(\d*)-(\d*)-(\d*)")
 elif os_name == "osx":  # mac osx
     apps_dir, pattern = "/Applications", re.compile("EnergyPlus-(\d*)-(\d*)-(\d*)")
 elif os_name == "linux":  # linux
