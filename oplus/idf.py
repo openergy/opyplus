@@ -1,4 +1,7 @@
 """
+IDF
+------
+
 We respect private/public naming conventions for methods and variables, EXCEPT for IDF or IDFObject managers. The
 _manager variable is semi-private: it can be accessed by other managers (including other modules of oplus), but not by
 IDF or IDFObject. The _manager attributes therefore remain private to oplus users.
@@ -618,7 +621,16 @@ class IDFManager(Cached):
     def parse(self, file_like):
         """
         Objects are created from string. They are not attached to idf manager yet.
+
+        Parameters
+        ----------
+        file_like
+
+        Returns
+        -------
+
         """
+
         objects_l, head_comments = [], ""
         idf_object_manager = None
         make_new_object = True

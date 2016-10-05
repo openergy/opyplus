@@ -1,3 +1,10 @@
+"""
+Simulation
+------------
+
+
+"""
+
 import os
 import shutil
 from threading import Thread
@@ -354,7 +361,6 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, enco
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
-
     # launch calculation
     run_subprocess(cmd_l=cmd_l, cwd=dir_path, encoding=encoding, stdout=stdout, stderr=stderr)
 

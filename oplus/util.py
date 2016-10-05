@@ -1,3 +1,10 @@
+"""
+Useful functions
+--------------------
+
+
+"""
+
 import datetime as dt
 import copy
 from threading import Thread
