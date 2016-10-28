@@ -45,7 +45,6 @@ class ERR:
             for var in enumerate(f):
                 # line_nb = var[0]
                 line_s = var[1].rstrip('\n')
-
                 # GET GENERIC INFORMATION
                 if 'Program Version,EnergyPlus' in line_s:
                     self.info['EnergyPlus Simulation Version'] = line_s.split(',')[2].rstrip('Version ')
@@ -83,7 +82,7 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     step_df[category].loc[index_nb] = line_s.split('** Warning **')[1]
-                elif '** Fatal **' in line_s:
+                elif 'Fatal' in line_s:
                     category = 'Fatal'
                     series = step_df[category].dropna()
                     if len(series.index) == 0:
@@ -91,8 +90,8 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     # new line (index) until next
-                    step_df[category].loc[index_nb] = line_s.split('** Fatal **')[1]
-                elif '** Severe **' in line_s:
+                    step_df[category].loc[index_nb] = line_s.split('**')[2]
+                elif 'Severe' in line_s:
                     category = 'Severe'
                     series = step_df[category].dropna()
                     if len(series.index) == 0:
@@ -100,11 +99,11 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     # new line (index) until next
-                    step_df[category].loc[index_nb] = line_s.split('** Severe **')[1]
+                    step_df[category].loc[index_nb] = line_s.split('**')[2]
 
                 elif '**   ~~~   **' in line_s:  # if we are here, we are sure category and index_nb have been defined
                     # information to add to error
-                    step_df[category].loc[index_nb] += '\n' + line_s.split('**   ~~~   **')[1]
+                    step_df[category].loc[index_nb] += '\n' + line_s.split('**')[2]
 
              # add last one
             iterables = [simulation_step, step_df.columns]
