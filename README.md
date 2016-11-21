@@ -11,6 +11,11 @@ A python package for working with Energy Plus
 
 *(M): major, (m): minor, (p): patch*
 
+### 4.6.0
+* (p): Err parse debug
+* (m): simulation beat_freq implemented
+* (p): subprocess management enhanced
+
 ### 4.5.1
 * **(p) conda-requirements.txt added, setup.py enhanced**
 
