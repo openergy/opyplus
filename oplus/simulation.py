@@ -211,8 +211,12 @@ class Simulation:
                     constructor=lambda path: self._standard_output_file_cls(
                         path,
                         encoding=self._encoding,
-                        start=self._start),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.eso)
+                        start=self._start
+                    ),
+                    get_path=lambda: get_common_output_file_path(
+                        self.dir_path,
+                        FILE_REFS.eso
+                    )
                 ),
 
                 FILE_REFS.mtr: FileInfo(

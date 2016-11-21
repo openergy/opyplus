@@ -31,6 +31,10 @@ WEEK_DAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 
 
 class EPWHeader:
+    """
+    EPW HEADER: Object representing the header of an EPW file.
+    It contains important information for the good running of simulation
+    """
     LOCATION = 0
     DESIGN_CONDITIONS = 1
     TYPICAL_EXTREME_PERIODS = 2
@@ -59,6 +63,16 @@ class EPWHeader:
             raise NotImplementedError("Can only manage hourly epws.")
 
     def to_str(self, add_copyright=True):
+        """
+        Enable to read the EPW Header object
+        Parameters
+        ----------
+        add_copyright: Option which adds copyright for modification. Default value is True
+
+        Returns
+        -------
+        str: the content of the epw file header
+        """
         l2 = []
         if add_copyright:
             for i, row in enumerate(self._l2):
