@@ -61,7 +61,7 @@ class ERR:
                 elif '************* Beginning' in line_s:
                     # SET OUTPUT DATAFRAME
                     if self.df is None:
-                        iterables = [simulation_step, step_df.columns]
+                        iterables = [(simulation_step,), step_df.columns]
                         columns = pd.MultiIndex.from_product(iterables)
                         self.df = pd.DataFrame(index=range(0, max_nb), columns=columns)
                         self.df[simulation_step] = step_df
