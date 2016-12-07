@@ -1,6 +1,6 @@
 """
 IDF
-------
+---
 
 We respect private/public naming conventions for methods and variables, EXCEPT for IDF or IDFObject managers. The
 _manager variable is semi-private: it can be accessed by other managers (including other modules of oplus), but not by
@@ -112,12 +112,6 @@ class IDFObject:
 
     @property
     def pointing_objects(self):
-        """
-
-        Returns
-        -------
-
-        """
         return self._.pointing_objects
 
     def to_str(self, style="idf"):
@@ -125,17 +119,13 @@ class IDFObject:
 
     def info(self, detailed=False):
         """
-        Returns a string with all available fields of object (information provided by the idd)
+        Returns a string with all available fields of object (information provided by the idd).
 
-        Parameters
-        ----------
-        detailed: include all field tags information
-
-        Returns
-        -------
-        str:
+        Arguments
+        ---------
+        detailed: bool
+            include all field tags information
         """
-
         return self._.info(detailed=detailed)
 
     def copy(self):
@@ -145,10 +135,16 @@ class IDFObject:
         """
         Add a new field to object (at the end).
 
-        Arguments
-        ---------
-        rawvalue_or_value: see get_value for mor information
-        comment: associated comment
+        Parameters
+        ----------
+        raw_value_or_value:
+            see get_value for mor information
+        comment:
+            associated comment
+
+        Returns
+        -------
+
         """
         self._.add_field("", comment=comment)
         self._.set_value(self._.fields_nb-1, raw_value_or_value)
@@ -387,22 +383,6 @@ class IDFObjectManager(Cached):
     #             links_l.append((value, self._fields_l[i][self._POINTED_INDEX]))
     #
     #     return links_l
-
-    @cached
-    def get_pointed_objects(self, field_index_or_name=None):
-        """
-        not used, not tested
-        """
-        index_l = (range(len(self._fields_l)) if field_index_or_name is None
-                   else [self.get_field_index(field_index_or_name)])
-
-        objects = []
-        for i in index_l:
-            value = self.get_value(i)
-            if isinstance(value, IDFObject):
-                objects.append(value)
-
-        return objects
 
     # ------------------------------------------------ SET -------------------------------------------------------------
     @check_cache_is_off
@@ -648,16 +628,7 @@ class IDFManager(Cached):
     def parse(self, file_like):
         """
         Objects are created from string. They are not attached to idf manager yet.
-
-        Parameters
-        ----------
-        file_like
-
-        Returns
-        -------
-
         """
-
         objects_l, head_comments = [], ""
         idf_object_manager = None
         make_new_object = True
@@ -1069,7 +1040,7 @@ class QuerySet:
         -------
         QuerySet containing filtered objects.
         """
-        if condition not in ("=", 'in', 'all'):
+        if condition not in ("=", 'in'):
             raise IDFError("Unknown condition: '%s'." % condition)
 
         search_tuple = (field_index_or_name,) if isinstance(field_index_or_name, str) else field_index_or_name
@@ -1081,29 +1052,16 @@ class QuerySet:
                 current_value = current_value._.get_value(level)
             if condition == '=':
                 if isinstance(current_value, str):
-                    if field_value is not None:
-                        if current_value.lower() == field_value.lower():
-                            result_l.append(o)
+                    if current_value.lower() == field_value.lower():
+                        result_l.append(o)
                 else:
                     if current_value == field_value:
                         result_l.append(o)
             elif condition == 'in':
                 if not isinstance(current_value, str):
                     raise IDFError("condition 'in' can not been performed on field_value  of type %s." % type(field_value))
-                if field_value is not None:
-                    if field_value.lower() in current_value.lower():
-                        result_l.append(o)
-
-            elif condition == 'all':
-                if field_value is None:
+                if field_value.lower() in current_value.lower():
                     result_l.append(o)
-                else:
-                    if isinstance(current_value, str):
-                        if current_value.lower() == field_value.lower():
-                            result_l.append(o)
-                    else:
-                        if current_value == field_value:
-                            result_l.append(o)
             else:
                 raise IDFError("unknown condition : '%s'" % condition)
 
