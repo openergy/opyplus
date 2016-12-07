@@ -169,11 +169,74 @@ class EPWHeader:
     def freq(self):
         return {"1": "H"}[self._l2[self.fields_d['DATA_PERIODS']][2]]
 
-    def set_field(self, field, data_l):
+    def get_field(self, field):
+        """
+
+        Parameters
+        ----------
+        field: this field should be a key of the fields_d dictionary
+
+        Returns
+        -------
+        A list containing the parameters' value of the defined field in the header
+        """
+        return self._l2[self.fields_d[field]][1:]
+
+    def set_field(self, field, data_l=None, parameter_index=None, value=None):
+        """
+        This function sets the defined field of the header. Two choices :
+         - put in parameter the entire new list
+         - put the index and value of the parameter
+
+        Parameters
+        ----------
+        field: this field should be a key of the fields_d dictionary
+        data_l: list corresponding to the field. It has to fit the requirements
+        parameter_index: first parameter is 1
+        value: value of the parameter
+
+        Returns
+        -------
+
+        """
         if field in self.fields_d.keys():
-            self._l2[self.fields_d[field]] = data_l
+            if data_l:
+                if data_l[0] != field.replace('_', ' '):
+                    data_l.insert(0, field.replace('_', ' '))
+                self._l2[self.fields_d[field]] = data_l
+            elif parameter_index:
+                if parameter_index == 0:
+                    raise ValueError('1 is the first index for parameters')
+                if value:
+                    try:
+                        self._l2[self.fields_d[field]][parameter_index] = value
+                    except IndexError:
+                        print('')
+
+                else:
+                    raise ValueError('If a parameter index is specified a value of the parameter is needed')
+            else:
+                raise ValueError('You have to specify a list of data or parameter index to set')
         else:
             raise KeyError('The mentioned field is not in header fields')
+
+    def clear_field(self, field):
+        """
+        Clear the list of the corresponding field
+
+        Parameters
+        ----------
+        field: this field should be a key of the fields_d dictionary
+
+        Returns
+        -------
+
+        """
+        if field in self.fields_d.keys():
+            self._l2[self.fields_d[field]] = [field.replace('_', ' ')]
+        else:
+            raise KeyError('The mentioned field is not in header fields')
+
 
 
 class EPW:
