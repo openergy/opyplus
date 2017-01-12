@@ -383,60 +383,21 @@ def get_string_buffer(path_or_content, expected_extension, encoding):
 
 
 class IDFStyle:
-
-    STYLE_TEMPLATE = {
-        "oplus": {
-            "head_key": " ",
-            "chapter_key": "#",
-            "object_key": "-"
-        },
-        "ASHRAE": {
-            "head_key": " ",
-            "chapter_key": " -",
-            "object_key": "  -"
-        }
-    }
-
-    def __init__(self, style_name, head_key=None, chapter_key=None, object_key=None):
-        if head_key and chapter_key and object_key:
-            self.name = style_name
-            self.head_key = head_key
-            self.chapter_key = chapter_key
-            self.object_key = object_key
-        elif style_name in IDFStyle.STYLE_TEMPLATE.keys():
-            self.name = style_name
-            self.head_key = IDFStyle.STYLE_TEMPLATE[style_name]["head_key"]
-            self.chapter_key = IDFStyle.STYLE_TEMPLATE[style_name]["chapter_key"]
-            self.object_key = IDFStyle.STYLE_TEMPLATE[style_name]["object_key"]
-        else:
-            raise ValueError("This template can't be defined or doesn't exist yet")
+    head_key = None
+    chapter_key = None
+    object_key = None
 
     def get_chapter_title(self, content):
-        if self.name == "oplus":
-            length = 100
-
-            s = self.get_chapter_comment("#"*length)
-
-            first_length = length // 2 - len(content) // 2 - 1
-            middle_string = "#" * first_length
-            middle_string += " " + content.upper() + " "
-            middle_string += "#"*(length - first_length - len(content) - 2)
-
-            s += self.get_chapter_comment(middle_string)
-
-            s += self.get_chapter_comment("#" * length)
-
-            return s
-
-        elif self.name == "ASHRAE":
-            s = " "*2 + "="*11 + " "*2
-            s += "ALL OBJECTS IN CLASS: " + content.upper()
-            s += " " + "="*11
-
-            return self.get_chapter_comment(s)
-
-        else:
-            raise ValueError("Not implemented yet")
+        # default: oplus
+        length = 100
+        s = self.get_chapter_comment("#" * length)
+        first_length = length // 2 - len(content) // 2 - 1
+        middle_string = "#" * first_length
+        middle_string += " " + content.upper() + " "
+        middle_string += "#" * (length - first_length - len(content) - 2)
+        s += self.get_chapter_comment(middle_string)
+        s += self.get_chapter_comment("#" * length)
+        return s
 
     def get_object_comment(self, comment, line_jump=True):
         prefix = "!" + self.object_key
@@ -466,3 +427,26 @@ class IDFStyle:
         return s
 
 
+class OplusIDFStyle(IDFStyle):
+    head_key = " "
+    chapter_key = "#",
+    object_key = "-"
+
+
+class ASHRAEIDFStyle(IDFStyle):
+    head_key = " "
+    chapter_key = " -",
+    object_key = "  -"
+
+    def get_chapter_title(self, content):
+        s = " "*2 + "="*11 + " "*2
+        s += "ALL OBJECTS IN CLASS: " + content.upper()
+        s += " " + "="*11
+
+        return self.get_chapter_comment(s)
+
+
+style_library = {
+    "oplus": OplusIDFStyle(),
+    "ASHRAE": ASHRAEIDFStyle()
+}

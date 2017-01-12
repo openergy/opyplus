@@ -58,3 +58,6 @@ target/
 /.eggs/
 .eggs/
 .idea/
+/_check/
+_check/
+doc/

@@ -18,6 +18,8 @@ class _Config:
         self.eplus_version = None  # (i1, i2, i3)
         self.encoding = "latin-1"
         self.simulation_base_name = "oplus"
+        self.default_write_style = "oplus"
+        self.default_read_style = None
 
     @property
     def eplus_base_dir_path(self):

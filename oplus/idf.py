@@ -650,6 +650,9 @@ class IDFManager(Cached):
     def parse(self, file_like):
         """
         Objects are created from string. They are not attached to idf manager yet.
+
+        in idf: header comment, chapter comments, objects
+        in object: head comment, field comments, tail comment
         """
         objects_l, head_comments = [], ""
         idf_object_manager = None
@@ -679,6 +682,7 @@ class IDFManager(Cached):
             # SKIP CURRENT LINE IF VOID
             if (content, comment) == (None, None):
                 continue
+
             # NO CONTENT
             if not content:
                 if idf_object_manager is None:  # head idf comment
@@ -977,7 +981,7 @@ class IDF:
         raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
                        (idf_or_path, type(idf_or_path)))
 
-    def __init__(self, path_or_content, idd_or_path=None, encoding=None, style=IDFStyle(style_name="oplus")):
+    def __init__(self, path_or_content, idd_or_path=None, encoding=None, style=None IDFStyle(style_name="oplus")):
         """
         Arguments
         ---------
