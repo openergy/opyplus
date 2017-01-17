@@ -386,6 +386,8 @@ class IDFStyle:
     head_key = None
     chapter_key = None
     object_key = None
+    tail_object_key = None
+    tail_type = None
 
     def get_chapter_title(self, content):
         # default: oplus
@@ -402,6 +404,15 @@ class IDFStyle:
     def get_object_comment(self, comment, line_jump=True):
         prefix = "!" + self.object_key
         if self.object_key != " ":
+            prefix += " "
+        s = prefix + comment
+        if line_jump:
+            s += "\n"
+        return s
+
+    def get_tail_object_comment(self, comment, line_jump=True):
+        prefix = "!" + self.tail_object_key
+        if self.tail_object_key != " ":
             prefix += " "
         s = prefix + comment
         if line_jump:
@@ -429,14 +440,34 @@ class IDFStyle:
 
 class OplusIDFStyle(IDFStyle):
     head_key = " "
-    chapter_key = "#",
+    chapter_key = "#"
     object_key = "-"
+    tail_object_key = "-"
+    tail_type = "after"
+
+
+class DefaultWriteIDFStyle(IDFStyle):
+    head_key = " "
+    chapter_key = " "
+    object_key = " "
+    tail_object_key = " "
+    tail_type = "after"
+
+
+class DesignBuilderIDFStyle(IDFStyle):
+    head_key = " "
+    chapter_key = "#"
+    object_key = "-"
+    tail_object_key = " "
+    tail_type = "before"
 
 
 class ASHRAEIDFStyle(IDFStyle):
     head_key = " "
-    chapter_key = " -",
+    chapter_key = " -"
     object_key = "  -"
+    tail_object_key = " "
+    tail_type = "before"
 
     def get_chapter_title(self, content):
         s = " "*2 + "="*11 + " "*2
@@ -447,6 +478,9 @@ class ASHRAEIDFStyle(IDFStyle):
 
 
 style_library = {
+    None: None,
     "oplus": OplusIDFStyle(),
-    "ASHRAE": ASHRAEIDFStyle()
+    "ASHRAE": ASHRAEIDFStyle(),
+    "default write": DefaultWriteIDFStyle(),
+    "design builder": DesignBuilderIDFStyle(),
 }
