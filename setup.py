@@ -1,46 +1,47 @@
 from setuptools import setup, find_packages
-
-import sys
+from pkg_resources import parse_requirements
 import os
 
-with open(os.path.join(os.path.dirname(__file__), "oplus", "version.txt")) as f:
-    version = f.read().strip()
 
-if sys.argv[-3] == 'tag':
-    user = sys.argv[-2]
-    pwd = sys.argv[-1]
-    print(version)
-    os.system('git tag -a %s -m "version %s" ' % (version, version))
-    #    os.system('git commit -m "version updated via setup.py tag"')
-    os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
-    sys.exit()
+with open(os.path.join("oplus", "version.py")) as f:
+    version = f.read().split("=")[1].strip().strip("'").strip('"')
+
+
+def _get_req_list(file_name):
+    with open(file_name) as f:
+        return [str(r) for r in parse_requirements(f.read())]
+
 
 setup(
-    name='Openergy oplus',
+    name='oplus',
 
     version=version,
 
-    packages=['oplus'],
+    packages=find_packages(),
 
     author="Geoffroy d'Estaintot",
 
     author_email="geoffroy.destaintot@openergy.fr",
 
-    long_description=open('README.md').read(),
+    description="A python package for working with Energy Plus",
 
-    install_requires=[
-        'pandas'
-        ],
+    long_description=open('README.md').read(),  # long_description,
+
+    install_requires=_get_req_list("requirements-conda.txt") + _get_req_list("requirements-pip.txt"),
 
     url='https://github.com/Openergy/oplus',
 
     classifiers=[
         "Programming Language :: Python",
         "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Research & Development",
         "Natural Language :: French",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.4",
-        "Topic :: Scientific/Engineering :: Data processing",
-    ]
+    ],
+
+    keywords=['data', 'simulation'],
+
+    package_data={'oplus': ['*.txt']},
+
+    include_package_data=True
 )

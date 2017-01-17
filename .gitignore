@@ -52,3 +52,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# .pypirc for PyPi
+.pypirc
+/.eggs/
+.eggs/
+.idea/
+/_check/
+_check/
+doc/

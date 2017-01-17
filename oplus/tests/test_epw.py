@@ -41,7 +41,8 @@ class EPlusWeatherData(EPWTestCase):
 
         for file_name in epw_files_l:
             file_path = os.path.join(weather_dir, file_name)
-            expected_content = open(file_path).read()
+            with open(file_path) as f:
+                expected_content = f.read()
 
             epw = EPW(file_path)
             f = io.StringIO()

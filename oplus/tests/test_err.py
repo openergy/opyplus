@@ -6,6 +6,7 @@ import tempfile
 from oplus import CONF, IDF, simulate
 
 
+
 class ZoneWithShadingSimple1(unittest.TestCase):
     idf_path = os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf")
     epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "USA_CO_Golden-NREL.724666_TMY3.epw")

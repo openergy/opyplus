@@ -1,0 +1,6 @@
+recursive-include oplus/tests/resources *
+include README.md
+include LICENSE.txt
+include requirements-conda.txt
+include requirements-pip.txt
+include setup.cfg

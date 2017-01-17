@@ -25,9 +25,15 @@ class OneZoneEvapCooler(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     !!! Only tests that do not modify IDF (avoid loading idf several times) - else use OneZoneEvapCoolerDynamic.
     """
+    idf = None
+
     @classmethod
     def setUpClass(cls):
         cls.idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.idf
 
     def test_idf_call(self):
         qs = self.idf("Construction")
@@ -57,8 +63,14 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     Here are tests that modify idf.
     """
+    idf = None
+
     def setUp(self):
         self.idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.idf
 
     def test_idf_add_object(self):
         sch_name = "NEW TEST SCHEDULE"
@@ -123,13 +135,12 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
             sch.add_field("12:00")
         self.assertEqual(sch[1300], "12:00")
 
+    @unittest.skip("skipped but must be fixed !!!")
     def test_big_extensible(self):
         """
         Doesn't work but bypassed !!! todo: repair
 
         """
-        logger.error("TEST BIG EXTENSIBLE MUST BE RUN CORRECTLY.")
-        return
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
         for i in range(4560):  # 4500 is the limit of idd
             sch.add_field("12:00")
@@ -202,6 +213,12 @@ class FourZoneWithShadingSimple1(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
+    idf = None
+
+    @classmethod
+    def tearDownClass(cls):
+        del cls.idf
+
     def test_read_idf(self):
         self.idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf"))
 
@@ -209,15 +226,10 @@ class FourZoneWithShadingSimple1(unittest.TestCase):
 class FiveZoneAirCooled(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
+    Tested under EPlus 8.1.0 on Mac (Antoine).
     """
     def test_multiple_branch_links(self):
         idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
         bl = idf("BranchList").filter("Name", "Heating Supply Side Branches").one
         b3 = idf("Branch").filter("Name", "Heating Supply Bypass Branch").one
         self.assertEqual(bl[3], b3)
-
-
-    """
-    Tested under EPlus 8.1.0 on Mac (Antoine).
-    """
-    idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
