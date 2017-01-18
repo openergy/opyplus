@@ -684,7 +684,7 @@ class IDFManager(Cached):
         return self._idf
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
-    def parse(self, file_like, style):
+    def parse(self, file_like, style=None):
         """
         Objects are created from string. They are not attached to idf manager yet.
 

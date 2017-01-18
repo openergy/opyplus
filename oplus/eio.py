@@ -62,8 +62,10 @@ def parse_eio(path, encoding=None):
         for line_s in f:
             if line_s == "End of Data":
                 break
+
             line_s = line_s.strip().strip(",")
             line_l = [c.strip() for c in line_s.split(",")]
+
             if line_s[0][0] == "!":  # header
                 headers_l2.append([line_l[0][1:].strip()] + line_l[1:])
             else:  # content
