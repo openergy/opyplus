@@ -66,12 +66,12 @@ class ERR:
                 elif '************* Beginning' in line_s:
                     # SET OUTPUT DATAFRAME
                     if self.df is None:
-                        iterables = [simulation_step, step_df.columns]
+                        iterables = [[simulation_step], list(step_df.columns)]
                         columns = pd.MultiIndex.from_product(iterables)
                         self.df = pd.DataFrame(index=range(0, max_nb), columns=columns)
                         self.df[simulation_step] = step_df
                     else:
-                        iterables = [simulation_step, step_df.columns]
+                        iterables = [[simulation_step], list(step_df.columns)]
                         columns = pd.MultiIndex.from_product(iterables)
                         multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
                         multi_step_df[simulation_step] = step_df
@@ -112,7 +112,7 @@ class ERR:
                     step_df[category].loc[index_nb] += '\n' + line_s.split('**')[2]
 
              # add last one
-            iterables = [simulation_step, step_df.columns]
+            iterables = [[simulation_step], step_df.columns]
             columns = pd.MultiIndex.from_product(iterables)
             multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
             multi_step_df[simulation_step] = step_df
