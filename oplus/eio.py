@@ -1,9 +1,14 @@
+"""
+EIO
+-------
+
+
+"""
 import os
 
 import pandas as pd
 
 from oplus.configuration import CONF
-
 
 class EIOError(Exception):
     pass
@@ -36,6 +41,17 @@ class EIO:
 
 
 def parse_eio(path, encoding=None):
+    """
+
+    Parameters
+    ----------
+    path
+    encoding
+
+    Returns
+    -------
+
+    """
     headers_l2 = [["<Program Version>", "Program Version ID", "YMD"]]
     content_d = {}  # {ref: data_l2, ...}
     content_header_d = {}  # {name: header_row, ...}
@@ -91,6 +107,15 @@ class EIOTable:
     def __init__(self, ref, columns, data):
         """
         Stores dataframe info without parsing types (otherwise dtypes are changed even if dtyp='object' is asked...)
+
+        Parameters
+        ----------
+        ref
+        columns
+        data
+        """
+        """
+
         """
         # check
         col_len = len(columns)

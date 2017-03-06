@@ -1,4 +1,7 @@
 """
+IDF
+---
+
 We respect private/public naming conventions for methods and variables, EXCEPT for IDF or IDFObject managers. The
 _manager variable is semi-private: it can be accessed by other managers (including other modules of oplus), but not by
 IDF or IDFObject. The _manager attributes therefore remain private to oplus users.
@@ -13,6 +16,7 @@ import os
 from oplus.configuration import CONF
 from oplus.idd import IDD
 from oplus.util import get_copyright_comment, Cached, check_cache_is_off, cached, get_string_buffer
+from oplus.util import IDFStyle, OplusIDFStyle, style_library
 
 
 class IDFError(Exception):
@@ -120,7 +124,8 @@ class IDFObject:
 
         Arguments
         ---------
-            detailed: include all field tags information
+        detailed: bool
+            include all field tags information
         """
         return self._.info(detailed=detailed)
 
@@ -131,10 +136,16 @@ class IDFObject:
         """
         Add a new field to object (at the end).
 
-        Arguments
-        ---------
-        rawvalue_or_value: see get_value for mor information
-        comment: associated comment
+        Parameters
+        ----------
+        raw_value_or_value:
+            see get_value for mor information
+        comment:
+            associated comment
+
+        Returns
+        -------
+
         """
         self._.add_field("", comment=comment)
         self._.set_value(self._.fields_nb-1, raw_value_or_value)
@@ -242,9 +253,12 @@ class IDFObjectManager(Cached):
 
     def copy(self):
         # create new object
-        new_object_manager = self._idf_manager.idf_object_manager_cls(self._ref, self._idf_manager,
-                                                                      head_comment=self._head_comment,
-                                                                      tail_comment=self._tail_comment)
+        new_object_manager = self._idf_manager.idf_object_manager_cls(
+            self._ref,
+            self._idf_manager,
+            head_comment=self._head_comment,
+            tail_comment=self._tail_comment
+        )
         # we must change all references
         for i in range(len(self._fields_l)):
             fieldd = self._descriptor.get_field_descriptor(i)
@@ -509,32 +523,71 @@ class IDFObjectManager(Cached):
         self._tail_comment = comment
 
     # ------------------------------------------------ COMMUNICATE -----------------------------------------------------
-    def to_str(self, style="idf"):
+    def to_str(self, style="idf", idf_style=None):
         if style == "idf":
+            if idf_style is None:
+                idf_style = style_library[CONF.default_write_style]
+            if isinstance(idf_style, IDFStyle):
+                idf_style = idf_style
+            elif isinstance(idf_style, str):
+                if idf_style in style_library.keys():
+                    idf_style = style_library[style]
+                else:
+                    idf_style = style_library[CONF.default_write_style]
+            else:
+                idf_style = style_library[CONF.default_write_style]
             # object descriptor ref
             content = "%s" % self._descriptor.ref + ("," if self.fields_nb != 0 else ";")
             spaces_nb = self._COMMENT_COLUMN_START - len(content)
             if spaces_nb < 0:
                 spaces_nb = self._TAB_LEN
-            comment = "" if self._head_comment is None else "%s! %s" % (" "*spaces_nb, self._head_comment)
-            s = content + comment + "\n"
+
+            s = ""
+
+            # Tail comment if the type is before the object
+            if idf_style.tail_type == "before":
+                if self._tail_comment:
+                    s += "\n"
+                    for line in self._tail_comment.strip().split("\n"):
+                        s += idf_style.get_tail_object_comment(line)
+
+            # MANAGE HEAD COMMENT
+            if self._head_comment:
+                comment = "%s" % (" " * spaces_nb) + idf_style.get_object_comment(
+                    self._head_comment,
+                    line_jump=False
+                )
+            else:
+                comment = ""
+            s += content + comment + "\n"
 
             # fields
             for field_index, (f_raw_value, f_comment) in enumerate(self._fields_l):
-                content = "%s%s%s" % (" " * self._TAB_LEN,
-                                      f_raw_value,
-                                      ";" if field_index == len(self._fields_l)-1 else ",")
+                content = "%s%s%s" % (
+                    " " * self._TAB_LEN,
+                    f_raw_value,
+                    ";" if field_index == len(self._fields_l)-1 else ","
+                )
                 spaces_nb = self._COMMENT_COLUMN_START - len(content)
                 if spaces_nb < 0:
                     spaces_nb = self._TAB_LEN
-                comment = "" if f_comment is None else "%s! %s" % (" "*spaces_nb, f_comment)
+
+                # MANAGE FIELD COMMENT
+                if f_comment:
+                    comment = (" " * spaces_nb) + idf_style.get_object_comment(
+                        f_comment,
+                        line_jump=False
+                    )
+                else:
+                    comment = ""
                 s += content + comment + "\n"
 
-            # tail comment
-            if self._tail_comment is not None:
-                s += "\n"
-                for line in self._tail_comment.strip().split("\n"):
-                    s += "! %s\n" % line
+            # Tail comment if the type is after the object
+            if idf_style.tail_type == "after":
+                if self._tail_comment:
+                    s += "\n"
+                    for line in self._tail_comment.strip().split("\n"):
+                        s += idf_style.get_tail_object_comment(line)
 
         elif style == "console":
             s = "%s\n%s%s\n" % ("-" * self._ROWS_NB, str(self.to_str(style="idf")), "-" * self._ROWS_NB)
@@ -573,7 +626,7 @@ class IDFManager(Cached):
     idf_object_manager_cls = IDFObjectManager  # for subclassing
 
     # ----------------------------------------------- INITIALIZE -------------------------------------------------------
-    def __init__(self, idf, path_or_content, idd_or_path=None, encoding=None):
+    def __init__(self, idf, path_or_content, idd_or_path=None, encoding=None, style=None):
         self._idf = idf
         self._idd = IDD.get_idd(idd_or_path, encoding=encoding)
         self._encoding = CONF.encoding if encoding is None else encoding
@@ -588,7 +641,7 @@ class IDFManager(Cached):
         # raw parse and parse
         with buffer as f:
             try:
-                self._objects_l, self._head_comments = self.parse(f)
+                self._objects_l, self._head_comments = self.parse(f, style)
             except Exception as e:
                 raise IDFError("Error while parsing idf. First check that given file exists "
                                "(if not, given path will have been considered as an idf content.\n%s" % e)
@@ -615,44 +668,78 @@ class IDFManager(Cached):
         return self._idf
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
-    def parse(self, file_like):
+    def parse(self, file_like, style):
         """
         Objects are created from string. They are not attached to idf manager yet.
+
+        in idf: header comment, chapter comments, objects
+        in object: head comment, field comments, tail comment
         """
+        if style is None:
+            style = style_library[CONF.default_read_style]
+        if isinstance(style, IDFStyle):
+            style = style
+        elif isinstance(style, str):
+            if style in style_library.keys():
+                style = style_library[style]
+            else:
+                style = style_library[CONF.default_read_style]
+        else:
+            style = style_library[CONF.default_read_style]
+
         objects_l, head_comments = [], ""
         idf_object_manager = None
         make_new_object = True
+
+        tail_comments = ""
+
         for i, raw_line in enumerate(file_like):
             # GET LINE CONTENT AND COMMENT
             split_line = raw_line.split("!")
-            if len(split_line) == 0:
-                content, comment = None, None
-            elif len(split_line) == 1:
-                if "!" in raw_line:
-                    content, comment = None, split_line[0]
+
+            # No "!" in the raw_line
+            if len(split_line) == 1:
+                # This is an empty line
+                if len(split_line[0].strip()) == 0:
+                    content, comment = None, None
+                # This is an object line with no comments
                 else:
                     content, comment = split_line[0].strip(), None
+            # There is at least one "!" in the raw_line
             else:
-                content, comment = split_line[0].strip(), "!".join(split_line[1:])
-
-            # RAW FORMATTING
-            if content.strip() == "":
-                content = None
-            if comment is not None:
-                comment = comment.strip()
-                if comment == "":
-                    comment = None
+                # This is a comment line
+                if len(split_line[0].strip()) == 0:
+                    content, comment = None, "!".join(split_line[1:])
+                # This is an object line with a comment
+                else:
+                    content, comment = split_line[0].strip(), "!".join(split_line[1:])
 
             # SKIP CURRENT LINE IF VOID
             if (content, comment) == (None, None):
                 continue
 
             # NO CONTENT
-            if content is None:
+            if not content:
                 if idf_object_manager is None:  # head idf comment
-                    head_comments += "\n%s" % comment
+                    if style is None:
+                        head_comments += comment.strip() + "\n"
+                    elif comment[:len(style.chapter_key)] == style.chapter_key:
+                        continue
+                    elif comment[:len(style.head_key)] == style.head_key:
+                        comment = comment[len(style.head_key):].strip()
+                        head_comments += comment + "\n"
                 else:
-                    idf_object_manager.add_tail_comment(comment)
+                    if style is None:
+                        continue
+                    elif comment[:len(style.chapter_key)] == style.chapter_key:
+                        continue
+                    elif comment[:len(style.tail_object_key)] == style.tail_object_key:
+                        comment = comment[len(style.tail_object_key):].strip().replace("\n", "")
+                        if style.tail_type == "before":
+                            tail_comments += comment + "\n"
+                        elif style.tail_type == "after":
+                            idf_object_manager.add_tail_comment(comment)
+
                 continue
 
             # CONTENT
@@ -661,9 +748,25 @@ class IDFManager(Cached):
             content = content[:-1]  # we tear comma or semi-colon
             content_l = [text.strip() for text in content.split(",")]
 
+            if comment:
+                if style is None:
+                    comment = comment.strip().replace("\n", "")
+                elif comment[:len(style.object_key)] == style.object_key:
+                    comment = comment[len(style.object_key):].strip().replace("\n", "")
+                else:
+                    comment = None
+
+            field_comment = comment
             # object creation if needed
             if make_new_object:
-                idf_object_manager = self.idf_object_manager_cls(content_l[0].strip(), self, head_comment=comment)
+                if not object_end and len(content_l) > 1:
+                    head_comment = None
+                    field_comment = comment
+                else:
+                    head_comment = comment
+                    field_comment = None
+
+                idf_object_manager = self.idf_object_manager_cls(content_l[0].strip(), self, head_comment=head_comment)
                 objects_l.append(idf_object_manager.idf_object)
                 # prepare in case fields on the same line
                 content_l = content_l[1:]
@@ -671,10 +774,14 @@ class IDFManager(Cached):
 
             # fields
             for value_s in content_l:
-                idf_object_manager.add_field(value_s, comment=comment)
+                idf_object_manager.add_field(value_s, comment=field_comment)
 
             # signal that new object must be created
             if object_end:
+                if style:
+                    if style.tail_type == "before":
+                        idf_object_manager.add_tail_comment(tail_comments)
+                        tail_comments = ""
                 make_new_object = True
 
         return objects_l, head_comments
@@ -861,7 +968,18 @@ class IDFManager(Cached):
 
         return msg
 
-    def to_str(self, add_copyright=True):
+    def to_str(self, style=None, add_copyright=True, clean=False):
+        if style is None:
+            style = style_library[CONF.default_write_style]
+        if isinstance(style, IDFStyle):
+            style = style
+        elif isinstance(style, str):
+            if style in style_library.keys():
+                style = style_library[style]
+            else:
+                style = style_library[CONF.default_write_style]
+        else:
+            style = style_library[CONF.default_write_style]
         content = ""
 
         # idf comments
@@ -869,21 +987,31 @@ class IDFManager(Cached):
         if add_copyright:
             msg = self.copyright_comment()
             if msg not in idf_comment:
-                idf_comment = msg + idf_comment
+                idf_comment = msg + "\n" + idf_comment
 
-        for comment in idf_comment.split("\n"):
-            content += "!%s\n" % comment
+        for comment in idf_comment.split("\n")[:-1]:
+            content += style.get_head_comment(comment)
 
-        # idf objects
-        for idf_object in self._objects_l:
-            content += "\n%s" % idf_object._.to_str(style="idf")
+        if clean:
+            object_ref_set = set()
+            for obj in self._objects_l:
+                object_ref_set.add(obj.ref)
+
+            for ref in sorted(object_ref_set):
+                content += "\n" + style.get_chapter_title(ref)
+                for idf_object in self.filter_by_ref(ref):
+                    content += "\n%s" % idf_object._.to_str(style="idf", idf_style=style)
+
+        else:
+            for idf_object in self._objects_l:
+                content += "\n%s" % idf_object._.to_str(style="idf", idf_style=style)
 
         return content
 
-    def save_as(self, file_or_path, add_copyright=True):
+    def save_as(self, file_or_path, style=None, add_copyright=True, clean=False):
         is_path = isinstance(file_or_path, str)
         f = open(file_or_path, "w", encoding=self._encoding) if is_path else file_or_path
-        f.write(self.to_str(add_copyright=add_copyright))
+        f.write(self.to_str(style=style, add_copyright=add_copyright, clean=clean))
         if is_path:
             f.close()
 
@@ -917,7 +1045,7 @@ class IDF:
         raise IDFError("'idf_or_path' must be a path or an IDF. Given object: '%s', type: '%s'." %
                        (idf_or_path, type(idf_or_path)))
 
-    def __init__(self, path_or_content, idd_or_path=None, encoding=None):
+    def __init__(self, path_or_content, idd_or_path=None, encoding=None, style=None):
         """
         Arguments
         ---------
@@ -925,7 +1053,13 @@ class IDF:
         idd_or_path: IDD object or idd path. If None, default will be chosen (most recent EPlus version installed on
             computer)
         """
-        self._ = self.idf_manager_cls(self, path_or_content, idd_or_path=idd_or_path, encoding=encoding)
+        self._ = self.idf_manager_cls(
+            self,
+            path_or_content,
+            idd_or_path=idd_or_path,
+            encoding=encoding,
+            style=style
+        )
 
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""
@@ -934,8 +1068,8 @@ class IDF:
     def to_str(self, add_copyright=True):
         return self._.to_str(add_copyright=add_copyright)
 
-    def save_as(self, file_or_path):
-        self._.save_as(file_or_path)
+    def save_as(self, file_or_path, style=None, clean=False):
+        self._.save_as(file_or_path, style=style, clean=clean)
 
     def copy(self, add_copyright=True):
         return self._.copy(add_copyright=add_copyright)

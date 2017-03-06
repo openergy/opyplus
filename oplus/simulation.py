@@ -1,3 +1,10 @@
+"""
+Simulation
+------------
+
+
+"""
+
 import os
 import shutil
 from threading import Thread
@@ -205,8 +212,12 @@ class Simulation:
                     constructor=lambda path: self._standard_output_file_cls(
                         path,
                         encoding=self._encoding,
-                        start=self._start),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.eso)
+                        start=self._start
+                    ),
+                    get_path=lambda: get_common_output_file_path(
+                        self.dir_path,
+                        FILE_REFS.eso
+                    )
                 ),
 
                 FILE_REFS.mtr: FileInfo(
@@ -365,7 +376,6 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
-
     # launch calculation
     run_subprocess(
         cmd_l,

@@ -1,3 +1,9 @@
+"""
+Output table
+---------------
+
+
+"""
 import os
 
 import pandas as pd
