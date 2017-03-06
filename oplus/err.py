@@ -26,7 +26,7 @@ class ERR:
         self.path = path
         self.encoding = CONF.encoding if encoding is None else encoding
 
-        self.df = None
+        self.df = None  # multi-index dataframe
         self.info = {}
         self._parse()
 
@@ -48,9 +48,9 @@ class ERR:
         step_df = pd.DataFrame(columns=self.CATEGORIES, index=range(0, max_nb))
         category, index_nb = None, None
         with open(self.path, encoding=self.encoding) as f:
-            for var in enumerate(f):
+            for row_nb, content in enumerate(f):
                 # line_nb = var[0]
-                line_s = var[1].rstrip('\n')
+                line_s = content.rstrip('\n')
 
                 # GET GENERIC INFORMATION
                 if 'Program Version,EnergyPlus' in line_s:
@@ -77,6 +77,7 @@ class ERR:
                         multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
                         multi_step_df[simulation_step] = step_df
                         self.df = self.df.join(multi_step_df)
+
                     # start new simulation step
                     simulation_step = line_s.split('Beginning ')[1]
                     step_df = pd.DataFrame(columns=self.CATEGORIES, index=range(0, max_nb))
@@ -112,7 +113,7 @@ class ERR:
                     # information to add to error
                     step_df[category].loc[index_nb] += '\n' + line_s.split('**   ~~~   **')[1]
 
-            # add last one
+            # save step_df
             iterables = [[simulation_step], step_df.columns]
             columns = pd.MultiIndex.from_product(iterables)
             multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
