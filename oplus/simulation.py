@@ -29,6 +29,7 @@ class SimulationError(Exception):
 class WrongExtensionError(SimulationError):
     pass
 
+
 FILE_REFS = Enum(**dict((ref, ref) for ref in (
     "idf", "epw", "eio", "eso", "mtr", "mtd", "mdd", "err", "summary_table")))
 
@@ -45,11 +46,14 @@ def get_input_file_path(dir_path, file_ref):
 
 
 def get_common_output_file_path(dir_path, file_ref):
-    assert file_ref in (FILE_REFS.eio, FILE_REFS.eso, FILE_REFS.mtr, FILE_REFS.mtd, FILE_REFS.mdd, FILE_REFS.err),\
+    assert file_ref in (FILE_REFS.eio, FILE_REFS.eso, FILE_REFS.mtr, FILE_REFS.mtd, FILE_REFS.mdd, FILE_REFS.err), \
         "'%s' file ref is not a common output file"
-    
+
     if CONF.os_name == "windows":
-        return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
+        else:
+            return os.path.join(dir_path, "eplusout.%s" % file_ref)
     elif CONF.os_name == "osx":
         if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
@@ -68,8 +72,10 @@ def get_common_output_file_path(dir_path, file_ref):
 def get_summary_table_file_path(dir_path):
     # TODO: code and test properly
     if CONF.os_name == "windows":
-        return os.path.join(dir_path, "%sTable.csv" % CONF.simulation_base_name)
-
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            return os.path.join(dir_path, "%sTable.csv" % CONF.simulation_base_name)
+        else:
+            return os.path.join(dir_path, "eplustbl.csv")
     elif CONF.os_name == "osx":
         if CONF.eplus_version[:2] <= (8, 1):
             return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
@@ -268,7 +274,7 @@ class Simulation:
         return self.file_refs[file_ref].get_path()
 
     def exists(self, file_ref):
-        assert file_ref in FILE_REFS,\
+        assert file_ref in FILE_REFS, \
             "Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS.keys())))
         return os.path.isfile(self._path(file_ref))
 
@@ -284,6 +290,7 @@ class Simulation:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
 
         return self.file_refs[item].constructor(self.path(item))
+
 
 simulate = Simulation.simulate
 
@@ -328,7 +335,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
 
     # prepare command
     if CONF.os_name == "windows":
-        last_name = "RunEPlus.bat"
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            last_name = "RunEPlus.bat"
+        else:
+            last_name = "energyplus"
     elif CONF.os_name == "osx":
         if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             last_name = "runenergyplus"
@@ -346,7 +356,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
 
     # idf
     if CONF.os_name == "windows":
-        idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
+        else:
+            idf_file_cmd = simulation_idf_path
     elif CONF.os_name == "osx":
         if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
@@ -358,15 +371,24 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # epw
-    epw_file_cmd = {
-        "windows": CONF.simulation_base_name,  # only weather data name
-        "osx": simulation_epw_path,
-        "linux": simulation_epw_path
-    }[CONF.os_name]
+    if CONF.os_name == "windows":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            epw_file_cmd = CONF.simulation_base_name,  # only weather data name
+        else:
+            epw_file_cmd = simulation_epw_path
+    elif CONF.os_name == "osx":
+        epw_file_cmd = simulation_epw_path
+    elif CONF.os_name == "linux":
+        epw_file_cmd = simulation_epw_path
+    else:
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # command list
     if CONF.os_name == "windows":
-        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        else:
+            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     elif CONF.os_name == "osx":
         if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]

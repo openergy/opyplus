@@ -388,6 +388,22 @@ class IDFObjectManager(Cached):
     #
     #     return links_l
 
+    @cached
+    def get_pointed_objects(self, field_index_or_name=None):
+        """
+        not used, not tested
+        """
+        index_l = (range(len(self._fields_l)) if field_index_or_name is None
+                   else [self.get_field_index(field_index_or_name)])
+
+        objects = []
+        for i in index_l:
+            value = self.get_value(i)
+            if isinstance(value, IDFObject):
+                objects.append(value)
+
+        return objects
+
     # ------------------------------------------------ SET -------------------------------------------------------------
     @check_cache_is_off
     def set_value(self, field_index_or_name, raw_value_or_value, raise_if_pointed=False):
@@ -468,8 +484,8 @@ class IDFObjectManager(Cached):
             raise IDFError("Unknown detailed type: '%s'." % fieldd.detailed_type)
 
         # remove if last field and emptied
-        if (len(self._fields_l) == (field_index+1)) and self._fields_l[-1][self._RAW_VALUE] == "":
-            self._fields_l.pop()
+        # if (len(self._fields_l) == (field_index+1)) and self._fields_l[-1][self._RAW_VALUE] == "":
+        #     self._fields_l.pop()
 
     @check_cache_is_off
     def replace_values(self, new_object_str):
@@ -668,7 +684,7 @@ class IDFManager(Cached):
         return self._idf
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
-    def parse(self, file_like, style):
+    def parse(self, file_like, style=None):
         """
         Objects are created from string. They are not attached to idf manager yet.
 

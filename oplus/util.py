@@ -51,7 +51,7 @@ https://github.com/Openergy/oplus
             __version__,
             dt.datetime.now().year
         )
-    return "-- OPlus version %s, copyright (c) %s, Openergy development team --\n" % (__version__, dt.datetime.now().year)
+    return "-- OPlus version %s, copyright (c) %s, Openergy development team --" % (__version__, dt.datetime.now().year)
 
 
 class EPlusDt:
