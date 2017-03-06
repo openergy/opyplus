@@ -11,12 +11,10 @@ A python package for working with Energy Plus
 
 *(M): major, (m): minor, (p): patch*
 
-### 4.7.0
+### 4.6.0
 * (m): idf styles added
 * (m): epw header completed
 * (p): err debug
-
-### 4.6.0
 * (p): Err parse debug
 * (m): simulation beat_freq implemented
 * (p): subprocess management enhanced
