@@ -11,12 +11,12 @@ import os
 import logging
 
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.idd import IDD
 from oplus.util import get_copyright_comment, Cached
 
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class IDFError(Exception):
@@ -610,7 +610,7 @@ class IDFManager(Cached):
         self._simulation = VoidSimulation()  # must be before parsing
 
         # raw parse and parse
-        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             self._objects_l, self._head_comments = self.parse(f)
 
         # cache
@@ -907,7 +907,7 @@ class IDFManager(Cached):
 
     def save_as(self, file_or_path, add_copyright=True):
         is_path = isinstance(file_or_path, str)
-        f = (open(file_or_path, "w", encoding=CONFIG.encoding if self._encoding is None else self._encoding)
+        f = (open(file_or_path, "w", encoding=CONF.encoding if self._encoding is None else self._encoding)
              if is_path else file_or_path)
 
         # idf comments

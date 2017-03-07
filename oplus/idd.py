@@ -19,18 +19,18 @@ import os
 import re
 import logging
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 
 
 class IDDError(Exception):
     pass
 
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 def get_idd_path():
-    return os.path.join(CONFIG.eplus_base_dir_path, "Energy+.idd")
+    return os.path.join(CONF.eplus_base_dir_path, "Energy+.idd")
 
 
 class FieldDescriptor:
@@ -295,7 +295,7 @@ class IDD:
     def _parse(self):
         """ Parses idd file."""
         group_name, od, fieldd = None, None, None
-        with open(self.path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self.path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             for i, raw_line in enumerate(f):
                 line = raw_line.split("!")[0]  # we tear comment
 

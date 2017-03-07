@@ -5,10 +5,10 @@ import re
 import pandas as pd
 from pandas.util.testing import assert_index_equal
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt, get_copyright_comment
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class EPWError(Exception):
@@ -111,7 +111,7 @@ class EPW:
         self._logger_name = logger_name
         self._encoding = encoding
         if isinstance(path_or_buffer, str):
-            with open(path_or_buffer, encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+            with open(path_or_buffer, encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
                 self._df, self._header = parse_epw(f, logger_name=logger_name, encoding=encoding)
         else:
             self._df, self._header = parse_epw(path_or_buffer, logger_name=logger_name, encoding=encoding)
@@ -138,7 +138,7 @@ class EPW:
         content += "\n" + _f.getvalue()
 
         # write to f
-        f = (open(file_or_path, "w", encoding=CONFIG.encoding if self._encoding is None else self._encoding)
+        f = (open(file_or_path, "w", encoding=CONF.encoding if self._encoding is None else self._encoding)
              if is_path else file_or_path)
 
         f.write(content)

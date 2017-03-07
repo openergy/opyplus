@@ -2,9 +2,9 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class EIOError(Exception):
@@ -45,7 +45,7 @@ def parse_eio(path, encoding=None):
 
     # _header_ref_pattern_ = "^([^<.]*)<([^>.]*)>(.*)$"
 
-    with open(path, encoding=CONFIG.encoding if encoding is None else encoding) as f:
+    with open(path, encoding=CONF.encoding if encoding is None else encoding) as f:
         for line_s in f:
             if line_s == "End of Data":
                 break

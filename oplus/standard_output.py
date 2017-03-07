@@ -7,7 +7,7 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt
 
 
@@ -15,7 +15,7 @@ class StandardOutputFileError(Exception):
     pass
 
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class StandardOutputFile:
@@ -50,7 +50,7 @@ class StandardOutputFile:
 
     def _parse(self):
         # todo: optimize (maybe readvarseso)
-        with open(self._path, "r", encoding=CONFIG.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             return parse_output(f)
 
     def df(self, environment=None, time_step=None, start=None, datetime_index=None):
