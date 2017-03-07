@@ -1,14 +1,11 @@
-"""
-EIO
--------
-
-
-"""
 import os
 
 import pandas as pd
 
 from oplus.configuration import CONF
+
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
+
 
 class EIOError(Exception):
     pass
@@ -19,10 +16,11 @@ class EndOfReportError(EIOError):
 
 
 class EIO:
-    def __init__(self, path, encoding=None):
+    def __init__(self, path, logger_name=None, encoding=None):
         if not os.path.isfile(path):
             raise EIOError("No file at given path: '%s'." % path)
         self._path = path
+        self._logger_name = logger_name
         self._encoding = encoding
 
         self._tables_d = parse_eio(self._path, encoding=encoding)
@@ -41,17 +39,6 @@ class EIO:
 
 
 def parse_eio(path, encoding=None):
-    """
-
-    Parameters
-    ----------
-    path
-    encoding
-
-    Returns
-    -------
-
-    """
     headers_l2 = [["<Program Version>", "Program Version ID", "YMD"]]
     content_d = {}  # {ref: data_l2, ...}
     content_header_d = {}  # {name: header_row, ...}
@@ -62,10 +49,8 @@ def parse_eio(path, encoding=None):
         for line_s in f:
             if line_s == "End of Data":
                 break
-
             line_s = line_s.strip().strip(",")
             line_l = [c.strip() for c in line_s.split(",")]
-
             if line_s[0][0] == "!":  # header
                 headers_l2.append([line_l[0][1:].strip()] + line_l[1:])
             else:  # content
@@ -109,15 +94,6 @@ class EIOTable:
     def __init__(self, ref, columns, data):
         """
         Stores dataframe info without parsing types (otherwise dtypes are changed even if dtyp='object' is asked...)
-
-        Parameters
-        ----------
-        ref
-        columns
-        data
-        """
-        """
-
         """
         # check
         col_len = len(columns)

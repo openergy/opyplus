@@ -1,14 +1,10 @@
-"""
-MTD
--------
-
-
-"""
-
 import os
 import re
 
 from oplus.configuration import CONF
+
+
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class MTDError(Exception):
@@ -16,10 +12,11 @@ class MTDError(Exception):
 
 
 class MTD:
-    def __init__(self, path, encoding=None):
+    def __init__(self, path, logger_name=None, encoding=None):
         if not os.path.isfile(path):
             raise MTDError("No file at given path: '%s'." % path)
         self._path = path
+        self._logger_name = logger_name
         self._encoding = encoding
 
         self._variables_d, self._meters_d = self._parse()

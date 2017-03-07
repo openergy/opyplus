@@ -1,6 +1,6 @@
 """
 IDD
-----
+---
 Manages the EPlus idd file.
 
 Definitions
@@ -22,11 +22,11 @@ import logging
 from oplus.configuration import CONF
 
 
-logger = logging.getLogger(__name__)
-
-
 class IDDError(Exception):
     pass
+
+
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 def get_idd_path():
@@ -228,20 +228,21 @@ class ObjectDescriptor:
 
 class IDD:
     @classmethod
-    def get_idd(cls, idd_or_path, encoding=None):
+    def get_idd(cls, idd_or_path, logger_name=None, encoding=None):
         if idd_or_path is None:
             return cls()
         if isinstance(idd_or_path, str):
-            return cls(path=idd_or_path, encoding=encoding)
+            return cls(path=idd_or_path, logger_name=logger_name, encoding=encoding)
         elif isinstance(idd_or_path, cls):
             return idd_or_path
         raise IDDError("'idd_or_path' must be a path or an IDD. Given object: '%s', type: '%s'." %
                        (idd_or_path, type(idd_or_path)))
 
-    def __init__(self, path=None, encoding=None):
+    def __init__(self, path=None, logger_name=None, encoding=None):
         if (path is not None) and not os.path.exists(path):
             raise IDDError("No file at given path: '%s'." % path)
         self.path = get_idd_path() if path is None else path
+        self._logger_name = logger_name
         self._encoding = encoding
         # od: object descriptor, linkd: link descriptor
         self._ods_d = {}  # object descriptors {lower_object_descriptor_ref: od, ...}
@@ -262,6 +263,7 @@ class IDD:
         list of links: [(object_descriptor_ref, index), ...]
         """
         if not link_name in self._pointed_od_linkds_d:
+            logger = logging.getLogger(default_logger_name if self._logger_name is None else self._logger_name)
             logger.info("Idd useless ref -> '%s' ref is defined, but no object-list pointing (idd problem, "
                         "nothing to do)." % link_name)
             return []
@@ -277,6 +279,7 @@ class IDD:
         list of links: [(object_descriptor_ref, index), ...]
         """
         if not link_name in self._pointing_od_linkds_d:
+            logger = logging.getLogger(default_logger_name if self._logger_name is None else self._logger_name)
             logger.debug("No pointing links ('object-list') with name '%s'. This may be an idd bug, or a wrong "
                          "link_name may have been provided." % link_name)
             return []

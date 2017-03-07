@@ -2,7 +2,7 @@ import os
 import shutil
 import platform
 
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF
 from oplus.util import run_eplus_and_log
 from oplus.idf import IDF
 from oplus.idd import IDD
@@ -19,7 +19,7 @@ class SimulationError(Exception):
 class WrongExtensionError(SimulationError):
     pass
 
-default_logger_name = __name__ if CONFIG.logger_name is None else CONFIG.logger_name
+default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class Simulation:
@@ -102,17 +102,17 @@ class Simulation:
         if extension in ("idf", "epw"):  # input files
             return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
 
-        if CONFIG.os_name == "windows":
+        if CONF.os_name == "windows":
             return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
-        elif CONFIG.os_name == "osx":
-            if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+        elif CONF.os_name == "osx":
+            if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
                 return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
             else:
                 if extension in ("idf", "epw"):
                     return os.path.join(self._dir_path, "%s.%s" % (self._base_name, extension))
                 else:
                     return os.path.join(self._dir_path, "eplusout.%s" % extension)
-        if CONFIG.os_name == "linux":
+        if CONF.os_name == "linux":
             # todo : check all versions of Energyplus
             return os.path.join(self._dir_path, "Output", "%s.%s" % (self._base_name, extension))
         else:
@@ -173,59 +173,59 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         shutil.copy2(epw_or_path, simulation_epw_path)
 
     # copy epw on windows (on linux or osx, epw may remain in current directory)
-    if CONFIG.os_name == "windows":
-        temp_epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "%s.epw" % base_name)
+    if CONF.os_name == "windows":
+        temp_epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "%s.epw" % base_name)
         shutil.copy2(simulation_epw_path, temp_epw_path)
     else:
         temp_epw_path = None
 
     # prepare command
-    if CONFIG.os_name == "windows":
+    if CONF.os_name == "windows":
         last_name = "RunEPlus.bat"
-    elif CONFIG.os_name == "osx":
-        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+    elif CONF.os_name == "osx":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             last_name = "runenergyplus"
         else:
             last_name = "energyplus"
-    elif CONFIG.os_name == "linux":
+    elif CONF.os_name == "linux":
         last_name = "runenergyplus"
     else:
-        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
-    eplus_cmd = os.path.join(CONFIG.eplus_base_dir_path, last_name)
+    eplus_cmd = os.path.join(CONF.eplus_base_dir_path, last_name)
 
     # idf
-    if CONFIG.os_name == "windows":
+    if CONF.os_name == "windows":
         idf_file_cmd = os.path.join(dir_path, base_name)
-    elif CONFIG.os_name == "osx":
-        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+    elif CONF.os_name == "osx":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             idf_file_cmd = os.path.join(dir_path, base_name)
         else:
             idf_file_cmd = simulation_idf_path
-    elif CONFIG.os_name == "linux":
+    elif CONF.os_name == "linux":
         idf_file_cmd = simulation_idf_path
     else:
-        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # epw
     epw_file_cmd = {
         "windows": base_name,  # only weather data name
         "osx": simulation_epw_path,
         "linux": simulation_epw_path
-    }[CONFIG.os_name]
+    }[CONF.os_name]
 
     # command list
-    if CONFIG.os_name == "windows":
+    if CONF.os_name == "windows":
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
-    elif CONFIG.os_name == "osx":
-        if CONFIG.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
+    elif CONF.os_name == "osx":
+        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
             cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
         else:
             cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
-    elif CONFIG.os_name == "linux":
+    elif CONF.os_name == "linux":
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     else:
-        raise SimulationError("unknown os name: %s" % CONFIG.os_name)
+        raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # launch calculation
     run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,

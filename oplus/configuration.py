@@ -20,31 +20,31 @@ class _Config:
         self.encoding = "latin-1"
 
 
-CONFIG = _Config()
+CONF = _Config()
 
 # --------------------------------------------- END OF DEFAULT VARIABLES -----------------------------------------------
 
 # set operating system
 sys_name = platform.system()
 if sys_name in ("Windows",):  # windows
-    CONFIG.os_name = "windows"
+    CONF.os_name = "windows"
 elif sys_name in ("Darwin",):  # mac osx
-    CONFIG.os_name = "osx"
+    CONF.os_name = "osx"
 elif sys_name in ("Linux", ):  # linux
-    CONFIG.os_name = "linux"
+    CONF.os_name = "linux"
 else:
     raise ConfigurationError("Unknown platform.system(): '%s'." % sys_name)
 
 
 # get systems specific configurations
-if CONFIG.os_name == "windows":
+if CONF.os_name == "windows":
     apps_dir, pattern = r"C:/", re.compile("EnergyPlusV(\d*)-(\d*)-(\d*)")
-elif CONFIG.os_name == "osx":  # mac osx
+elif CONF.os_name == "osx":  # mac osx
     apps_dir, pattern = "/Applications", re.compile("EnergyPlus-(\d*)-(\d*)-(\d*)")
-elif CONFIG.os_name == "linux":  # linux
+elif CONF.os_name == "linux":  # linux
     apps_dir, pattern = "/usr/local", re.compile("EnergyPlus-(\d*)-(\d*)-(\d*)")
 else:
-    raise ConfigurationError("Unknown os_name: '%s'" % CONFIG.os_name)
+    raise ConfigurationError("Unknown os_name: '%s'" % CONF.os_name)
 
 # find most recent version of EnergyPlus
 paths_d = {}  # {version_tuple: file_path, ...}
@@ -55,31 +55,31 @@ for file_name in os.listdir(apps_dir):
             paths_d[version_tuple] = os.path.join(apps_dir, file_name)
 
 if len(paths_d) == 0:
-    logging.getLogger(CONFIG.logger_name).warning(
+    logging.getLogger(CONF.logger_name).warning(
         "Base directory was not found. You must provide the path with 'set_configuration'.")
 else:
-    CONFIG.eplus_version = sorted(paths_d, reverse=True)[0]
-    CONFIG.eplus_base_dir_path = paths_d[CONFIG.eplus_version]
-    logging.getLogger(CONFIG.logger_name).info(
+    CONF.eplus_version = sorted(paths_d, reverse=True)[0]
+    CONF.eplus_base_dir_path = paths_d[CONF.eplus_version]
+    logging.getLogger(CONF.logger_name).info(
         "EnergyPlus version: '%s', base directory: '%s'. Use 'set_configuration' to change it." %
-        (".".join([str(i) for i in CONFIG.eplus_version]), CONFIG.eplus_base_dir_path))
+        (".".join([str(i) for i in CONF.eplus_version]), CONF.eplus_base_dir_path))
 
 
 def set_configuration(**kwargs):
-    logger = logging.getLogger(CONFIG.logger_name)
+    logger = logging.getLogger(CONF.logger_name)
 
     for k, v in kwargs.items():
-        if not hasattr(CONFIG, k):
+        if not hasattr(CONF, k):
             raise ConfigurationError("Unknown configuration parameter: '%s'." % k)
 
         if k == "eplus_base_dir_path":
             if not os.path.exists(v):
                 raise ConfigurationError("Given directory does not exist: '%s'." % v)
 
-        setattr(CONFIG, k, v)
+        setattr(CONF, k, v)
 
         logger.info("Configuration variable '%s' has been set to: '%s'." % (k, v))
 
 if __name__ == "__main__":
     set_configuration(eplus_base_dir=r"C:\EnergyPlusV7-2-0")
-    print(CONFIG.eplus_base_dir_path)
+    print(CONF.eplus_base_dir_path)
