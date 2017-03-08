@@ -3,7 +3,7 @@ import shutil
 import platform
 
 from oplus.configuration import CONF
-from oplus.util import run_eplus_and_log
+from oplus.util import run_subprocess
 from oplus.idf import IDF
 from oplus.idd import IDD
 from oplus.epw import EPW
@@ -19,7 +19,6 @@ class SimulationError(Exception):
 class WrongExtensionError(SimulationError):
     pass
 
-default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class Simulation:
@@ -228,8 +227,8 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, base_name="oplus", logger_name
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
     # launch calculation
-    run_eplus_and_log(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
-                      logger_name=default_logger_name if logger_name is None else logger_name)
+    run_subprocess(cmd_l=cmd_l, cwd=dir_path, encoding=encoding,
+                   logger_name=default_logger_name if logger_name is None else logger_name)
 
     # if needed, we delete temp weather data (only on Windows, see above)
     if temp_epw_path is not None:

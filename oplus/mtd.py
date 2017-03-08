@@ -4,7 +4,6 @@ import re
 from oplus.configuration import CONF
 
 
-default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class MTDError(Exception):

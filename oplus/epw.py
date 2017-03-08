@@ -8,7 +8,6 @@ from pandas.util.testing import assert_index_equal
 from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt, get_copyright_comment
 
-default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
 
 
 class EPWError(Exception):

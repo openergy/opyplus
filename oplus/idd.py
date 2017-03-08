@@ -26,9 +26,6 @@ class IDDError(Exception):
     pass
 
 
-default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
-
-
 def get_idd_path():
     return os.path.join(CONF.eplus_base_dir_path, "Energy+.idd")
 

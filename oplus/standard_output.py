@@ -15,9 +15,6 @@ class StandardOutputFileError(Exception):
     pass
 
 
-default_logger_name = __name__ if CONF.logger_name is None else CONF.logger_name
-
-
 class StandardOutputFile:
     DETAILED = "Detailed"
     TIME_STEP = "TimeStep"
