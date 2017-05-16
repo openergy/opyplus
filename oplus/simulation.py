@@ -7,7 +7,7 @@ Simulation
 
 import os
 import shutil
-from threading import Thread
+import stat
 import logging
 
 from oplus.configuration import CONF
@@ -86,6 +86,12 @@ def get_summary_table_file_path(dir_path):
         # todo : check all versions of Energyplus
         return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
     raise NotImplemented()
+
+
+def _copy_without_read_only(src, dst):
+    shutil.copy2(src, dst)
+    # ensure not read only
+    os.chmod(dst, stat.S_IWRITE)
 
 
 class Simulation:
@@ -318,18 +324,18 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     if isinstance(idf_or_path, IDF):
         idf_or_path.save_as(simulation_idf_path)
     else:
-        shutil.copy2(idf_or_path, simulation_idf_path)
+        _copy_without_read_only(idf_or_path, simulation_idf_path)
 
     simulation_epw_path = os.path.join(dir_path, CONF.simulation_base_name + ".epw")
     if isinstance(epw_or_path, EPW):
         epw_or_path.save_as(simulation_epw_path)
     else:
-        shutil.copy2(epw_or_path, simulation_epw_path)
+        _copy_without_read_only(epw_or_path, simulation_epw_path)
 
     # copy epw on windows (on linux or osx, epw may remain in current directory)
     if CONF.os_name == "windows":
         temp_epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "%s.epw" % CONF.simulation_base_name)
-        shutil.copy2(simulation_epw_path, temp_epw_path)
+        _copy_without_read_only(simulation_epw_path, temp_epw_path)
     else:
         temp_epw_path = None
 
