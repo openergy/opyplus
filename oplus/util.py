@@ -7,14 +7,15 @@ Useful functions
 
 import datetime as dt
 import copy
-from threading import Thread
-from queue import Queue, Empty
 import logging
 import subprocess
 import collections
 import os
 import io
 import sys
+import threading
+import contextlib
+
 
 from oplus import __version__, CONF
 
@@ -186,83 +187,27 @@ def get_start_dt(start):
     return start_dt
 
 
-def _redirect_subprocess_streams(sub_p, stdout, stderr, encoding=None, timeout=0.1):
-    """
-    subprocess stdout and stderr must have been set to subprocess.PIPE
-    this function will block until p finishes
-    """
-
-
-def run_subprocess(cmd_l, cwd=None, stdout=None, stderr=None, encoding=None):
-    """
-    Parameters
-    ----------
-    cmd_l: command
-    cwd: current working directory
-    stdout: output info stream (must have 'write' method)
-    stderr: output error stream (must have 'write' method)
-    encoding: encoding
-    """
-    # prepare variables
-    stdout = sys.stdout if stdout is None else stdout
-    stderr = sys.stderr if stderr is None else stderr
-
-    # run subprocess
-    with subprocess.Popen(cmd_l, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd) as sub_p:
-        # prepare encoding
-        encoding = CONF.encoding if encoding is None else encoding
-
-        # link output streams
-        out_reader = _NonBlockingStreamReader(sub_p.stdout)
-        err_reader = _NonBlockingStreamReader(sub_p.stderr)
-        while True:
-            out = out_reader.get(timeout=0.1)
-            if out is not None:
-                stdout.write(out.decode(encoding).strip())
-
-            err = err_reader.get(timeout=0.1)
-            if err is not None:
-                # special EPlus function
-                err_s = err.decode(encoding).strip()
-                if err_s == "EnergyPlus Completed Successfully.":  # redirect to standard output
-                    stdout.write(err_s)
-                else:
-                    stderr.write(err_s)
-
-            if sub_p.poll() is not None:
-                break
-
-
-def _populate_queue(stream, queue):
-    """
-    Collect lines from 'stream' and put them in 'queue'.
-    """
-
-    while True:
-        line = stream.readline()
-        if line:
-            queue.put(line)
-        else:
+def _redirect_stream(src, dst, stop_event, freq):
+    while not stop_event.is_set():  # read all filled lines
+        content = src.readline()
+        if content == "":  # empty: break
             break
+        dst.write(content)
+        if hasattr(dst, "flush"):
+            dst.flush()
 
 
-class _NonBlockingStreamReader:
-    def __init__(self, stream):
-        """
-        stream: the stream to read from.
-                Usually a process' stdout or stderr.
-        """
-        self._s = stream
-        self._q = Queue()
-        self._t = Thread(target=_populate_queue, args=(self._s, self._q))
-        self._t.daemon = True
-        self._t.start()  # start collecting lines from the stream
-
-    def get(self, timeout=0.1):
-        try:
-            return self._q.get(block=False, timeout=timeout)
-        except Empty:
-            return None
+@contextlib.contextmanager
+def redirect_stream(src, dst, freq=0.1):
+    stop_event = threading.Event()
+    t = threading.Thread(target=_redirect_stream, args=(src, dst, stop_event, freq))
+    t.daemon = True
+    t.start()
+    try:
+        yield
+    finally:
+        stop_event.set()
+        t.join()
 
 
 class LoggerStreamWriter:
@@ -274,6 +219,43 @@ class LoggerStreamWriter:
         message = message.strip()
         if message != "":
             self._logger.log(self._level, message)
+
+
+def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, beat_freq=None):
+    """
+    Parameters
+    ----------
+    command: command
+    cwd: current working directory
+    stdout: output info stream (must have 'write' method)
+    stderr: output error stream (must have 'write' method)
+    shell: see subprocess.Popen
+    beat_freq: if not none, stdout will be used at least every beat_freq (in seconds)
+    """
+    # prepare variables
+    stdout = sys.stdout if stdout is None else stdout
+    stderr = sys.stderr if stderr is None else stderr
+
+    # run subprocess
+    with subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
+        shell=shell,
+        universal_newlines=True
+    ) as sub_p:
+        # link output streams
+        with redirect_stream(sub_p.stdout, stdout), redirect_stream(sub_p.stderr, stderr):
+            while True:
+                try:
+                    sub_p.wait(timeout=beat_freq)
+                    break
+                except subprocess.TimeoutExpired:
+                    stdout.write("subprocess is still running\n")
+                    if hasattr(sys.stdout, "flush"):
+                        sys.stdout.flush()
+        return sub_p.returncode
 
 
 class CacheKey:

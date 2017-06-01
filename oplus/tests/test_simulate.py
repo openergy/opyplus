@@ -45,3 +45,15 @@ class OneZoneEvapCooler(unittest.TestCase):
             )
             self.assertGreater(len(out_f.getvalue()), 0)
             self.assertGreater(len(err_f.getvalue()), 0)
+
+    def test_beat_freq(self):
+        with tempfile.TemporaryDirectory() as dir_path:
+            out_f = io.StringIO()
+            s = simulate(
+                self.idf,
+                self.epw,
+                dir_path,
+                stdout=out_f,
+                beat_freq=0.1
+            )
+            self.assertIn("subprocess is still running", out_f.getvalue())

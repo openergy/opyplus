@@ -110,7 +110,8 @@ class Simulation:
             encoding=None,
             idd_or_path=None,
             stdout=None,
-            stderr=None
+            stderr=None,
+            beat_freq=None
     ):
         """
         simulation will be done in os.path.join(base_dir_path, simulation_name) if simulation has a name, else in
@@ -160,7 +161,7 @@ class Simulation:
             simulation_dir_path,
             stdout=stdout,
             stderr=stderr,
-            encoding=encoding
+            beat_freq=beat_freq
         )
 
         # return simulation object
@@ -293,7 +294,17 @@ class Simulation:
 simulate = Simulation.simulate
 
 
-def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, encoding=None):
+def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat_freq=None):
+    """
+    Parameters
+    ----------
+    idf_or_path
+    epw_or_path
+    dir_path
+    stdout: default sys.stdout
+    stderr: default sys.stderr
+    beat_freq: if not none, stdout will be used at least every beat_freq (in seconds)
+    """
     # work with absolute paths
     dir_path = os.path.abspath(dir_path)
 
@@ -387,7 +398,13 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, enco
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
     # launch calculation
-    run_subprocess(cmd_l=cmd_l, cwd=dir_path, encoding=encoding, stdout=stdout, stderr=stderr)
+    run_subprocess(
+        cmd_l,
+        cwd=dir_path,
+        stdout=stdout,
+        stderr=stderr,
+        beat_freq=beat_freq
+    )
 
     # if needed, we delete temp weather data (only on Windows, see above)
     if temp_epw_path is not None:
