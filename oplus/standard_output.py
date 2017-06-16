@@ -8,7 +8,7 @@ import os
 import pandas as pd
 
 from oplus.configuration import CONF
-from oplus.util import EPlusDt, get_start_dt
+from oplus.util import EPlusDt, get_start_dt, sort_df
 
 
 class StandardOutputFileError(Exception):
@@ -131,7 +131,7 @@ class StandardOutputFile:
 
         df = df.copy()
         df.index = df.index.map(row_to_dt)
-        df.sort(inplace=True)
+        df = sort_df(df)
         freq = None
         if time_step in (self.TIME_STEP, self.DETAILED):
             freq = None

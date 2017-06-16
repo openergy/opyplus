@@ -490,7 +490,7 @@ class IDFObjectManager(Cached):
             raise IDFError("Wrong number of objects created: %i" % len(objects_l))
         new_object = objects_l[0]
 
-        if self.ref != new_object._.ref:
+        if self.ref != new_object._.ref and bypass_ref is False:
             raise IDFError("New object (%s) does not have same reference as new object (%s). Can't replace." %
                            (self.ref, new_object._.ref))
 
@@ -501,6 +501,7 @@ class IDFObjectManager(Cached):
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type in ("reference", "object-list"):
                 continue  # we do not modifiy links
+
             if (i < old_nb) and (i < new_nb):
                 self.set_value(i, new_object._.get_raw_value(i))
             elif i < old_nb:
