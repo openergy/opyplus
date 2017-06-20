@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.util.testing import assert_index_equal
 
 from oplus.configuration import CONF
-from oplus.util import EPlusDt, get_start_dt, get_copyright_comment
+from oplus.util import EPlusDt, get_start_dt, get_copyright_comment, sort_df
 
 
 
@@ -177,7 +177,7 @@ class EPW:
             return eplusdt.datetime(_year)
 
         df.index = df.index.map(index_to_dt)
-        df.sort(inplace=True)
+        df = sort_df(df)
         df = df.reindex(pd.date_range(df.index[0], df.index[-1], freq=self.freq))
 
         return df
