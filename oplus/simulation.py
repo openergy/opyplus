@@ -414,5 +414,5 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     )
 
     # if needed, we delete temp weather data (only on Windows, see above)
-    if temp_epw_path is not None:
+    if (temp_epw_path is not None) and os.path.isfile(temp_epw_path):
         os.remove(os.path.join(temp_epw_path))
