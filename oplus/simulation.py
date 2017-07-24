@@ -1,13 +1,12 @@
 """
 Simulation
 ------------
-
-
 """
 
 import os
 import shutil
 import stat
+from threading import Thread
 import logging
 
 from oplus.configuration import CONF
