@@ -387,7 +387,6 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         epw_file_cmd = simulation_epw_path
     elif CONF.os_name == "linux":
         epw_file_cmd = simulation_epw_path
-        print("epw path: ", simulation_epw_path)
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
