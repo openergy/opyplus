@@ -15,6 +15,8 @@ import io
 import sys
 import threading
 import contextlib
+import traceback
+
 import pandas as pd
 
 
@@ -197,7 +199,11 @@ def get_start_dt(start):
 
 def _redirect_stream(src, dst, stop_event, freq):
     while not stop_event.is_set():  # read all filled lines
-        content = src.readline()
+        try:
+            content = src.readline()
+        except UnicodeDecodeError as e:
+            logger.error(str(e))
+            content = "unicode decode error"
         if content == "":  # empty: break
             break
         dst.write(content)
@@ -240,6 +246,7 @@ def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, bea
     shell: see subprocess.Popen
     beat_freq: if not none, stdout will be used at least every beat_freq (in seconds)
     """
+    sys.encoding = CONF.encoding
     # prepare variables
     stdout = sys.stdout if stdout is None else stdout
     stderr = sys.stderr if stderr is None else stderr

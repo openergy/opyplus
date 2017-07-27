@@ -6,7 +6,6 @@ Simulation
 import os
 import shutil
 import stat
-from threading import Thread
 import logging
 
 from oplus.configuration import CONF
@@ -19,6 +18,9 @@ from oplus.mtd import MTD
 from oplus.eio import EIO
 from oplus.err import ERR
 from oplus.summary_table import SummaryTable
+
+
+DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
 
 class SimulationError(Exception):
@@ -90,7 +92,7 @@ def get_summary_table_file_path(dir_path):
 def _copy_without_read_only(src, dst):
     shutil.copy2(src, dst)
     # ensure not read only
-    os.chmod(dst, stat.S_IWRITE)
+    os.chmod(dst, DEFAULT_SERVER_PERMS)
 
 
 class Simulation:
@@ -385,6 +387,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         epw_file_cmd = simulation_epw_path
     elif CONF.os_name == "linux":
         epw_file_cmd = simulation_epw_path
+        print("epw path: ", simulation_epw_path)
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
