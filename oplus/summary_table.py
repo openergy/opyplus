@@ -54,15 +54,14 @@ class SummaryTable:
                     self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)]['TableListName'] = []
                     continue
 
-                elif not (any(
+                elif not any(
                         [v in line_s for v in
                          ['Values gathered over',
                           'WARNING:',
                           'Note',
                           '----',
                           'Values in table are in hours.',
-                          ]])  or any( [v in line_s for v in [
-                            'User-Specified values were used',]]) ) and line_s[0] != '%s' % self.sep and line_s[0:2] != '\n' :
+                          ]])   and line_s[0] != '%s' % self.sep and line_s[0:2] != '\n' :
 
                     if search_end:
                         self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name][
@@ -76,7 +75,7 @@ class SummaryTable:
 
                 # find last table line
                 elif any( [v in line_s for v in [
-                            "Total Facility",]]) and  line_s[0:2] != '\n':
+                            "Total Facility","User-Specified values were used."]]) and  line_s[0:2] != '\n':
 
                     if search_end:
                         self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name][
