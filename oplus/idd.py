@@ -180,8 +180,10 @@ class ObjectDescriptor:
         asked field descriptor.
         """
         #todo: manage correctly extensible field
-        # if self.extensible[0] is not None:
-        #     self._fieldds_l.extend([ self._fieldds_l[self.extensible[1]+i] for i in range(self.extensible[0])  for x in range(200)])
+        if self.ref in ("Schedule:Compact", "BranchList"):
+            if self.extensible[0] is not None:
+                self._fieldds_l.extend([ self._fieldds_l[self.extensible[1]+i] for i in range(self.extensible[0])
+                                         for x in range(200)])
 
         index = self.get_field_index(index_or_name)
 
