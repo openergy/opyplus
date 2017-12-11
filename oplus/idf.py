@@ -1176,7 +1176,7 @@ class QuerySet:
             for level in search_tuple:
                 current_value = current_value._.get_value(level)
             if condition == '=':
-                if isinstance(current_value, str):
+                if isinstance(current_value, str) and isinstance(field_value, str):
                     if current_value.lower() == field_value.lower():
                         result_l.append(o)
                 else:
