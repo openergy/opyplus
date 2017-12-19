@@ -456,7 +456,7 @@ class IDFObjectManager(Cached):
                     if pointed_index is not None:
                         break
                     for object_descriptor, object_index in self._idf_manager.idd.pointed_links(link_name):
-                        if ((value._.ref == object_descriptor.ref) and
+                        if ((value._.ref.lower() == object_descriptor.ref.lower()) and
                                 (value._.get_value(object_index) is not None)):
                             # ok, we fond an accepted combination
                             pointed_index = object_index
@@ -1179,6 +1179,8 @@ class QuerySet:
                 if isinstance(current_value, str) and isinstance(field_value, str):
                     if current_value.lower() == field_value.lower():
                         result_l.append(o)
+                elif not isinstance(current_value, type(field_value)):
+                    raise IDFError("filter element type %s is not correct" % type(field_value))
                 else:
                     if current_value == field_value:
                         result_l.append(o)
