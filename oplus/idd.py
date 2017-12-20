@@ -179,7 +179,6 @@ class ObjectDescriptor:
         -------
         asked field descriptor.
         """
-        #todo: manage correctly extensible field
         if self.ref in ("Schedule:Compact", "BranchList"):
             if self.extensible[0] is not None:
                 self._fieldds_l.extend([ self._fieldds_l[self.extensible[1]+i] for i in range(self.extensible[0])
