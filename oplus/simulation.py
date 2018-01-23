@@ -355,7 +355,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         if CONF.eplus_version[:2] < (8, 1):  # todo: check this limit is right
             last_name = "bin/runenergyplus"
         else:
-            last_name = "runenergyplus"
+            last_name = "energyplus"
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
@@ -402,7 +402,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         else:
             cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     elif CONF.os_name == "linux":
-        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
     # launch calculation
