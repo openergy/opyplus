@@ -64,8 +64,10 @@ def get_common_output_file_path(dir_path, file_ref):
             else:
                 return os.path.join(dir_path, "eplusout.%s" % file_ref)
     elif CONF.os_name == "linux":
-        # todo : check all versions of Energyplus
-        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        if CONF.eplus_version[:2] <= (8, 5):  # todo: check that it is not 8.2 or 8.3
+            return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        else:
+            return os.path.join(dir_path, "eplusout.%s" % file_ref)
     else:
         raise NotImplementedError("Linux not implemented yet.")
 
