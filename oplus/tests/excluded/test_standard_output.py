@@ -4,7 +4,7 @@ import datetime as dt
 import tempfile
 
 from oplus.idf import IDF
-from oplus.configuration import CONF
+from oplus.configuration import CONFIG
 from oplus.simulation import simulate
 
 
@@ -12,8 +12,8 @@ class ZoneWithShadingSimple1(unittest.TestCase):
     """
     Tested under EPlus 8.1.0 on Windows (Geoffroy).
     """
-    idf_path = os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf")
-    epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "USA_CO_Golden-NREL.724666_TMY3.epw")
+    idf_path = os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf")
+    epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "USA_CO_Golden-NREL.724666_TMY3.epw")
 
     def add_output(self, idf, time_step):
         idf.add_object("Output:Variable,*,Site Outdoor Air Drybulb Temperature,%s;" % time_step)
