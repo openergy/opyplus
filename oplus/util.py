@@ -33,6 +33,7 @@ class UtilError(Exception):
 class CachingNotAllowedError(Exception):
     pass
 
+
 def sort_df(df):
     version = tuple([int(x) for x in pd.__version__.split(".")])
     if version < (0, 20, 0):
