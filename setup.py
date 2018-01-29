@@ -1,47 +1,52 @@
-from setuptools import setup, find_packages
-from pkg_resources import parse_requirements
 import os
+import sys
+import subprocess
+
+from setuptools import setup
+
+from version import __version__
 
 
-with open(os.path.join("oplus", "version.py")) as f:
-    version = f.read().split("=")[1].strip().strip("'").strip('"')
-
-
-def _get_req_list(file_name):
-    with open(file_name) as f:
-        return [str(r) for r in parse_requirements(f.read())]
+if sys.argv[-3] == 'tag':
+    user = sys.argv[-2]
+    pwd = sys.argv[-1]
+    output = subprocess.Popen('git tag -a %s -m "version %s" ' % (__version__, __version__), shell=True, stderr=subprocess.PIPE)
+    os.system('git tag -d $(git tag --list "jenkins*")')
+    #    os.system('git commit -m "version updated via setup.py tag"')
+    err = output.communicate()[1]
+    if err != b'':
+        raise ValueError('"git tag" failed, the tag might already exist')
+    os.system('git push https://%s:%s@github.com/Openergy/oplus.git --tags' % (user, pwd))
+    sys.exit()
 
 
 setup(
-    name='oplus',
+    name='Optimized cython functions',
 
-    version=version,
+    version=__version__,
 
-    packages=find_packages(),
+    packages=['oplus'],
 
     author="Geoffroy d'Estaintot",
 
     author_email="geoffroy.destaintot@openergy.fr",
 
-    description="A python package for working with Energy Plus",
+    long_description=open('README.md').read(),
 
-    long_description=open('README.md').read(),  # long_description,
-
-    install_requires=_get_req_list("requirements-conda.txt") + _get_req_list("requirements-pip.txt"),
+    install_requires=[
+        'pandas'
+        ],
 
     url='https://github.com/Openergy/oplus',
 
     classifiers=[
         "Programming Language :: Python",
         "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Research & Development",
         "Natural Language :: French",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.4",
-    ],
+        "Topic :: Scientific/Engineering :: Data processing",
+    ]
 
-    keywords=['data', 'simulation'],
-
-    package_data={'oplus': ['*.txt']},
-
-    include_package_data=True
 )

@@ -90,7 +90,7 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     step_df[category].loc[index_nb] = line_s.split('** Warning **')[1]
-                elif '** Fatal **' in line_s:
+                elif '**  Fatal  **' in line_s:
                     category = 'Fatal'
                     series = step_df[category].dropna()
                     if len(series.index) == 0:
@@ -98,8 +98,8 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     # new line (index) until next
-                    step_df[category].loc[index_nb] = line_s.split('** Fatal **')[1]
-                elif '** Severe **' in line_s:
+                    step_df[category].loc[index_nb] = line_s.split('**  Fatal  **')[1]
+                elif '** Severe  **' in line_s:
                     category = 'Severe'
                     series = step_df[category].dropna()
                     if len(series.index) == 0:
@@ -107,7 +107,7 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     # new line (index) until next
-                    step_df[category].loc[index_nb] = line_s.split('** Severe **')[1]
+                    step_df[category].loc[index_nb] = line_s.split('** Severe  **')[1]
 
                 elif '**   ~~~   **' in line_s:  # if we are here, we are sure category and index_nb have been defined
                     # information to add to error
@@ -118,7 +118,10 @@ class ERR:
             columns = pd.MultiIndex.from_product(iterables)
             multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
             multi_step_df[simulation_step] = step_df
-            self.df = self.df.join(multi_step_df)
+            if self.df is not None:  # can happen if never encounters "******* Beginning"
+                self.df = self.df.join(multi_step_df)
+            else:
+                self.df = multi_step_df
 
             self.info = pd.Series(self.info, index=self.info.keys())
 
