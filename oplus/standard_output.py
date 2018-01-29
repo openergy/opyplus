@@ -137,7 +137,7 @@ class StandardOutputFile:
 
         df = df.copy()
         df.index = df.index.map(row_to_dt)
-        df.sort(inplace=True)
+        df.sort_index(inplace=True)
         freq = None
         if time_step in (self.TIME_STEP, self.DETAILED):
             for year, year_df in df.groupby(lambda x: x.year):

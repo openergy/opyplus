@@ -1,7 +1,6 @@
 """
 IDF
 ---
-
 We respect private/public naming conventions for methods and variables, EXCEPT for IDF or IDFObject managers. The
 _manager variable is semi-private: it can be accessed by other managers (including other modules of oplus), but not by
 IDF or IDFObject. The _manager attributes therefore remain private to oplus users.
@@ -121,7 +120,6 @@ class IDFObject:
     def info(self, detailed=False):
         """
         Returns a string with all available fields of object (information provided by the idd).
-
         Arguments
         ---------
         detailed: bool
@@ -135,17 +133,14 @@ class IDFObject:
     def add_field(self, raw_value_or_value, comment=""):
         """
         Add a new field to object (at the end).
-
         Parameters
         ----------
         raw_value_or_value:
             see get_value for mor information
         comment:
             associated comment
-
         Returns
         -------
-
         """
         self._.add_field("", comment=comment)
         self._.set_value(self._.fields_nb-1, raw_value_or_value)
@@ -161,13 +156,10 @@ class IDFObject:
         """
         Removes field from idf object and shift following rows upwards (value and comment will be removed).
         Can only be applied on extensible fields (for now, only extensible:1).
-
         #todo: manage extensible > 1
-
         Arguments
         ---------
         index: index of field to remove (default -1)
-
         Returns
         -------
         Value of poped field.
@@ -507,8 +499,10 @@ class IDFObjectManager(Cached):
 
         for i in range(max(old_nb, new_nb)):
             fieldd = self._descriptor.get_field_descriptor(i)
+
             if fieldd.detailed_type in ("reference", "object-list"):
                 continue  # we do not modifiy links
+
             if (i < old_nb) and (i < new_nb):
                 self.set_value(i, new_object._.get_raw_value(i))
             elif i < old_nb:
@@ -615,7 +609,6 @@ class IDFObjectManager(Cached):
     def info(self, detailed=False):
         """
         Returns a string with all available fields of object (information provided by the idd).
-
         Arguments
         ---------
             detailed: include all field tags information
@@ -687,7 +680,6 @@ class IDFManager(Cached):
     def parse(self, file_like, style=None):
         """
         Objects are created from string. They are not attached to idf manager yet.
-
         in idf: header comment, chapter comments, objects
         in object: head comment, field comments, tail comment
         """
@@ -952,7 +944,6 @@ class IDFManager(Cached):
         ---------
         sort_by_group: will sort object descriptors by group
         detailed: will give all object descriptors' associated tags
-
         Returns
         -------
         a text describing the information on object contained in idd file
@@ -1049,7 +1040,6 @@ class IDF:
         Arguments
         ---------
         idf_or_path: idf object or idf file path
-
         Returns
         -------
         IDF object
@@ -1093,7 +1083,6 @@ class IDF:
     def remove_object(self, object_to_remove, raise_if_pointed=True):
         """
         Removes object from idf.
-
         Arguments
         ---------
         old: object to remove
@@ -1105,7 +1094,6 @@ class IDF:
     def add_object(self, new_str, position=None):
         """
         Adds new object to the idf, at required position.
-
         Arguments
         ---------
         new_or_str: new object (or string describing new object) that will be added to idf
@@ -1122,7 +1110,6 @@ class IDF:
         ---------
         sort_by_group: will sort object descriptors by group
         detailed: will give all object descriptors' associated tags
-
         Returns
         -------
         a text describing the information on object contained in idd file
@@ -1168,14 +1155,12 @@ class QuerySet:
     def filter(self, field_index_or_name, field_value, condition="="):
         """
         Filter all objects who's field value matches field_value according to given condition.
-
         Arguments
         ---------
         field_index_or_name: field index or name. Can access children with tuple or list.
         field_value_or_values: value on which to be matched.
         condition: "=" (equality)
         condition: 'in' (include in string field)
-
         Returns
         -------
         QuerySet containing filtered objects.

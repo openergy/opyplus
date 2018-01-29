@@ -1,13 +1,11 @@
 """
 Simulation
 ------------
-
-
 """
 
 import os
 import shutil
-from threading import Thread
+import stat
 import logging
 
 from oplus.configuration import CONF
@@ -20,6 +18,9 @@ from oplus.mtd import MTD
 from oplus.eio import EIO
 from oplus.err import ERR
 from oplus.summary_table import SummaryTable
+
+
+DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
 
 class SimulationError(Exception):
@@ -63,8 +64,10 @@ def get_common_output_file_path(dir_path, file_ref):
             else:
                 return os.path.join(dir_path, "eplusout.%s" % file_ref)
     elif CONF.os_name == "linux":
-        # todo : check all versions of Energyplus
-        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        if CONF.eplus_version[:2] <= (8, 5):  # todo: check that it is not 8.2 or 8.3
+            return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        else:
+            return os.path.join(dir_path, "eplusout.%s" % file_ref)
     else:
         raise NotImplementedError("Linux not implemented yet.")
 
@@ -83,9 +86,17 @@ def get_summary_table_file_path(dir_path):
             return os.path.join(dir_path, "eplustbl.csv")
 
     elif CONF.os_name == "linux":
-        # todo : check all versions of Energyplus
-        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
+        if CONF.eplus_version[:2] <= (8, 5):
+            return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
+        else:
+            return os.path.join(dir_path, "eplustbl.csv")
     raise NotImplemented()
+
+
+def _copy_without_read_only(src, dst):
+    shutil.copy2(src, dst)
+    # ensure not read only
+    os.chmod(dst, DEFAULT_SERVER_PERMS)
 
 
 class Simulation:
@@ -318,18 +329,18 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     if isinstance(idf_or_path, IDF):
         idf_or_path.save_as(simulation_idf_path)
     else:
-        shutil.copy2(idf_or_path, simulation_idf_path)
+        _copy_without_read_only(idf_or_path, simulation_idf_path)
 
     simulation_epw_path = os.path.join(dir_path, CONF.simulation_base_name + ".epw")
     if isinstance(epw_or_path, EPW):
         epw_or_path.save_as(simulation_epw_path)
     else:
-        shutil.copy2(epw_or_path, simulation_epw_path)
+        _copy_without_read_only(epw_or_path, simulation_epw_path)
 
     # copy epw on windows (on linux or osx, epw may remain in current directory)
     if CONF.os_name == "windows":
         temp_epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "%s.epw" % CONF.simulation_base_name)
-        shutil.copy2(simulation_epw_path, temp_epw_path)
+        _copy_without_read_only(simulation_epw_path, temp_epw_path)
     else:
         temp_epw_path = None
 
@@ -347,8 +358,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     elif CONF.os_name == "linux":
         if CONF.eplus_version[:2] < (8, 1):  # todo: check this limit is right
             last_name = "bin/runenergyplus"
-        else:
+        elif CONF.eplus_version[:2] < (8, 4):  # todo: check this limit is right
             last_name = "runenergyplus"
+        else:
+            last_name = "energyplus"
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
@@ -395,7 +408,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         else:
             cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     elif CONF.os_name == "linux":
-        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        if CONF.eplus_version[:2] <= (8, 4):  # todo: check that it is not 8.2 or 8.3
+            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        else:
+            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
     # launch calculation
@@ -408,5 +424,5 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     )
 
     # if needed, we delete temp weather data (only on Windows, see above)
-    if temp_epw_path is not None:
+    if (temp_epw_path is not None) and os.path.isfile(temp_epw_path):
         os.remove(os.path.join(temp_epw_path))

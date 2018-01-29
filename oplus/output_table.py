@@ -1,9 +1,3 @@
-"""
-Output table
----------------
-
-
-"""
 import os
 
 import pandas as pd
@@ -15,11 +9,13 @@ class OutputTableError(Exception):
     pass
 
 
+
 class OutputTable:
-    def __init__(self, path, encoding=None):
+    def __init__(self, path, logger_name=None, encoding=None):
         if not os.path.isfile(path):
             raise OutputTableError("No file at given path: '%s'." % path)
         self._path = path
+        self._logger_name = logger_name
         self._encoding = encoding
 
         self._reports_d = self._parse()  # {report_name: {table_name: df, ...}, ...}

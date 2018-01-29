@@ -107,14 +107,25 @@ class SummaryTable:
         begin_line = self.report_tables_ref[report_key][table_report]['linestart']
         end_line = self.report_tables_ref[report_key][table_report]['lineend']
 
-        df = pd.read_csv(
-            f,
-            #sep=self.sep,
-            sep=None,
-            skiprows=begin_line,
-            nrows=end_line-begin_line-3,
-            index_col=1
+        if (report_key == "Input Verification and Results Summary_Entire Facility") and (table_report == "General"):
+            df = pd.read_csv(
+                f,
+                # sep=self.sep,
+                sep=None,
+                skiprows=begin_line,
+                nrows=end_line - begin_line - 3,
             )
+            df.index = df.index.droplevel(level=0)
+        else:
+            df = pd.read_csv(
+                f,
+                #sep=self.sep,
+                sep=None,
+                skiprows=begin_line,
+                nrows=end_line-begin_line-3,
+                index_col=1
+                )
+
         df = df.dropna(axis='columns', how='all')
         df = df.dropna(axis='rows', how='all')
 
@@ -126,6 +137,8 @@ class SummaryTable:
 if __name__ == '__main__':
     import oplus as op
     rsc_path = os.path.join(os.getcwd().split('oplus')[0], 'antoine-work', 'csv')
+
+    # summary = SummaryTable(os.path.join(rsc_path, 'stchamond.csv'))
 
     summary = SummaryTable(os.path.join(rsc_path, 'eplustbl.csv'))
     # for k in summary.get_report_keys():
@@ -146,4 +159,5 @@ if __name__ == '__main__':
     #             print(var[1])
 
     df = summary.get_table_df('Component Sizing Summary_Entire Facility', 'AirTerminal:SingleDuct:Uncontrolled')
+    # df = summary.get_table_df("Input Verification and Results Summary_Entire Facility",'General')
     print(df)
