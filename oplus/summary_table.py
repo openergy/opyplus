@@ -122,7 +122,7 @@ class SummaryTable:
                 #sep=self.sep,
                 sep=None,
                 skiprows=begin_line,
-                nrows=end_line-begin_line-3,
+                nrows=end_line-begin_line,
                 index_col=1
                 )
 
@@ -133,6 +133,7 @@ class SummaryTable:
         df.index.name = None
 
         return df
+
 
 if __name__ == '__main__':
     import oplus as op
