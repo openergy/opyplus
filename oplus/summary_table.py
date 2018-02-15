@@ -33,10 +33,10 @@ class SummaryTable:
         with open(self.path, encoding=self.encoding) as f:
             start_parse = False
             search_end = False
+
             for var in enumerate(f):
                 line_nb = var[0]
                 line_s = var[1]
-
                 if 'Tabular Output Report in Format' in line_s:
                     self.sep = line_s.split(':')[1][1]
 
@@ -60,11 +60,28 @@ class SummaryTable:
                           'WARNING:',
                           'Note',
                           '----',
-                          'Values in table are in hours.'
-                          ]]) and line_s[0] != '%s' % self.sep and line_s[0:2] != '\n':
+                          'Values in table are in hours.',
+                          ]])   and line_s[0] != '%s' % self.sep and line_s[0:2] != '\n' :
+
                     if search_end:
-                        self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name]['lineend'] = line_nb-1
+                        self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name][
+                            'lineend'] = line_nb - 1
                         search_end = False
+
+                    table_name = line_s.split('%s' % self.sep)[0].replace('\n', '')
+                    if table_name not in self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)]['TableListName']:
+                        self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)]['TableListName'].append(table_name)
+                    self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name] = {}
+
+                # find last table line
+                elif any( [v in line_s for v in [
+                            "Total Facility","User-Specified values were used."]]) and  line_s[0:2] != '\n':
+
+                    if search_end:
+                        self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name][
+                            'lineend'] = line_nb
+                        search_end = False
+
                     table_name = line_s.split('%s' % self.sep)[0].replace('\n', '')
                     if table_name not in self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)]['TableListName']:
                         self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)]['TableListName'].append(table_name)
@@ -79,7 +96,6 @@ class SummaryTable:
                 ):
                     self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name]['linestart'] = line_nb
                     search_end = True
-
         # TODO: Manage key error correctly
         delete_t = []
         for report_key in self.report_tables_ref.keys():
@@ -106,7 +122,7 @@ class SummaryTable:
 
         begin_line = self.report_tables_ref[report_key][table_report]['linestart']
         end_line = self.report_tables_ref[report_key][table_report]['lineend']
-
+        # print(report_key, table_report, begin_line, end_line)
         if (report_key == "Input Verification and Results Summary_Entire Facility") and (table_report == "General"):
             df = pd.read_csv(
                 f,
@@ -133,7 +149,6 @@ class SummaryTable:
         df.index.name = None
 
         return df
-
 
 if __name__ == '__main__':
     import oplus as op
