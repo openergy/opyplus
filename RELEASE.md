@@ -2,6 +2,10 @@
 
 **(M): major, (m): minor, (p): patch**
 
+### Next
+* (p): debug architecture linux for 8.5.0 EnergyPlus version 
+(Output directory no longer exists)
+
 ### 5.0.0
 * (m): EIO logger name argument
 * (M): EPWHeader, removed:
