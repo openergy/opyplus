@@ -150,6 +150,7 @@ class SummaryTable:
 
         return df
 
+
 if __name__ == '__main__':
     import oplus as op
     rsc_path = os.path.join(os.getcwd().split('oplus')[0], 'antoine-work', 'csv')

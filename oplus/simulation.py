@@ -64,8 +64,10 @@ def get_common_output_file_path(dir_path, file_ref):
             else:
                 return os.path.join(dir_path, "eplusout.%s" % file_ref)
     elif CONF.os_name == "linux":
-        # todo : check all versions of Energyplus
-        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        if CONF.eplus_version[:2] < (8, 5):  # todo: check that it is not 8.2 or 8.3
+            return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        else:
+            return os.path.join(dir_path, "eplusout.%s" % file_ref)
     else:
         raise NotImplementedError("Linux not implemented yet.")
 
@@ -84,8 +86,10 @@ def get_summary_table_file_path(dir_path):
             return os.path.join(dir_path, "eplustbl.csv")
 
     elif CONF.os_name == "linux":
-        # todo : check all versions of Energyplus
-        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
+        if CONF.eplus_version[:2] < (8, 5):
+            return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
+        else:
+            return os.path.join(dir_path, "eplustbl.csv")
     raise NotImplemented()
 
 
@@ -354,8 +358,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     elif CONF.os_name == "linux":
         if CONF.eplus_version[:2] < (8, 1):  # todo: check this limit is right
             last_name = "bin/runenergyplus"
-        else:
+        elif CONF.eplus_version[:2] < (8, 4):  # todo: check this limit is right
             last_name = "runenergyplus"
+        else:
+            last_name = "energyplus"
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
 
@@ -402,7 +408,10 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         else:
             cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     elif CONF.os_name == "linux":
-        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        if CONF.eplus_version[:2] <= (8, 4):  # todo: check that it is not 8.2 or 8.3
+            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        else:
+            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     else:
         raise SimulationError("unknown os name: %s" % CONF.os_name)
     # launch calculation
