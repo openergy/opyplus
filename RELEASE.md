@@ -6,10 +6,7 @@
 * (p): debug architecture linux for 8.5.0 EnergyPlus version 
 (Output directory no longer exists)
 * (m): EIO logger name argument
-* (M): EPWHeader, removed:
-    - start day of week
-    - get field
-    - set field
+* (M): EPWHeader, removed: start day of week, get field, set field
 * (m): EPW logger name
 * (p): sort_df to account for pandas backward compatibilities
 * (p): debug double space in eplusout.err strings
