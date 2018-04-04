@@ -4,7 +4,7 @@ import datetime as dt
 import tempfile
 
 from oplus.idf import IDF
-from oplus.configuration import CONFIG
+from oplus.configuration import CONF as CONFIG
 from oplus.simulation import simulate
 
 
