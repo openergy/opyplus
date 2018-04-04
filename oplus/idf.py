@@ -855,6 +855,32 @@ class IDFManager(Cached):
                                              " that field must be changed." %
                                              (new_object_index, pointed_object._.ref, pointed_index))
 
+    def check_duplicate_references(self):
+        # we create a dict containing for each link_name a set of references to check that they are unique
+        ref_d = dict()
+        for object in self.objects_l:
+            # check reference uniqueness
+            object_descriptor = self._idd.get_object_descriptor(object._.ref)
+            for i in range(object._.fields_nb):
+                fieldd = object_descriptor.get_field_descriptor(i)
+                if fieldd.detailed_type == "reference":
+                    reference = object._.get_raw_value(i)
+                    for link_name in fieldd.get_tag("reference"):
+                        # for each link name add the reference to the set to check for uniqueness
+                        if link_name not in ref_d:
+                            ref_d[link_name] = set()
+                        if reference in ref_d[link_name]:
+                            raise BrokenIDFError(
+                                "Reference duplicate for link name: {}\n".format(link_name) +
+                                "Reference: {}\n".format(reference) +
+                                "Detected while checking object ref: {}\n".format(object._.ref) +
+                                "Field: {}".format(i)
+                            )
+                        ref_d[link_name].add(reference)
+
+
+
+
     # ------------------------------------------ MANAGE OBJECTS --------------------------------------------------------
     def has_object(self, idf_object):
         return idf_object in self._objects_l
