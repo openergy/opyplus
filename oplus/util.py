@@ -291,12 +291,13 @@ class CacheKey:
         return "<CacheKey: %s>" % str(self._value)
 
 
-def check_cache_is_off(method):
+def clear_cache(method):
     def wrapper(self, *args, **kwargs):
         assert isinstance(self, Cached), "decorator was applied to a non-cached class (%s)" % method
-        if self.is_cached:
-            raise CachingNotAllowedError("Must turn off cache to perform action.")
-        return method(self, *args, **kwargs)
+        self.deactivate_cache()
+        res = method(self, *args, **kwargs)
+        self.activate_cache()
+        return res
     return wrapper
 
 

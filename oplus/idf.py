@@ -10,11 +10,12 @@ IDF or IDFObject. The _manager attributes therefore remain private to oplus user
 import io
 import datetime as dt
 import os
+from contextlib import contextmanager
 
 
 from oplus.configuration import CONF
 from oplus.idd import IDD
-from oplus.util import get_copyright_comment, Cached, check_cache_is_off, cached, get_string_buffer
+from oplus.util import get_copyright_comment, Cached, clear_cache, cached, get_string_buffer
 from oplus.util import IDFStyle, OplusIDFStyle, style_library
 
 
@@ -228,13 +229,13 @@ class IDFObjectManager(Cached):
         return self._idf_manager
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
-    @check_cache_is_off
+    @clear_cache
     def add_field(self, raw_value, comment=""):
         if not isinstance(raw_value, str):
             raise IDFError("'raw_value' must be a string.")
         self._fields_l.append([raw_value, comment])
 
-    @check_cache_is_off
+    @clear_cache
     def add_tail_comment(self, comment):
         stripped = comment.strip()
         if stripped == "":
@@ -264,7 +265,7 @@ class IDFObjectManager(Cached):
         return self._idf_manager.add_object_from_parsed(new_object_manager)
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
-    @check_cache_is_off
+    @clear_cache
     def remove_values_that_point(self, pointed_object=None):
         """
         Removes all fields that point at pointed_object if not None (if you want a specific index, use remove_value).
@@ -275,7 +276,7 @@ class IDFObjectManager(Cached):
                 if (pointed_object is None) or (self.get_value(i) is pointed_object):
                     self.set_value(i, None)
 
-    @check_cache_is_off
+    @clear_cache
     def neutralize(self):
         """
         remove values and links of fields, idf_manager, descriptor, pointing_d.
@@ -283,7 +284,7 @@ class IDFObjectManager(Cached):
         self._idf_manager = None
         self._descriptor = None
 
-    @check_cache_is_off
+    @clear_cache
     def pop(self, field_index_or_name=-1):
         """
         Remove item at given position and return it. All rows will be shifted upwards to fill the blank. May only be
@@ -397,7 +398,7 @@ class IDFObjectManager(Cached):
         return objects
 
     # ------------------------------------------------ SET -------------------------------------------------------------
-    @check_cache_is_off
+    @clear_cache
     def set_value(self, field_index_or_name, raw_value_or_value, raise_if_pointed=False):
         field_index = self.get_field_index(field_index_or_name)
         fieldd = self._descriptor.get_field_descriptor(field_index)
@@ -479,7 +480,7 @@ class IDFObjectManager(Cached):
         # if (len(self._fields_l) == (field_index+1)) and self._fields_l[-1][self._RAW_VALUE] == "":
         #     self._fields_l.pop()
 
-    @check_cache_is_off
+    @clear_cache
     def replace_values(self, new_object_str):
         """
         Purpose: keep old pointed links
@@ -513,13 +514,13 @@ class IDFObjectManager(Cached):
         # remove all last values
         self._fields_l = self._fields_l[:new_nb]
 
-    @check_cache_is_off
+    @clear_cache
     def set_field_comment(self, field_index_or_name, comment):
         field_index = self.get_field_index(field_index_or_name)
         comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
         self._fields_l[field_index][self._COMMENT] = comment
 
-    @check_cache_is_off
+    @clear_cache
     def set_head_comment(self, comment):
         """
         All line return will be replaced by a blank.
@@ -527,7 +528,7 @@ class IDFObjectManager(Cached):
         comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
         self._head_comment = comment
 
-    @check_cache_is_off
+    @clear_cache
     def set_tail_comment(self, comment):
         comment = None if comment.strip() == "" else str(comment).strip()
         self._tail_comment = comment
@@ -639,6 +640,7 @@ class IDFManager(Cached):
         self._idf = idf
         self._idd = IDD.get_idd(idd_or_path, encoding=encoding)
         self._encoding = CONF.encoding if encoding is None else encoding
+        self.constructing_mode = False
 
         # simulation
         self._simulation = VoidSimulation()  # must be before parsing
@@ -677,6 +679,17 @@ class IDFManager(Cached):
         return self._idf
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
+    @contextmanager
+    def constructing(self):
+        """
+        Allows the user to deactivate new reference checks while adding objects. The whole idf is checked afterwards.
+        This allows to construct idfs more efficiently.
+        """
+        self.constructing_mode = True
+        yield
+        self.check_duplicate_references()
+        self.constructing_mode = False
+
     def parse(self, file_like, style=None):
         """
         Objects are created from string. They are not attached to idf manager yet.
@@ -841,19 +854,14 @@ class IDFManager(Cached):
     def check_new_reference(self, new_object_ref, new_object_index, reference):
         if reference == "":
             return None
-
-        object_descriptor = self._idd.get_object_descriptor(new_object_ref)
-        fieldd = object_descriptor.get_field_descriptor(new_object_index)
-
-        # iter through all possible links and check that reference is not already in use
-        for link_name in fieldd.get_tag("reference"):
-            for pointed_descriptor, pointed_index in self._idd.pointed_links(link_name):
-                for pointed_object in self.filter_by_ref(pointed_descriptor.ref):
-                    if pointed_object._.get_raw_value(pointed_index) == reference:
-                        raise BrokenIDFError("New object has same reference at index '%s' as other object of "
-                                             "same link name. Other object ref: '%s', index: '%s'. The value at"
-                                             " that field must be changed." %
-                                             (new_object_index, pointed_object._.ref, pointed_index))
+        # check that there is no duplicate reference (i.e. none of the links which will point to this field already
+        # points to another field with the same reference)
+        links_l = self.get_pointing_links_l(new_object_ref, new_object_index, reference)
+        if len(links_l) != 0:
+            raise BrokenIDFError("New object has same reference at index '%s' as other object of "
+                                 "same link name. Other object ref: '%s', index: '%s'. The value at"
+                                 " that field must be changed." %
+                                 (new_object_index, links_l[0][0]._.ref, links_l[0][1]))
 
     def check_duplicate_references(self):
         # we create a dict containing for each link_name a set of references to check that they are unique
@@ -885,7 +893,7 @@ class IDFManager(Cached):
     def has_object(self, idf_object):
         return idf_object in self._objects_l
 
-    @check_cache_is_off
+    @clear_cache
     def add_object(self, new_str, position=None):
         """
         From str
@@ -897,7 +905,7 @@ class IDFManager(Cached):
         new_object = objects_l[0]
         return self.add_object_from_parsed(new_object._, position=position)
 
-    @check_cache_is_off
+    @clear_cache
     def add_object_from_parsed(self, raw_parsed_object_manager, position=None):
         """checks references uniqueness"""
         new_object = raw_parsed_object_manager.idf_object  # change name since no more raw parsed
@@ -906,7 +914,7 @@ class IDFManager(Cached):
         object_descriptor = self._idd.get_object_descriptor(new_object._.ref)
         for i in range(new_object._.fields_nb):
             fieldd = object_descriptor.get_field_descriptor(i)
-            if fieldd.detailed_type == "reference":
+            if fieldd.detailed_type == "reference" and not self.constructing_mode:
                 self.check_new_reference(object_descriptor.ref, i, new_object._.get_raw_value(i))
 
         # add object
@@ -918,7 +926,7 @@ class IDFManager(Cached):
         # return new object
         return new_object
 
-    @check_cache_is_off
+    @clear_cache
     def remove_object(self, idf_object, raise_if_pointed=True):
         """
         Arguments
@@ -958,7 +966,7 @@ class IDFManager(Cached):
     def get_comment(self):
         return self._head_comments
 
-    @check_cache_is_off
+    @clear_cache
     def set_comment(self, value):
         self._head_comments = str(value).strip()
 
@@ -1165,6 +1173,11 @@ class IDF:
         for o in self._.objects_l:
             o._.clear_cache()
 
+    @contextmanager
+    def constructing(self):
+        with self._.constructing():
+            yield
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------- QuerySet ---------------------------------------------------------------
@@ -1246,7 +1259,7 @@ class QuerySet:
             return QuerySet([o for o in self._objects_l])
         return QuerySet([o for o in self._objects_l if o._.ref.lower() == object_descriptor_ref.lower()])
 
-    @check_cache_is_off
+    @clear_cache
     def __add__(self, other):
         """
         Add new query set to query set (only new objects will be added).
