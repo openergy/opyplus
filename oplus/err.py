@@ -54,14 +54,14 @@ class ERR:
 
                 # GET GENERIC INFORMATION
                 if 'Program Version,EnergyPlus' in line_s:
-                    self.info['EnergyPlus Simulation Version'] = line_s.split(',')[2].rstrip('Version ')
-                    self.info['IDD_Version'] = line_s.split('IDD_Version ')[1]
+                    self.info['EnergyPlus Simulation Version'] = str(line_s.split(',')[2].rstrip('Version '))
+                    self.info['IDD_Version'] = str(line_s.split('IDD_Version ')[1])
                 elif 'EnergyPlus Warmup Error Summary' in line_s:
-                    self.info['EnergyPlus Warmup Error Summary'] = line_s.split('. ')[1]
+                    self.info['EnergyPlus Warmup Error Summary'] = str(line_s.split('. ')[1])
                 elif 'EnergyPlus Sizing Error Summary' in line_s:
-                    self.info['EnergyPlus Sizing Error Summary'] = line_s.split('. ')[1]
+                    self.info['EnergyPlus Sizing Error Summary'] = str(line_s.split('. ')[1])
                 elif 'EnergyPlus Completed Successfully' in line_s:
-                    self.info['EnergyPlus Completed Successfully'] = line_s.split('--')[1]
+                    self.info['EnergyPlus Completed Successfully'] = str(line_s.split('--')[1])
 
                 # PARSE AND ..
                 elif '************* Beginning' in line_s:
@@ -89,7 +89,7 @@ class ERR:
                         index_nb = 0
                     else:
                         index_nb = series.index[-1] + 1
-                    step_df[category].loc[index_nb] = line_s.split('** Warning **')[1]
+                    step_df[category].loc[index_nb] = str(line_s.split('** Warning **')[1])
                 elif '**  Fatal  **' in line_s:
                     category = 'Fatal'
                     series = step_df[category].dropna()
@@ -98,7 +98,7 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     # new line (index) until next
-                    step_df[category].loc[index_nb] = line_s.split('**  Fatal  **')[1]
+                    step_df[category].loc[index_nb] = str(line_s.split('**  Fatal  **')[1])
                 elif '** Severe  **' in line_s:
                     category = 'Severe'
                     series = step_df[category].dropna()
@@ -107,11 +107,11 @@ class ERR:
                     else:
                         index_nb = series.index[-1] + 1
                     # new line (index) until next
-                    step_df[category].loc[index_nb] = line_s.split('** Severe  **')[1]
+                    step_df[category].loc[index_nb] = str(line_s.split('** Severe  **')[1])
 
                 elif '**   ~~~   **' in line_s:  # if we are here, we are sure category and index_nb have been defined
                     # information to add to error
-                    step_df[category].loc[index_nb] += '\n' + line_s.split('**   ~~~   **')[1]
+                    step_df[category].loc[index_nb] += '\n' + str(line_s.split('**   ~~~   **')[1])
 
             # save step_df
             iterables = [[simulation_step], step_df.columns]
