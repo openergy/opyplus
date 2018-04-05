@@ -9,14 +9,14 @@ IDF or IDFObject. The _manager attributes therefore remain private to oplus user
 
 import io
 import datetime as dt
-import os
 from contextlib import contextmanager
+import warnings
 
 
 from oplus.configuration import CONF
 from oplus.idd import IDD
 from oplus.util import get_copyright_comment, Cached, clear_cache, cached, get_string_buffer
-from oplus.util import IDFStyle, OplusIDFStyle, style_library
+from oplus.util import IDFStyle, style_library
 
 
 class IDFError(Exception):
@@ -1103,6 +1103,7 @@ class IDF:
             encoding=encoding,
             style=style
         )
+        self._activate_cache()
 
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""
@@ -1161,15 +1162,29 @@ class IDF:
     def comment(self, value):
         self._.set_comment(value)
 
-    def activate_cache(self):
+    def _activate_cache(self):
         self._._activate_cache()
         for o in self._.objects_l:
             o._._activate_cache()
 
-    def deactivate_cache(self):
+    # todo: remove this method at the next major update
+    def activate_cache(self):
+        warnings.warn(
+            "activate_cache is deprecated and will be removed: the cache is now managed automatically",
+            category=DeprecationWarning
+        )
+
+    def _deactivate_cache(self):
         self._._deactivate_cache()
         for o in self._.objects_l:
             o._._deactivate_cache()
+
+    # todo: remove this method at the next major update
+    def deactivate_cache(self):
+        warnings.warn(
+            "deactivate_cache is deprecated and will be removed: the cache is now managed automatically",
+            category=DeprecationWarning
+        )
 
     def clear_cache(self):
         self._.clear_cache()

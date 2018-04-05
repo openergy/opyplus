@@ -187,7 +187,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
 
     def test_cache_on_filter(self):
         # activate
-        self.idf.activate_cache()
+        self.idf._activate_cache()
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
         self.assertEqual(1, len(self.idf._.cache))
         k = list(self.idf._.cache.keys())[0]
@@ -208,7 +208,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         self.assertEqual(1, self.idf._.cache[k]["hits"])
 
         # deactivate
-        self.idf.deactivate_cache()
+        self.idf._deactivate_cache()
         self.assertIs(None, self.idf._.cache)
 
 
