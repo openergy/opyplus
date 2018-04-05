@@ -201,6 +201,7 @@ class IDFObjectManager(Cached):
     _COMMENT = 1
 
     def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
+        self._activate_cache()
         self._ref = ref
         self._head_comment = head_comment
         self._tail_comment = tail_comment
@@ -637,10 +638,11 @@ class IDFManager(Cached):
 
     # ----------------------------------------------- INITIALIZE -------------------------------------------------------
     def __init__(self, idf, path_or_content, idd_or_path=None, encoding=None, style=None):
+        self._activate_cache()
         self._idf = idf
         self._idd = IDD.get_idd(idd_or_path, encoding=encoding)
         self._encoding = CONF.encoding if encoding is None else encoding
-        self.constructing_mode = False
+        self._constructing_mode = False
 
         # simulation
         self._simulation = VoidSimulation()  # must be before parsing
@@ -679,16 +681,17 @@ class IDFManager(Cached):
         return self._idf
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
+    @property
     @contextmanager
-    def constructing(self):
+    def under_construction(self):
         """
         Allows the user to deactivate new reference checks while adding objects. The whole idf is checked afterwards.
         This allows to construct idfs more efficiently.
         """
-        self.constructing_mode = True
+        self._constructing_mode = True
         yield
         self.check_duplicate_references()
-        self.constructing_mode = False
+        self._constructing_mode = False
 
     def parse(self, file_like, style=None):
         """
@@ -914,7 +917,7 @@ class IDFManager(Cached):
         object_descriptor = self._idd.get_object_descriptor(new_object._.ref)
         for i in range(new_object._.fields_nb):
             fieldd = object_descriptor.get_field_descriptor(i)
-            if fieldd.detailed_type == "reference" and not self.constructing_mode:
+            if fieldd.detailed_type == "reference" and not self._constructing_mode:
                 self.check_new_reference(object_descriptor.ref, i, new_object._.get_raw_value(i))
 
         # add object
@@ -1159,23 +1162,24 @@ class IDF:
         self._.set_comment(value)
 
     def activate_cache(self):
-        self._.activate_cache()
+        self._._activate_cache()
         for o in self._.objects_l:
-            o._.activate_cache()
+            o._._activate_cache()
 
     def deactivate_cache(self):
-        self._.deactivate_cache()
+        self._._deactivate_cache()
         for o in self._.objects_l:
-            o._.deactivate_cache()
+            o._._deactivate_cache()
 
     def clear_cache(self):
         self._.clear_cache()
         for o in self._.objects_l:
             o._.clear_cache()
 
+    @property
     @contextmanager
-    def constructing(self):
-        with self._.constructing():
+    def under_construction(self):
+        with self._.under_construction:
             yield
 
 

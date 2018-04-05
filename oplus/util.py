@@ -16,6 +16,7 @@ import sys
 import threading
 import contextlib
 import traceback
+import warnings
 
 import pandas as pd
 
@@ -294,9 +295,9 @@ class CacheKey:
 def clear_cache(method):
     def wrapper(self, *args, **kwargs):
         assert isinstance(self, Cached), "decorator was applied to a non-cached class (%s)" % method
-        self.deactivate_cache()
+        self._deactivate_cache()
         res = method(self, *args, **kwargs)
-        self.activate_cache()
+        self._activate_cache()
         return res
     return wrapper
 
@@ -318,12 +319,26 @@ def cached(method):
 class Cached:
     cache = None  # dict(key: dict(value=v, hits=0))  (hits for testing)
 
-    def activate_cache(self):
+    def _activate_cache(self):
         if self.cache is None:
             self.cache = {}
 
-    def deactivate_cache(self):
+    # todo: remove this method at the next major update
+    def activate_cache(self):
+        warnings.warn(
+            "activate_cache is deprecated and will be removed: the cache is now managed automatically",
+            category=DeprecationWarning
+        )
+
+    def _deactivate_cache(self):
         self.cache = None
+
+    # todo: remove this method at the next major update
+    def deactivate_cache(self):
+        warnings.warn(
+            "deactivate_cache is deprecated and will be removed: the cache is now managed automatically",
+            category=DeprecationWarning
+        )
 
     def clear_cache(self):
         if self.cache is not None:

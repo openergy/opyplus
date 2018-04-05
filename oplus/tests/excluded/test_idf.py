@@ -129,6 +129,14 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
             supply_fan["availability schedule name"] = schedule_test_object_str % name
         self.assertRaises(BrokenIDFError, raise_if_you_care)
 
+    def test_set_object_broken_constructing_mode(self):
+        supply_fan = self.idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
+        name = supply_fan["availability schedule name"]["name"]
+
+        with self.assertRaises(BrokenIDFError):
+            with self.idf.under_construction:
+                supply_fan["availability schedule name"] = schedule_test_object_str % name
+
     def test_extensible(self):
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
         for i in range(1500):
@@ -176,11 +184,6 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
     def test_pop_raises(self):
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
         self.assertRaises(IDFError, lambda: sch.pop(1))
-
-    def test_cache_with_modification_raises(self):
-        self.idf.activate_cache()
-        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertRaises(CachingNotAllowedError, lambda: sch.pop(1))
 
     def test_cache_on_filter(self):
         # activate
