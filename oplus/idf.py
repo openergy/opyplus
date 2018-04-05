@@ -1103,7 +1103,6 @@ class IDF:
             encoding=encoding,
             style=style
         )
-        self._activate_cache()
 
     def __call__(self, object_descriptor_ref=None):
         """returns all objects of given object descriptor"""
@@ -1162,22 +1161,12 @@ class IDF:
     def comment(self, value):
         self._.set_comment(value)
 
-    def _activate_cache(self):
-        self._._activate_cache()
-        for o in self._.objects_l:
-            o._._activate_cache()
-
     # todo: remove this method at the next major update
     def activate_cache(self):
         warnings.warn(
             "activate_cache is deprecated and will be removed: the cache is now managed automatically",
             category=DeprecationWarning
         )
-
-    def _deactivate_cache(self):
-        self._._deactivate_cache()
-        for o in self._.objects_l:
-            o._._deactivate_cache()
 
     # todo: remove this method at the next major update
     def deactivate_cache(self):
