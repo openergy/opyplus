@@ -103,6 +103,22 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         0.6500000;               !- Visible Absorptance
         """))
 
+    def test_idf_add_object_broken_construct_mode(self):
+        with self.assertRaises(BrokenIDFError):
+            with self.idf_manager.under_construction:
+                self.idf_manager.add_object("""
+                Material,
+                C5 - 4 IN HW CONCRETE,   !- Name
+                MediumRough,             !- Roughness
+                0.1014984,               !- Thickness {m}
+                1.729577,                !- Conductivity {W/m-K}
+                2242.585,                !- Density {kg/m3}
+                836.8000,                !- Specific Heat {J/kg-K}
+                0.9000000,               !- Thermal Absorptance
+                0.6500000,               !- Solar Absorptance
+                0.6500000;               !- Visible Absorptance
+                """)
+
     def test_idf_remove_object(self):
         sch_name = "NEW TEST SCHEDULE"
         sch = self.idf_manager.add_object(schedule_test_object_str % sch_name)

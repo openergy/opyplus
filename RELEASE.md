@@ -2,6 +2,10 @@
 
 **(M): major, (m): minor, (p): patch**
 
+### 5.1.0
+* (m): Caching is now managed automatically
+* (m): Added the under_construction mode to add several objects in a more efficient manner
+
 ### 5.0.0
 * (p): debug architecture linux for 8.5.0 EnergyPlus version 
 (Output directory no longer exists)
