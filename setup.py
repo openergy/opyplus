@@ -56,7 +56,7 @@ setup(
         "Natural Language :: French",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.6",
-        "Topic :: Scientific/Engineering :: Data processing",
+        "Topic :: Scientific/Engineering :: Physics",
     ],
     package_data={'oplus': ['*.txt']},
     include_package_data=True
