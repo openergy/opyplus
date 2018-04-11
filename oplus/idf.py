@@ -861,10 +861,11 @@ class IDFManager(Cached):
         # points to another field with the same reference)
         links_l = self.get_pointing_links_l(new_object_ref, new_object_index, reference)
         if len(links_l) != 0:
-            raise BrokenIDFError("New object has same reference at index '%s' as other object of "
-                                 "same link name. Other object ref: '%s', index: '%s'. The value at"
-                                 " that field must be changed." %
-                                 (new_object_index, links_l[0][0]._.ref, links_l[0][1]))
+            raise BrokenIDFError(
+                "New object has same reference at index '%s' as other object of same link name. "
+                "Other object ref: '%s', index: '%s'. The value at that field must be changed." %
+                (new_object_index, links_l[0][0]._.ref, links_l[0][1])
+            )
 
     def check_duplicate_references(self):
         # we create a dict containing for each link_name a set of references to check that they are unique
@@ -888,9 +889,6 @@ class IDFManager(Cached):
                                 "Field: {}".format(i)
                             )
                         ref_d[link_name].add(reference)
-
-
-
 
     # ------------------------------------------ MANAGE OBJECTS --------------------------------------------------------
     def has_object(self, idf_object):
