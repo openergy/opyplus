@@ -15,7 +15,7 @@ import warnings
 
 from oplus.configuration import CONF
 from oplus.idd import IDD
-from oplus.util import get_copyright_comment, Cached, clear_cache, cached, get_string_buffer
+from oplus.util import get_copyright_comment, get_string_buffer
 from oplus.util import IDFStyle, style_library
 
 
@@ -38,6 +38,90 @@ class ObjectDoesNotExist(IDFError):
 class MultipleObjectsReturned(IDFError):
     pass
 
+
+# ------------------------------------------------ CACHE MANAGEMENT -------------------------------------------------- #
+def clear_cache(method):
+    def wrapper(self, *args, **kwargs):
+        if isinstance(self, IDFManager):
+            idf_manager = self
+        elif isinstance(self, IDFObjectManager):
+            idf_manager = self.idf_manager
+        else:
+            raise ValueError("clear_cache decorator applied to a non cached item")
+        idf_manager._deactivate_cache()
+        res = method(self, *args, **kwargs)
+        idf_manager._activate_cache()
+        return res
+    return wrapper
+
+
+def cached(method):
+    def wrapper(self, *args, **kwargs):
+        if isinstance(self, IDFManager):
+            cache = self.cache
+        elif isinstance(self, IDFObjectManager):
+            cache = self.idf_manager.cache
+        else:
+            raise ValueError("cached decorator applied to a non cached item")
+        if cache is None:
+            return method(self, *args, **kwargs)
+        key = CacheKey(self, method, *args, **kwargs)
+        if key not in cache:
+            cache[key] = dict(value=method(self, *args, **kwargs), hits=0)
+        else:
+            cache[key]["hits"] += 1
+        return cache[key]["value"]
+    return wrapper
+
+
+class Cached:
+    cache = None  # dict(key: dict(value=v, hits=0))  (hits for testing)
+
+    def _activate_cache(self):
+        if self.cache is None:
+            self.cache = {}
+
+    # todo: remove this method at the next major update
+    def activate_cache(self):
+        warnings.warn(
+            "activate_cache is deprecated and will be removed: the cache is now managed automatically",
+            category=DeprecationWarning
+        )
+
+    def _deactivate_cache(self):
+        self.cache = None
+
+    # todo: remove this method at the next major update
+    def deactivate_cache(self):
+        warnings.warn(
+            "deactivate_cache is deprecated and will be removed: the cache is now managed automatically",
+            category=DeprecationWarning
+        )
+
+    def clear_cache(self):
+        if self.cache is not None:
+            self.cache = {}
+
+    @property
+    def is_cached(self):
+        return self.cache is not None
+
+
+class CacheKey:
+    """
+    emulated a dict that can store hashable types
+    """
+    def __init__(self, obj, method,  *args, **kwargs):
+        self._value = tuple([obj, method] + list(args) + [(k, v) for k, v in sorted(kwargs.items())])
+
+    def __hash__(self):
+        return self._value.__hash__()
+
+    def __eq__(self, other):
+        return self.__hash__() == other.__hash__()
+
+    def __str__(self):
+        return "<CacheKey: %s>" % str(self._value)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------- IDF OBJECTS ------------------------------------------------------------
@@ -190,7 +274,7 @@ class IDFObject:
 
 
 # ------------------------------------------- idf object manager -------------------------------------------------------
-class IDFObjectManager(Cached):
+class IDFObjectManager:
     idf_object_cls = IDFObject  # for subclassing
 
     _COMMENT_COLUMN_START = 35
@@ -201,7 +285,6 @@ class IDFObjectManager(Cached):
     _COMMENT = 1
 
     def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
-        self._activate_cache()
         self._ref = ref
         self._head_comment = head_comment
         self._tail_comment = tail_comment
@@ -1175,8 +1258,6 @@ class IDF:
 
     def clear_cache(self):
         self._.clear_cache()
-        for o in self._.objects_l:
-            o._.clear_cache()
 
     @property
     @contextmanager
@@ -1282,3 +1363,7 @@ class QuerySet:
 
     def __len__(self):
         return len(self._objects_l)
+
+
+
+

@@ -23,7 +23,6 @@ import pandas as pd
 
 from oplus import __version__, CONF
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -273,80 +272,6 @@ def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, bea
                     if hasattr(sys.stdout, "flush"):
                         sys.stdout.flush()
         return sub_p.returncode
-
-
-class CacheKey:
-    """
-    emulated a dict that can store hashable types
-    """
-    def __init__(self, method, *args, **kwargs):
-        self._value = tuple([method] + list(args) + [(k, v) for k, v in sorted(kwargs.items())])
-
-    def __hash__(self):
-        return self._value.__hash__()
-
-    def __eq__(self, other):
-        return self.__hash__() == other.__hash__()
-
-    def __str__(self):
-        return "<CacheKey: %s>" % str(self._value)
-
-
-def clear_cache(method):
-    def wrapper(self, *args, **kwargs):
-        assert isinstance(self, Cached), "decorator was applied to a non-cached class (%s)" % method
-        self._deactivate_cache()
-        res = method(self, *args, **kwargs)
-        self._activate_cache()
-        return res
-    return wrapper
-
-
-def cached(method):
-    def wrapper(self, *args, **kwargs):
-        assert isinstance(self, Cached), "decorator was applied to a non-cached class (%s)" % method
-        if not self.is_cached:
-            return method(self, *args, **kwargs)
-        key = CacheKey(method, *args, **kwargs)
-        if key not in self.cache:
-            self.cache[key] = dict(value=method(self, *args, **kwargs), hits=0)
-        else:
-            self.cache[key]["hits"] += 1
-        return self.cache[key]["value"]
-    return wrapper
-
-
-class Cached:
-    cache = None  # dict(key: dict(value=v, hits=0))  (hits for testing)
-
-    def _activate_cache(self):
-        if self.cache is None:
-            self.cache = {}
-
-    # todo: remove this method at the next major update
-    def activate_cache(self):
-        warnings.warn(
-            "activate_cache is deprecated and will be removed: the cache is now managed automatically",
-            category=DeprecationWarning
-        )
-
-    def _deactivate_cache(self):
-        self.cache = None
-
-    # todo: remove this method at the next major update
-    def deactivate_cache(self):
-        warnings.warn(
-            "deactivate_cache is deprecated and will be removed: the cache is now managed automatically",
-            category=DeprecationWarning
-        )
-
-    def clear_cache(self):
-        if self.cache is not None:
-            self.cache = {}
-
-    @property
-    def is_cached(self):
-        return self.cache is not None
 
 
 class Enum(collections.UserDict):

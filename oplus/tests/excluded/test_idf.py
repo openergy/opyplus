@@ -2,7 +2,7 @@ import unittest
 import os
 import logging
 
-from oplus.idf import IDF, IDFObject, IDFError
+from oplus.idf import IDF, IDFObject, IDFError, CacheKey
 from oplus.util import CachingNotAllowedError
 from oplus.idf import BrokenIDFError, IsPointedError
 from oplus.configuration import CONF
@@ -186,11 +186,8 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
         self.assertRaises(IDFError, lambda: sch.pop(1))
 
     def test_cache_on_filter(self):
-        # activate
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertEqual(1, len(self.idf._.cache))
-        k = list(self.idf._.cache.keys())[0]
-        self.assertEqual(0, self.idf._.cache[k]["hits"])
+        self.assertTrue(len(self.idf._.cache) > 0)
 
         # clear
         self.idf.clear_cache()
@@ -198,13 +195,7 @@ class OneZoneEvapCoolerDynamic(unittest.TestCase):
 
         # retry
         sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertEqual(1, len(self.idf._.cache))
-        k = list(self.idf._.cache.keys())[0]
-        self.assertEqual(0, self.idf._.cache[k]["hits"])
-
-        # check 1 hit
-        sch = self.idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-        self.assertEqual(1, self.idf._.cache[k]["hits"])
+        self.assertTrue(len(self.idf._.cache) > 0)
 
 
 class FourZoneWithShadingSimple1(unittest.TestCase):
