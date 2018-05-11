@@ -4,8 +4,6 @@ import re
 from oplus.configuration import CONF
 
 
-
-
 class MTDError(Exception):
     pass
 
@@ -109,30 +107,3 @@ class Variable:
         if meter in self.meters_l:
             raise MTDError("Meter already linked.")
         self.meters_l = []
-
-if __name__ == "__main__":
-    mtd = MTD(r"C:\Users\Geoffroy\Desktop\simul_dir\rs_2013-opt_chicago.mtd")
-
-    # print("VARIABLES")
-    # for k in sorted(mtd._variables_d):
-    #     print("'%s'" % k)
-    #
-    # print()
-    # print("METERS")
-    # for k in sorted(mtd._meters_d):
-    #     print("'%s'" % k)
-
-    # print(mtd.get_variable_refs("CH4:Facility"))
-    meters_structure = [
-        # "Heating", "Cooling", "InteriorLights", "ExteriorLights", "InteriorEquipment", "ExteriorEquipment", "Fans",
-        # "Pumps", "HeatRejection", "Humidification", "HeatRecovery", "WaterSystems", "Refrigeration", "Generators"
-        ["Electricity", ["Heating", "Cooling", "InteriorLights", "ExteriorLights", "InteriorEquipment", "Fans",
-                         "HeatRecovery"]],
-        ["Gas", ["Heating", "WaterSystems"]],
-        ["Water", ["WaterSystems"]]
-    ]
-    for source, uses_l in meters_structure:
-        for use in uses_l:
-            meter_ref = "%s:%s" % (use, source)
-            if not mtd.has_meter(meter_ref):
-                print("ERROR: '%s' not found." % meter_ref)

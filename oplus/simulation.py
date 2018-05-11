@@ -118,7 +118,7 @@ class Simulation:
             base_dir_path,
             simulation_name=None,
             start=None,
-            simulation_control=None,
+            simulation_control=None,  # todo: remove
             encoding=None,
             idd_or_path=None,
             stdout=None,
@@ -139,7 +139,7 @@ class Simulation:
             os.mkdir(simulation_dir_path)
 
         # simulation control
-        # todo: shouldn't this be in idf builder ?
+        # todo: remove, this is idf manipluation
         if simulation_control is not None:
             _sizing_ = "Sizing"
             _run_periods_ = "RunPeriods"

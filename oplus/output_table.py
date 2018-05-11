@@ -9,7 +9,6 @@ class OutputTableError(Exception):
     pass
 
 
-
 class OutputTable:
     def __init__(self, path, logger_name=None, encoding=None):
         if not os.path.isfile(path):
@@ -114,11 +113,3 @@ class OutputTable:
         if not table_name in tables_d:
             raise OutputTableError("Table name '%s' not found in report '%s'." % (table_name, report_name))
         return tables_d[table_name]
-
-
-if __name__ == "__main__":
-    table = OutputTable(r"C:\Users\Geoffroy\Desktop\simul_dir\oplusTable.csv")
-    #print(table._reports_d["Annual Building Utility Performance Summary"])
-    print(table.get_table("End Uses"))
-
-

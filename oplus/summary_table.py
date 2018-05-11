@@ -150,31 +150,3 @@ class SummaryTable:
 
         return df
 
-
-if __name__ == '__main__':
-    import oplus as op
-    rsc_path = os.path.join(os.getcwd().split('oplus')[0], 'antoine-work', 'csv')
-
-    # summary = SummaryTable(os.path.join(rsc_path, 'stchamond.csv'))
-
-    summary = SummaryTable(os.path.join(rsc_path, 'eplustbl.csv'))
-    # for k in summary.get_report_keys():
-    #     if 'Sizing' in k:
-    #         print(k)
-
-    # for tablename in summary.get_table_report_list('Component Sizing Summary_Entire Facility'):
-    #     print(tablename)
-
-    # for tablename in summary.get_table_report_list('Component Sizing Summary_Entire Facility'):
-    #     print(tablename)
-    #     df = summary.get_table_df('Component Sizing Summary_Entire Facility', tablename)
-
-    #
-    # with open(os.path.join(rsc_path, 'eplustbl.csv'), encoding=CONF.encoding) as f:
-    #     for var in enumerate(f):
-    #         if var[0] > 8735 and var[0] <= 9091:
-    #             print(var[1])
-
-    df = summary.get_table_df('Component Sizing Summary_Entire Facility', 'AirTerminal:SingleDuct:Uncontrolled')
-    # df = summary.get_table_df("Input Verification and Results Summary_Entire Facility",'General')
-    print(df)

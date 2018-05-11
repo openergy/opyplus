@@ -1,0 +1,109 @@
+Program Version,EnergyPlus, Version 8.5.0-c87e61b44b, YMD=2018.05.11 18:47
+1,5,Environment Title[],Latitude[deg],Longitude[deg],Time Zone[],Elevation[m]
+2,6,Day of Simulation[],Month[],Day of Month[],DST Indicator[1=yes 0=no],Hour[],StartMinute[],EndMinute[],DayType
+3,3,Cumulative Day of Simulation[],Month[],Day of Month[],DST Indicator[1=yes 0=no],DayType  ! When Daily Meters Requested
+4,2,Cumulative Days of Simulation[],Month[]  ! When Monthly Meters Requested
+5,1,Cumulative Days of Simulation[] ! When Run Period Meters Requested
+25,1,ExteriorLights:Electricity [J] !Hourly
+87,1,EnergyTransfer:Building [J] !Hourly
+77,1,EnergyTransfer:Facility [J] !Hourly
+End of Data Dictionary
+1,Tampa International Ap FL USA TMY3 WMO#=722110,  27.97, -82.53,  -5.00,   6.00
+2,1, 1, 1, 0, 1, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 2, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 3, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 4, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 5, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 6, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 7, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 8, 0.00,60.00,Tuesday
+25,4725000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0, 9, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,10, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,11, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,12, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,13, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,14, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,15, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,16, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,17, 0.00,60.00,Tuesday
+25,0.0
+77,0.0
+87,0.0
+2,1, 1, 1, 0,18, 0.00,60.00,Tuesday
+25,9450000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0,19, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0,20, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0,21, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0,22, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0,23, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+2,1, 1, 1, 0,24, 0.00,60.00,Tuesday
+25,18900000.
+77,0.0
+87,0.0
+End of Data
+ Number of Records Written=          72
