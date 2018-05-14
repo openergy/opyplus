@@ -229,6 +229,7 @@ class ObjectDescriptor:
             self._extensible_cycle_start = i
         return self._extensible_cycle_len, self._extensible_cycle_start
 
+
 class IDD:
     @classmethod
     def get_idd(cls, idd_or_path, logger_name=None, encoding=None):
