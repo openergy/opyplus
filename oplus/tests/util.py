@@ -5,11 +5,9 @@ from oplus import CONF
 RESOURCES_DIR_PATH = os.path.join(os.path.dirname(__file__), "resources")
 
 TESTED_EPLUS_VERSIONS = (
-    (8, 1, 0),
-    (8, 3, 0),
-    (8, 4, 0),
-    (8, 5, 0)
-)  # todo: ask antoine
+    (8, 5, 0),
+    (8, 6, 0)
+)
 
 
 def eplus_tester(test_case):

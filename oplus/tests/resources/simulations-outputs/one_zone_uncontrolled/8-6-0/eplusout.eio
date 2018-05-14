@@ -1,6 +1,6 @@
-Program Version,EnergyPlus, Version 8.3.0-6d97d074ea, YMD=2018.05.11 18:47
+Program Version,EnergyPlus, Version 8.6.0-198c6a3cff, YMD=2018.05.14 11:07
 ! <Version>, Version ID
- Version, 8.3
+ Version, 8.6
 ! <Timesteps per Hour>, #TimeSteps, Minutes per TimeStep {minutes}
  Timesteps per Hour,  4, 15
 ! <System Convergence Limits>, Minimum System TimeStep {minutes}, Max HVAC Iterations, Minimum Plant Iterations, Maximum Plant Iterations
@@ -39,12 +39,12 @@ Outside Convection Algorithm,DOE-2
 Sky Radiance Distribution,Anisotropic
 ! <Zone Air Solution Algorithm>, Value {ThirdOrderBackwardDifference | AnalyticalSolution | EulerMethod}
  Zone Air Solution Algorithm, ThirdOrderBackwardDifference
-! <Zone Air Contaminant Balance Simulation>, Simulation {Yes/No}, Carbon Dioxide Concentration
+! <Zone Air Carbon Dioxide Balance Simulation>, Simulation {Yes/No}, Carbon Dioxide Concentration
  Zone Air Carbon Dioxide Balance Simulation, No,N/A
-! <Zone Air Contaminant Balance Simulation>, Simulation {Yes/No}, Generic Contaminant Concentration
+! <Zone Air Generic Contaminant Balance Simulation>, Simulation {Yes/No}, Generic Contaminant Concentration
  Zone Air Generic Contaminant Balance Simulation, No,N/A
-! <Zone Air Mass Flow Balance Simulation>, Simulation {Yes/No}
- Zone Air Mass Flow Balance Simulation, No
+! <Zone Air Mass Flow Balance Simulation>, Enforce Mass Balance, Adjust Zone Mixing, Adjust Zone Infiltration {AddInfiltration | AdjustInfiltration | None}, Infiltration Zones {MixingSourceZonesOnly | AllZones}
+ Zone Air Mass Flow Balance Simulation, No,N/A,N/A,N/A
 ! <Environment:Site Atmospheric Variation>,Wind Speed Profile Exponent {},Wind Speed Profile Boundary Layer Thickness {m},Air Temperature Gradient Coefficient {K/m}
 Environment:Site Atmospheric Variation,0.220,370.000,6.500000E-003
 ! <SurfaceGeometry>,Starting Corner,Vertex Input Direction,Coordinate System,Daylight Reference Point Coordinate System,Rectangular (Simple) Surface Coordinate System

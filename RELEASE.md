@@ -2,6 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
+### 5.1.2
+* p: tests are now properly organized
+
 ### 5.1.1
 * p: Fixed bug on the caching system for IDF objects
 

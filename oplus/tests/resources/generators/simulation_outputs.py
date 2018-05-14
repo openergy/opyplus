@@ -30,7 +30,8 @@ to_simulate = [
         "dir_name": "one_zone_uncontrolled",
         "idf": "1ZoneUncontrolled",
         "epw": "USA_FL_Tampa.Intl.AP.722110_TMY3",
-        "pre_process": one_zone_pre_process
+        "pre_process": one_zone_pre_process,
+        "extensions": ("eio", "err", "eso"),
     }
 ]
 
@@ -84,6 +85,14 @@ def generate_outputs():
             # simulate
             simulate(idf, epw_path, dir_path)
 
+            # remove unwanted extensions
+            for file_name in os.listdir(dir_path):
+                file_path = os.path.join(dir_path, file_name)
+                _, ext = os.path.splitext(file_path)
+                if ext[1:] not in simulation_case["extensions"]:
+                    os.remove(file_path)
+
 
 if __name__ == "__main__":
     generate_outputs()
+
