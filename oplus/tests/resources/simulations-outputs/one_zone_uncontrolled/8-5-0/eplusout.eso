@@ -1,0 +1,442 @@
+Program Version,EnergyPlus, Version 8.5.0-c87e61b44b, YMD=2018.05.14 11:07
+1,5,Environment Title[],Latitude[deg],Longitude[deg],Time Zone[],Elevation[m]
+2,6,Day of Simulation[],Month[],Day of Month[],DST Indicator[1=yes 0=no],Hour[],StartMinute[],EndMinute[],DayType
+3,3,Cumulative Day of Simulation[],Month[],Day of Month[],DST Indicator[1=yes 0=no],DayType  ! When Daily Report Variables Requested
+4,2,Cumulative Days of Simulation[],Month[]  ! When Monthly Report Variables Requested
+5,1,Cumulative Days of Simulation[] ! When Run Period Report Variables Requested
+6,1,Environment,Site Outdoor Air Drybulb Temperature [C] !Hourly
+7,1,Environment,Site Outdoor Air Drybulb Temperature [C] !TimeStep
+8,7,Environment,Site Outdoor Air Drybulb Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+9,9,Environment,Site Outdoor Air Drybulb Temperature [C] !Monthly [Value,Min,Day,Hour,Minute,Max,Day,Hour,Minute]
+10,11,Environment,Site Outdoor Air Drybulb Temperature [C] !RunPeriod [Value,Min,Month,Day,Hour,Minute,Max,Month,Day,Hour,Minute]
+11,7,Environment,Site Daylight Saving Time Status [] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+12,7,Environment,Site Day Type Index [] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+44,1,ZONE ONE,Zone Total Internal Latent Gain Energy [J] !Hourly
+45,9,TEST 352A,Other Equipment Total Heating Energy [J] !Monthly  [Value,Min,Day,Hour,Minute,Max,Day,Hour,Minute]
+46,9,ZONE ONE,Zone Other Equipment Total Heating Energy [J] !Monthly  [Value,Min,Day,Hour,Minute,Max,Day,Hour,Minute]
+47,9,TEST 352 MINUS,Other Equipment Total Heating Energy [J] !Monthly  [Value,Min,Day,Hour,Minute,Max,Day,Hour,Minute]
+48,7,ZN001:WALL001,Surface Inside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+49,7,ZN001:WALL001,Surface Outside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+50,7,ZN001:WALL001,Surface Inside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+51,7,ZN001:WALL001,Surface Outside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+52,7,ZN001:WALL002,Surface Inside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+53,7,ZN001:WALL002,Surface Outside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+54,7,ZN001:WALL002,Surface Inside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+55,7,ZN001:WALL002,Surface Outside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+56,7,ZN001:WALL003,Surface Inside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+57,7,ZN001:WALL003,Surface Outside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+58,7,ZN001:WALL003,Surface Inside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+59,7,ZN001:WALL003,Surface Outside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+60,7,ZN001:WALL004,Surface Inside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+61,7,ZN001:WALL004,Surface Outside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+62,7,ZN001:WALL004,Surface Inside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+63,7,ZN001:WALL004,Surface Outside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+64,7,ZN001:FLR001,Surface Inside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+65,7,ZN001:FLR001,Surface Outside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+66,7,ZN001:FLR001,Surface Inside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+67,7,ZN001:ROOF001,Surface Inside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+68,7,ZN001:ROOF001,Surface Outside Face Temperature [C] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+69,7,ZN001:ROOF001,Surface Inside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+70,7,ZN001:ROOF001,Surface Outside Face Convection Heat Transfer Coefficient [W/m2-K] !Daily [Value,Min,Hour,Minute,Max,Hour,Minute]
+71,1,ZONE ONE,Zone Mean Radiant Temperature [C] !Hourly
+72,1,ZONE ONE,Zone Mean Air Temperature [C] !Hourly
+73,1,ZONE ONE,Zone Air Heat Balance Surface Convection Rate [W] !Hourly
+74,1,ZONE ONE,Zone Air Heat Balance Air Energy Storage Rate [W] !Hourly
+End of Data Dictionary
+1,Tampa International Ap FL USA TMY3 WMO#=722110,  27.97, -82.53,  -5.00,   6.00
+2,1, 1, 1, 0, 1, 0.00,15.00,Tuesday
+7,19.85
+2,1, 1, 1, 0, 1,15.00,30.00,Tuesday
+7,19.7
+2,1, 1, 1, 0, 1,30.00,45.00,Tuesday
+7,19.55
+2,1, 1, 1, 0, 1,45.00,60.00,Tuesday
+7,19.4
+2,1, 1, 1, 0, 1, 0.00,60.00,Tuesday
+6,19.625
+44,0.0
+71,19.4426884389695
+72,19.4612128466586
+73,-5.2653243728043
+74,-3.65194086141183
+2,1, 1, 1, 0, 2, 0.00,15.00,Tuesday
+7,19.4
+2,1, 1, 1, 0, 2,15.00,30.00,Tuesday
+7,19.4
+2,1, 1, 1, 0, 2,30.00,45.00,Tuesday
+7,19.4
+2,1, 1, 1, 0, 2,45.00,60.00,Tuesday
+7,19.4
+2,1, 1, 1, 0, 2, 0.00,60.00,Tuesday
+6,19.4
+44,0.0
+71,19.4089022247819
+72,19.4360424683628
+73,-10.6016655532915
+74,-10.6522616029828
+2,1, 1, 1, 0, 3, 0.00,15.00,Tuesday
+7,19.825
+2,1, 1, 1, 0, 3,15.00,30.00,Tuesday
+7,20.25
+2,1, 1, 1, 0, 3,30.00,45.00,Tuesday
+7,20.675
+2,1, 1, 1, 0, 3,45.00,60.00,Tuesday
+7,21.1
+2,1, 1, 1, 0, 3, 0.00,60.00,Tuesday
+6,20.4625
+44,0.0
+71,19.4862818002959
+72,19.4349351973216
+73,16.7012436645782
+74,10.9703647287117
+2,1, 1, 1, 0, 4, 0.00,15.00,Tuesday
+7,21.1
+2,1, 1, 1, 0, 4,15.00,30.00,Tuesday
+7,21.1
+2,1, 1, 1, 0, 4,30.00,45.00,Tuesday
+7,21.1
+2,1, 1, 1, 0, 4,45.00,60.00,Tuesday
+7,21.1
+2,1, 1, 1, 0, 4, 0.00,60.00,Tuesday
+6,21.1
+44,0.0
+71,19.5584825784899
+72,19.5053296427485
+73,24.5006405851531
+74,26.6122593328323
+2,1, 1, 1, 0, 5, 0.00,15.00,Tuesday
+7,20.55
+2,1, 1, 1, 0, 5,15.00,30.00,Tuesday
+7,20.
+2,1, 1, 1, 0, 5,30.00,45.00,Tuesday
+7,19.45
+2,1, 1, 1, 0, 5,45.00,60.00,Tuesday
+7,18.9
+2,1, 1, 1, 0, 5, 0.00,60.00,Tuesday
+6,19.725
+44,0.0
+71,19.4733330123169
+72,19.5259059630825
+73,-16.7985642166482
+74,-9.36599611549106
+2,1, 1, 1, 0, 6, 0.00,15.00,Tuesday
+7,19.025
+2,1, 1, 1, 0, 6,15.00,30.00,Tuesday
+7,19.15
+2,1, 1, 1, 0, 6,30.00,45.00,Tuesday
+7,19.275
+2,1, 1, 1, 0, 6,45.00,60.00,Tuesday
+7,19.4
+2,1, 1, 1, 0, 6, 0.00,60.00,Tuesday
+6,19.2125
+44,0.0
+71,19.4193336804534
+72,19.4574023691711
+73,-17.9192880442364
+74,-22.4679833988311
+2,1, 1, 1, 0, 7, 0.00,15.00,Tuesday
+7,19.275
+2,1, 1, 1, 0, 7,15.00,30.00,Tuesday
+7,19.15
+2,1, 1, 1, 0, 7,30.00,45.00,Tuesday
+7,19.025
+2,1, 1, 1, 0, 7,45.00,60.00,Tuesday
+7,18.9
+2,1, 1, 1, 0, 7, 0.00,60.00,Tuesday
+6,19.0875
+44,0.0
+71,19.3969440591776
+72,19.4255469510508
+73,-10.9919431439255
+74,-9.76647819795083
+2,1, 1, 1, 0, 8, 0.00,15.00,Tuesday
+7,18.9
+2,1, 1, 1, 0, 8,15.00,30.00,Tuesday
+7,18.9
+2,1, 1, 1, 0, 8,30.00,45.00,Tuesday
+7,18.9
+2,1, 1, 1, 0, 8,45.00,60.00,Tuesday
+7,18.9
+2,1, 1, 1, 0, 8, 0.00,60.00,Tuesday
+6,18.9
+44,0.0
+71,19.3888926780349
+72,19.3977553112878
+73,-3.79148128722858
+74,-6.37204154256154
+2,1, 1, 1, 0, 9, 0.00,15.00,Tuesday
+7,19.175
+2,1, 1, 1, 0, 9,15.00,30.00,Tuesday
+7,19.45
+2,1, 1, 1, 0, 9,30.00,45.00,Tuesday
+7,19.725
+2,1, 1, 1, 0, 9,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0, 9, 0.00,60.00,Tuesday
+6,19.5875
+44,0.0
+71,19.4317904894294
+72,19.403881295133
+73,8.27892608833466
+74,6.56702076436853
+2,1, 1, 1, 0,10, 0.00,15.00,Tuesday
+7,19.725
+2,1, 1, 1, 0,10,15.00,30.00,Tuesday
+7,19.45
+2,1, 1, 1, 0,10,30.00,45.00,Tuesday
+7,19.175
+2,1, 1, 1, 0,10,45.00,60.00,Tuesday
+7,18.9
+2,1, 1, 1, 0,10, 0.00,60.00,Tuesday
+6,19.3125
+44,0.0
+71,19.4061418342016
+72,19.4224808031194
+73,-5.22095907303624
+74,9.683115080967886E-002
+2,1, 1, 1, 0,11, 0.00,15.00,Tuesday
+7,19.025
+2,1, 1, 1, 0,11,15.00,30.00,Tuesday
+7,19.15
+2,1, 1, 1, 0,11,30.00,45.00,Tuesday
+7,19.275
+2,1, 1, 1, 0,11,45.00,60.00,Tuesday
+7,19.4
+2,1, 1, 1, 0,11, 0.00,60.00,Tuesday
+6,19.2125
+44,0.0
+71,19.396434448906
+72,19.39717095684
+73,-2.54356167196143
+74,-6.31728803960286
+2,1, 1, 1, 0,12, 0.00,15.00,Tuesday
+7,19.55
+2,1, 1, 1, 0,12,15.00,30.00,Tuesday
+7,19.7
+2,1, 1, 1, 0,12,30.00,45.00,Tuesday
+7,19.85
+2,1, 1, 1, 0,12,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0,12, 0.00,60.00,Tuesday
+6,19.775
+44,0.0
+71,19.4317289958754
+72,19.4077675637751
+73,6.13062220575403
+74,6.3072920238178
+2,1, 1, 1, 0,13, 0.00,15.00,Tuesday
+7,19.85
+2,1, 1, 1, 0,13,15.00,30.00,Tuesday
+7,19.7
+2,1, 1, 1, 0,13,30.00,45.00,Tuesday
+7,19.55
+2,1, 1, 1, 0,13,45.00,60.00,Tuesday
+7,19.4
+2,1, 1, 1, 0,13, 0.00,60.00,Tuesday
+6,19.625
+44,0.0
+71,19.4349512026789
+72,19.4217836201567
+73,3.05056381794685
+74,3.66050479455798
+2,1, 1, 1, 0,14, 0.00,15.00,Tuesday
+7,19.275
+2,1, 1, 1, 0,14,15.00,30.00,Tuesday
+7,19.15
+2,1, 1, 1, 0,14,30.00,45.00,Tuesday
+7,19.025
+2,1, 1, 1, 0,14,45.00,60.00,Tuesday
+7,18.9
+2,1, 1, 1, 0,14, 0.00,60.00,Tuesday
+6,19.0875
+44,0.0
+71,19.4022010700819
+72,19.4203176528601
+73,-5.27371117098101
+74,-3.84725037332086
+2,1, 1, 1, 0,15, 0.00,15.00,Tuesday
+7,18.75
+2,1, 1, 1, 0,15,15.00,30.00,Tuesday
+7,18.6
+2,1, 1, 1, 0,15,30.00,45.00,Tuesday
+7,18.45
+2,1, 1, 1, 0,15,45.00,60.00,Tuesday
+7,18.3
+2,1, 1, 1, 0,15, 0.00,60.00,Tuesday
+6,18.525
+44,0.0
+71,19.4471535785868
+72,19.4115936198674
+73,15.3680940168065
+74,7.83532187487707
+2,1, 1, 1, 0,16, 0.00,15.00,Tuesday
+7,18.875
+2,1, 1, 1, 0,16,15.00,30.00,Tuesday
+7,19.45
+2,1, 1, 1, 0,16,30.00,45.00,Tuesday
+7,20.025
+2,1, 1, 1, 0,16,45.00,60.00,Tuesday
+7,20.6
+2,1, 1, 1, 0,16, 0.00,60.00,Tuesday
+6,19.7375
+44,0.0
+71,19.4333457125285
+72,19.4375623075778
+73,-3.61266604713981
+74,1.03622273377698
+2,1, 1, 1, 0,17, 0.00,15.00,Tuesday
+7,20.45
+2,1, 1, 1, 0,17,15.00,30.00,Tuesday
+7,20.3
+2,1, 1, 1, 0,17,30.00,45.00,Tuesday
+7,20.15
+2,1, 1, 1, 0,17,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0,17, 0.00,60.00,Tuesday
+6,20.225
+44,0.0
+71,19.4874635797861
+72,19.4600750498209
+73,10.511664441313
+74,11.3232231278627
+2,1, 1, 1, 0,18, 0.00,15.00,Tuesday
+7,20.15
+2,1, 1, 1, 0,18,15.00,30.00,Tuesday
+7,20.3
+2,1, 1, 1, 0,18,30.00,45.00,Tuesday
+7,20.45
+2,1, 1, 1, 0,18,45.00,60.00,Tuesday
+7,20.6
+2,1, 1, 1, 0,18, 0.00,60.00,Tuesday
+6,20.375
+44,0.0
+71,19.5012827003827
+72,19.4820444929952
+73,7.15927161760346
+74,6.81618779978632
+2,1, 1, 1, 0,19, 0.00,15.00,Tuesday
+7,20.6
+2,1, 1, 1, 0,19,15.00,30.00,Tuesday
+7,20.6
+2,1, 1, 1, 0,19,30.00,45.00,Tuesday
+7,20.6
+2,1, 1, 1, 0,19,45.00,60.00,Tuesday
+7,20.6
+2,1, 1, 1, 0,19, 0.00,60.00,Tuesday
+6,20.6
+44,0.0
+71,19.4992968493627
+72,19.4996258173478
+73,2.44694529156904
+74,4.12419764312086
+2,1, 1, 1, 0,20, 0.00,15.00,Tuesday
+7,20.45
+2,1, 1, 1, 0,20,15.00,30.00,Tuesday
+7,20.3
+2,1, 1, 1, 0,20,30.00,45.00,Tuesday
+7,20.15
+2,1, 1, 1, 0,20,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0,20, 0.00,60.00,Tuesday
+6,20.225
+44,0.0
+71,19.4870995908598
+72,19.4967038607536
+73,-2.09815724391534
+74,-2.37537578650432
+2,1, 1, 1, 0,21, 0.00,15.00,Tuesday
+7,20.
+2,1, 1, 1, 0,21,15.00,30.00,Tuesday
+7,20.
+2,1, 1, 1, 0,21,30.00,45.00,Tuesday
+7,20.
+2,1, 1, 1, 0,21,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0,21, 0.00,60.00,Tuesday
+6,20.
+44,0.0
+71,19.4748955264887
+72,19.4892849165384
+73,-2.91332693716486
+74,-2.92703130976581
+2,1, 1, 1, 0,22, 0.00,15.00,Tuesday
+7,19.85
+2,1, 1, 1, 0,22,15.00,30.00,Tuesday
+7,19.7
+2,1, 1, 1, 0,22,30.00,45.00,Tuesday
+7,19.55
+2,1, 1, 1, 0,22,45.00,60.00,Tuesday
+7,19.4
+2,1, 1, 1, 0,22, 0.00,60.00,Tuesday
+6,19.625
+44,0.0
+71,19.4499842676067
+72,19.4771928028193
+73,-7.69477190514535
+74,-6.43765235257004
+2,1, 1, 1, 0,23, 0.00,15.00,Tuesday
+7,19.55
+2,1, 1, 1, 0,23,15.00,30.00,Tuesday
+7,19.7
+2,1, 1, 1, 0,23,30.00,45.00,Tuesday
+7,19.85
+2,1, 1, 1, 0,23,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0,23, 0.00,60.00,Tuesday
+6,19.775
+44,0.0
+71,19.4536847201815
+72,19.4577330570891
+73,-2.24363896903851
+74,-4.17628804866752
+2,1, 1, 1, 0,24, 0.00,15.00,Tuesday
+7,20.
+2,1, 1, 1, 0,24,15.00,30.00,Tuesday
+7,20.
+2,1, 1, 1, 0,24,30.00,45.00,Tuesday
+7,20.
+2,1, 1, 1, 0,24,45.00,60.00,Tuesday
+7,20.
+2,1, 1, 1, 0,24, 0.00,60.00,Tuesday
+6,20.
+44,0.0
+71,19.4695229522902
+72,19.4609901942637
+73,2.2589550782051
+74,2.43383496888081
+3,1, 1, 1, 0,Tuesday
+8,19.7166666666667,18.3,15,60,21.1, 3,60
+48,19.4528808672565,19.3121309155571,10,60,19.6366166871224, 4,60
+49,19.5100874282634,18.4932871198298,10,60,20.7650105681046, 4,60
+50,0.442554533246103,0.118035943041721, 9,45,0.731802273453132,15,60
+51,462.745446395991,1.02550099413726,19,60,1000., 9,15
+52,19.4525918936761,19.3121140299761,10,60,19.6366166871167, 4,60
+53,19.5057959958759,18.4930307996792,10,60,20.7650105680856, 4,60
+54,0.442233906184988,0.11803592653133, 9,45,0.723743858622456,15,60
+55,462.645428771095,1.06048764083557,19,60,1000., 9,15
+56,19.4526488432054,19.3120320700214,10,60,19.6360342002386, 4,60
+57,19.5067710466855,18.4917434130655,10,60,20.7560409142418, 4,60
+58,0.442079193319464,0.105697992986245, 1,30,0.746354694299407,15,60
+59,462.400986442151,1.0604881093593,19,60,1000., 9,15
+60,19.4527839250096,19.3120320700214,10,60,19.6366166871224, 4,60
+61,19.5086496203185,18.4917434130655,10,60,20.7650105681046, 4,60
+62,0.44257185602461,0.118035943041721, 9,45,0.72943956991109,15,60
+63,462.720365534629,1.02582225962703,19,60,1000., 9,15
+64,19.4489295472358,19.4135110344303,15,30,19.4825495794057, 5,15
+65,19.4489462582329,19.4135110344303,15,45,19.4825495794057, 5,30
+66,0.293800057010315,0.1, 1,30,0.532666993841897, 8,60
+67,19.4453769262555,19.3483758631536,15,30,19.5774666271643, 4,60
+68,19.2736234532849,18.1789224853602, 2,60,21.8074527721134,15,45
+69,0.361745389162305,0.1, 5,30,0.714450293252521, 6,15
+70,463.428756928498,0.839350505135401,19,60,1000., 9,15
+11,0.0,0, 1,15,0, 1,15
+12,3.,3, 1,15,3, 1,15
+4,1, 1
+9,19.7166666666667,18.3, 1,15,60,21.1, 1, 3,60
+45,30412800.,316800., 1, 1,15,316800., 1, 1,15
+46,0.0,0.0, 1, 1,15,0.0, 1, 1,15
+47,-30412800.,-316800., 1, 1,15,-316800., 1, 1,15
+5,1
+10,19.7166666666667,18.3, 1, 1,15,60,21.1, 1, 1, 3,60
+End of Data
+ Number of Records Written=         271

@@ -2,9 +2,6 @@
 
 **M: major, m: minor, p: patch**
 
-### 5.1.3
-* p: 5.1.2 was no properly created
-
 ### 5.1.2
 * p: tests are now properly organized
 

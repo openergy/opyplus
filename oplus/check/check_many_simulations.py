@@ -33,5 +33,6 @@ def check():
         if test_num == MAX_TESTS_NB:
             break
 
+
 if __name__ == "__main__":
     check()

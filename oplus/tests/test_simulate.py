@@ -3,57 +3,63 @@ import os
 import tempfile
 import io
 
-from oplus.idf import IDF
-from oplus.epw import EPW
-from oplus.standard_output import StandardOutputFile
-from oplus.simulation import simulate
-from oplus.configuration import CONF
+from oplus import simulate, CONF, IDF
+from oplus.tests.util import eplus_tester
 
 
-class OneZoneEvapCooler(unittest.TestCase):
+class SimulateTest(unittest.TestCase):
     """
-    Tested under EPlus 8.1.0 on Windows (Geoffroy).
+    we test everything in one simulation, for performance reasons
     """
-    idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
-    epw = EPW(os.path.join(CONF.eplus_base_dir_path, "WeatherData", "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"))
-
-    def test_simulation_control(self):
-        for (simulation_control, expected_environments) in (
-                (None, {"RunPeriod", "SummerDesignDay", "WinterDesignDay"}),
-                ("RunPeriods", {"RunPeriod"}),
-                ("Sizing", {"SummerDesignDay", "WinterDesignDay"})
-        ):
-            with tempfile.TemporaryDirectory() as dir_path:
-                s = simulate(self.idf, self.epw, dir_path, simulation_control=simulation_control)
-
-                self.assertIsInstance(s.eso, StandardOutputFile)
-                self.assertIsInstance(s.mtr, StandardOutputFile)
-                self.assertEqual(set(s.eso.environments), expected_environments)
-                self.assertEqual(set(s.mtr.environments), expected_environments)
-                break
-
-    def test_redirect_output(self):
-        with tempfile.TemporaryDirectory() as dir_path:
-            out_f, err_f = io.StringIO("hey"), io.StringIO("ho")
-
-            s = simulate(
-                self.idf,
-                self.epw,
-                dir_path,
-                stdout=out_f,
-                stderr=err_f
+    def test_simulate(self):
+        for eplus_version in eplus_tester(self):
+            # prepare paths
+            idf_path = os.path.join(
+                CONF.eplus_base_dir_path,
+                "ExampleFiles",
+                "1ZoneEvapCooler.idf"
             )
-            self.assertGreater(len(out_f.getvalue()), 0)
-            self.assertGreater(len(err_f.getvalue()), 0)
+            epw_path = os.path.join(
+                CONF.eplus_base_dir_path,
+                "WeatherData",
+                "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"
+            )
 
-    def test_beat_freq(self):
-        with tempfile.TemporaryDirectory() as dir_path:
+            # prepare a quick simulation
+            idf = IDF(idf_path)
+            sc = idf("SimulationControl").one
+            sc["Run Simulation for Sizing Periods"] = "No"
+            rp = idf("RunPeriod").one
+            rp["End Month"] = 1
+            rp["End Day of Month"] = 1
+
+            # prepare outputs
             out_f = io.StringIO()
-            s = simulate(
-                self.idf,
-                self.epw,
-                dir_path,
-                stdout=out_f,
-                beat_freq=0.1
-            )
-            self.assertIn("subprocess is still running", out_f.getvalue())
+            err_f = io.StringIO()
+
+            # simulate
+            with tempfile.TemporaryDirectory() as dir_path:
+                s = simulate(
+                    idf,
+                    epw_path,
+                    dir_path,
+                    stdout=out_f,
+                    stderr=err_f,
+                    beat_freq=0.1
+                )
+
+                # check one day output
+                eso_df = s.eso.df()
+                self.assertEqual(24, len(eso_df))
+
+            # check err (manage differences between eplus versions)
+            expected = "" if eplus_version == (8, 3, 0) else "EnergyPlus Completed Successfully.\n"
+            self.assertEqual(expected, err_f.getvalue())
+
+            # check beat
+            out_str = out_f.getvalue()
+            self.assertIn("subprocess is still running", out_str)
+
+            # check stdout
+            out_str = out_str.replace("subprocess is still running\n", "")
+            self.assertGreater(len(out_str.split("\n")), 15)  # check that more than 15 lines

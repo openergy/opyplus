@@ -1094,6 +1094,7 @@ class IDFManager(Cached):
         return msg
 
     def to_str(self, style=None, add_copyright=True, clean=False):
+        # todo: change clean to sort, make default true, (and order table refs by idd order ?)
         if style is None:
             style = style_library[CONF.default_write_style]
         if isinstance(style, IDFStyle):
@@ -1118,14 +1119,22 @@ class IDFManager(Cached):
             content += style.get_head_comment(comment)
 
         if clean:
-            object_ref_set = set()
+            # store objects str (before order)
+            objects_l = []  # [(table_ref, obj_str), ...]
             for obj in self._objects_l:
-                object_ref_set.add(obj.ref)
+                objects_l.append((obj.ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)))
 
-            for ref in sorted(object_ref_set):
-                content += "\n" + style.get_chapter_title(ref)
-                for idf_object in self.filter_by_ref(ref):
-                    content += "\n%s" % idf_object._.to_str(style="idf", idf_style=style)
+            # iter sorted list and add chapter titles
+            current_ref = None
+
+            for (obj_ref, obj_str) in sorted(objects_l):
+                # write chapter title if needed
+                if obj_ref != current_ref:
+                    current_ref = obj_ref
+                    content += "\n" + style.get_chapter_title(current_ref)
+
+                # write object
+                content += obj_str
 
         else:
             for idf_object in self._objects_l:
@@ -1146,7 +1155,7 @@ class IDFManager(Cached):
 
 
 # ------------------------------------------------- idf ----------------------------------------------------------------
-class IDF:
+class IDF:  # todo: Idf, not IDF
     """
     IDF is allowed to access private keys/methods of IDFObject.
     """

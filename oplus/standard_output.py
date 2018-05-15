@@ -518,13 +518,3 @@ def __parse_out_optimized1(file_like):
     df.rename(columns=dict([(k, report_codes_d[k][0]) for k in report_codes_d]), inplace=True)
 
     return df
-
-
-if __name__ == "__main__":
-    pass
-    # import datetime as dt
-    # _start_dt = dt.datetime.now()
-    # out = StandardOutputFile(r"C:\Users\Geoffroy\Desktop\simul_dir\oplus.mtr")
-    # print(out.info())
-    # print(out.df(time_step="Monthly", datetime_index=True, start=1999))
-    # print(dt.datetime.now()-_start_dt)
