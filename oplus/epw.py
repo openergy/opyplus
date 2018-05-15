@@ -1,4 +1,3 @@
-import os
 import io
 import re
 
@@ -9,18 +8,47 @@ from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt, get_copyright_comment, sort_df
 
 
-
 class EPWError(Exception):
     pass
 
 
-EPW_COLUMNS = ("year", "month", "day", "hour", "minute", "datasource",
-               "drybulb", "dewpoint", "relhum", "atmos_pressure", "exthorrad",
-               "extdirrad", "horirsky", "glohorrad", "dirnorrad", "difhorrad",
-               "glohorillum", "dirnorillum", "difhorillum", "zenlum", "winddir",
-               "windspd", "totskycvr", "opaqskycvr", "visibility", "ceiling_hgt", "presweathobs",
-               "presweathcodes", "precip_wtr", "aerosol_opt_depth", "snowdepth", "days_last_snow",
-               "albedo", "liq_precip_depth", "liq_precip_rate")
+EPW_COLUMNS = (
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+    "datasource",
+    "drybulb",
+    "dewpoint",
+    "relhum",
+    "atmos_pressure",
+    "exthorrad",
+    "extdirrad",
+    "horirsky",
+    "glohorrad",
+    "dirnorrad",
+    "difhorrad",
+    "glohorillum",
+    "dirnorillum",
+    "difhorillum",
+    "zenlum",
+    "winddir",
+    "windspd",
+    "totskycvr",
+    "opaqskycvr",
+    "visibility",
+    "ceiling_hgt",
+    "presweathobs",
+    "presweathcodes",
+    "precip_wtr",
+    "aerosol_opt_depth",
+    "snowdepth",
+    "days_last_snow",
+    "albedo",
+    "liq_precip_depth",
+    "liq_precip_rate"
+)
 
 WEEK_DAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 

@@ -1,7 +1,7 @@
-Program Version,EnergyPlus, Version 8.6.0-198c6a3cff, YMD=2018.05.14 11:07,IDD_Version 8.6.0
+Program Version,EnergyPlus, Version 8.6.0-198c6a3cff, YMD=2018.05.14 11:07,Idd_Version 8.6.0
    ** Warning ** ManageSizing: For a zone sizing run, there must be at least 1 Sizing:Zone input object. SimulationControl Zone Sizing option ignored.
    ** Warning ** ManageSizing: For a plant sizing run, there must be at least 1 Sizing:Plant object input. SimulationControl Plant Sizing option ignored.
-   ** Warning ** Weather file location will be used rather than entered (IDF) Location object.
+   ** Warning ** Weather file location will be used rather than entered (Idf) Location object.
    **   ~~~   ** ..Location object=DENVER CENTENNIAL  GOLDEN   N_CO_USA DESIGN_CONDITIONS
    **   ~~~   ** ..Weather File Location=Tampa International Ap FL USA TMY3 WMO#=722110
    **   ~~~   ** ..due to location differences, Latitude difference=[11.77] degrees, Longitude difference=[22.65] degrees.

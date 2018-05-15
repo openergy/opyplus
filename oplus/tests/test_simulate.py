@@ -3,7 +3,7 @@ import os
 import tempfile
 import io
 
-from oplus import simulate, CONF, IDF
+from oplus import simulate, CONF, Idf
 from oplus.tests.util import eplus_tester
 
 
@@ -26,7 +26,7 @@ class SimulateTest(unittest.TestCase):
             )
 
             # prepare a quick simulation
-            idf = IDF(idf_path)
+            idf = Idf(idf_path)
             sc = idf("SimulationControl").one
             sc["Run Simulation for Sizing Periods"] = "No"
             rp = idf("RunPeriod").one

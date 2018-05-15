@@ -1,6 +1,6 @@
 import os
 
-from oplus import CONF, simulate, IDF
+from oplus import CONF, simulate, Idf
 from oplus.tests.util import TESTED_EPLUS_VERSIONS
 
 
@@ -71,7 +71,7 @@ def generate_outputs():
             # prepare idf if needed
             pre_process = simulation_case.get("pre_process")
             if pre_process is not None:
-                idf = IDF(idf_path)
+                idf = Idf(idf_path)
                 pre_process(idf)
             else:
                 idf = idf_path

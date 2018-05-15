@@ -1,7 +1,8 @@
 import unittest
 import os
 
-from oplus.idf import BrokenIDFError, IsPointedError, IDF, IDFObject
+from oplus import BrokenIdfError, IsPointedError, Idf
+from oplus.idf.record import Record
 from oplus.configuration import CONF
 from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
 
@@ -17,7 +18,7 @@ schedule_test_object_str = """Schedule:Compact,
 
 class StaticIdfTest(unittest.TestCase):
     """
-    Only tests that do not modify IDF (avoid loading idf several times) - else use DynamicIdfTest.
+    Only tests that do not modify Idf (avoid loading idf several times) - else use DynamicIdfTest.
     """
     idf_managers_d = None
 
@@ -26,7 +27,7 @@ class StaticIdfTest(unittest.TestCase):
         cls.idf_managers_d = {}
         for eplus_version in TESTED_EPLUS_VERSIONS:
             CONF.eplus_version = eplus_version
-            cls.idf_managers_d[eplus_version] = IDF(os.path.join(
+            cls.idf_managers_d[eplus_version] = Idf(os.path.join(
                 CONF.eplus_base_dir_path,
                 "ExampleFiles",
                 "1ZoneEvapCooler.idf")
@@ -52,7 +53,7 @@ class StaticIdfTest(unittest.TestCase):
         for eplus_version in eplus_tester(self):
             sch_name = "NEW TEST SCHEDULE"
             sch = self.idf_managers_d[eplus_version].add_object(schedule_test_object_str % sch_name)
-            self.assertTrue(isinstance(sch, IDFObject))
+            self.assertTrue(isinstance(sch, Record))
 
     def test_pointing_links_l(self):
         for eplus_version in eplus_tester(self):
@@ -88,7 +89,7 @@ class DynamicIdfTest(unittest.TestCase):
     """
     @staticmethod
     def get_idf_manager():
-        return IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
+        return Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
 
     def test_idf_add_object(self):
         for _ in eplus_tester(self):
@@ -101,7 +102,7 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
             self.assertRaises(
-                BrokenIDFError,
+                BrokenIdfError,
                 lambda: idf_manager.add_object("""Material,
     C5 - 4 IN HW CONCRETE,   !- Name
     MediumRough,             !- Roughness
@@ -117,7 +118,7 @@ class DynamicIdfTest(unittest.TestCase):
     def test_idf_add_object_broken_construct_mode(self):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
-            with self.assertRaises(BrokenIDFError):
+            with self.assertRaises(BrokenIdfError):
                 with idf_manager.under_construction:
                     idf_manager.add_object("""
                     Material,

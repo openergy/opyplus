@@ -10,8 +10,8 @@ import logging
 
 from oplus.configuration import CONF
 from oplus.util import run_subprocess, Enum, LoggerStreamWriter
-from oplus.idf import IDF
-from oplus.idd import IDD
+from oplus import Idf
+from oplus.idd.idd import Idd
 from oplus.epw import EPW
 from oplus.standard_output import StandardOutputFile
 from oplus.mtd import MTD
@@ -102,8 +102,8 @@ def _copy_without_read_only(src, dst):
 
 class Simulation:
     # for subclassing
-    _idf_cls = IDF
-    _idd_cls = IDD
+    _idf_cls = Idf
+    _idd_cls = Idd
     _epw_cls = EPW
     _standard_output_file_cls = StandardOutputFile
     _mtd_cls = MTD
@@ -147,8 +147,8 @@ class Simulation:
             if simulation_control not in (_sizing_, _run_periods_):
                 raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
                                       (simulation_control, (_sizing_, _run_periods_)))
-            if not isinstance(idf_or_path, IDF):
-                idf_or_path = IDF(idf_or_path, encoding=encoding, idd_or_path=idd_or_path)
+            if not isinstance(idf_or_path, Idf):
+                idf_or_path = Idf(idf_or_path, encoding=encoding, idd_or_path=idd_or_path)
 
             sc = idf_or_path("SimulationControl").one
             if simulation_control == _sizing_:
@@ -276,7 +276,7 @@ class Simulation:
     @property
     def _idd(self):
         if self.__idd is None:
-            self.__idd = IDD.get_idd(self._idd_or_path, encoding=self._encoding)
+            self.__idd = Idd.get_idd(self._idd_or_path, encoding=self._encoding)
         return self.__idd
 
     def _check_file_ref(self, file_ref):
@@ -327,7 +327,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
 
     # save files
     simulation_idf_path = os.path.join(dir_path, CONF.simulation_base_name + ".idf")
-    if isinstance(idf_or_path, IDF):
+    if isinstance(idf_or_path, Idf):
         idf_or_path.save_as(simulation_idf_path)
     else:
         _copy_without_read_only(idf_or_path, simulation_idf_path)

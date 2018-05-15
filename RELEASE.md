@@ -20,9 +20,8 @@
 * m: EPW logger name
 * p: sort_df to account for pandas backward compatibilities
 * p: debug double space in eplusout.err strings
-* p: in parsing *.err file, debug the case when "\******* Beginnning" is
-never encountered
-* m: IDD loggers
+* p: in parsing *.err file, debug the case when "\******* Beginnning" is never encountered
+* m: Idd loggers
 * m: MTD logger name
 * m: OutputTable logger name
 * p: simulation debug read_only epw files when copied

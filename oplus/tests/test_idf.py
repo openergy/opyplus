@@ -1,8 +1,8 @@
 import unittest
 import os
 
-from oplus.idf import IDF, IDFObject, IDFError
-from oplus.idf import BrokenIDFError, IsPointedError
+from oplus import Idf, BrokenIdfError, IsPointedError
+from oplus.idf.record import Record
 from oplus.configuration import CONF
 from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
 
@@ -18,7 +18,7 @@ schedule_test_object_str = """Schedule:Compact,
 
 class StaticIdfTest(unittest.TestCase):
     """
-    Only tests that do not modify IDF (avoid loading idf several times) - else use DynamicIdfTest.
+    Only tests that do not modify Idf (avoid loading idf several times) - else use DynamicIdfTest.
     """
     idfs_d = None
 
@@ -27,7 +27,7 @@ class StaticIdfTest(unittest.TestCase):
         cls.idfs_d = {}
         for eplus_version in TESTED_EPLUS_VERSIONS:
             CONF.eplus_version = eplus_version
-            cls.idfs_d[eplus_version] = IDF(os.path.join(
+            cls.idfs_d[eplus_version] = Idf(os.path.join(
                 CONF.eplus_base_dir_path,
                 "ExampleFiles",
                 "1ZoneEvapCooler.idf")
@@ -56,7 +56,7 @@ class StaticIdfTest(unittest.TestCase):
         for eplus_version in eplus_tester(self):
             sch_name = "NEW TEST SCHEDULE"
             sch = self.idfs_d[eplus_version].add_object(schedule_test_object_str % sch_name)
-            self.assertTrue(isinstance(sch, IDFObject))
+            self.assertTrue(isinstance(sch, Record))
 
     def test_multi_level_filter(self):
         for eplus_version in eplus_tester(self):
@@ -77,7 +77,7 @@ class DynamicIdfTest(unittest.TestCase):
 
     @staticmethod
     def get_idf():
-        return IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+        return Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 
     def test_idf_add_object(self):
         for _ in eplus_tester(self):
@@ -107,7 +107,7 @@ class DynamicIdfTest(unittest.TestCase):
             idf.remove_object(zone, raise_if_pointed=False)
             self.assertEqual(len(idf("Zone")), 0)
 
-    def test_pointing_objects(self):
+    def test_pointing_records(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             zone = idf("Zone").one
@@ -120,7 +120,7 @@ class DynamicIdfTest(unittest.TestCase):
                     "Zn001:Flr001",
                     "Zn001:Roof001"
                 },
-                set([bsd["name"] for bsd in zone.pointing_objects("BuildingSurface:Detailed")])
+                set([bsd["name"] for bsd in zone.pointing_records("BuildingSurface:Detailed")])
             )
 
     def test_pointed_objects(self):
@@ -160,7 +160,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             def raise_if_you_care():
                 supply_fan["availability schedule name"] = schedule_test_object_str % name
-            self.assertRaises(BrokenIDFError, raise_if_you_care)
+            self.assertRaises(BrokenIdfError, raise_if_you_care)
 
     def test_set_object_broken_constructing_mode(self):
         for _ in eplus_tester(self):
@@ -168,7 +168,7 @@ class DynamicIdfTest(unittest.TestCase):
             supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
             name = supply_fan["availability schedule name"]["name"]
 
-            with self.assertRaises(BrokenIDFError):
+            with self.assertRaises(BrokenIdfError):
                 with idf.under_construction:
                     supply_fan["availability schedule name"] = schedule_test_object_str % name
 
@@ -223,7 +223,7 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
-            self.assertRaises(IDFError, lambda: sch.pop(1))
+            self.assertRaises(AssertionError, lambda: sch.pop(1))
 
     def test_cache_on_filter(self):
         for _ in eplus_tester(self):
@@ -244,11 +244,11 @@ class MiscellaneousIdfTest(unittest.TestCase):
     def test_simple_read(self):
         for _ in eplus_tester(self):
             for idf_name in ("4ZoneWithShading_Simple_1",):
-                IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", f"{idf_name}.idf"))
+                Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", f"{idf_name}.idf"))
 
     def test_multiple_branch_links(self):
         for _ in eplus_tester(self):
-            idf = IDF(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
+            idf = Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
             bl = idf("BranchList").filter("Name", "Heating Supply Side Branches").one
             b3 = idf("Branch").filter("Name", "Heating Supply Bypass Branch").one
             self.assertEqual(bl[3], b3)
