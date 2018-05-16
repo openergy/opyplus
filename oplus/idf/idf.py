@@ -1,9 +1,9 @@
 """
 Idf
 ---
-We respect private/public naming conventions for methods and variables, EXCEPT for Idf or IdfObject managers. The
+We respect private/public naming conventions for methods and variables, EXCEPT for Idf or Record managers. The
 _manager variable is semi-private: it can be accessed by other managers (including other modules of oplus), but not by
-Idf or IdfObject. The _manager attributes therefore remain private to oplus users.
+Idf or Record. The _manager attributes therefore remain private to oplus users.
 """
 from contextlib import contextmanager
 from .idf_manager import IdfManager
@@ -11,7 +11,7 @@ from .idf_manager import IdfManager
 
 class Idf:
     """
-    Idf is allowed to access private keys/methods of IdfObject.
+    Idf is allowed to access private keys/methods of Record.
     """
     idf_manager_cls = IdfManager  # for subclassing
 
@@ -64,30 +64,30 @@ class Idf:
     def copy(self, add_copyright=True):
         return self._.copy(add_copyright=add_copyright)
 
-    def remove_object(self, object_to_remove, raise_if_pointed=True):  # todo: remove (now __del__ on record)
+    def remove_object(self, record_to_remove, raise_if_pointed=True):  # todo: remove (now __del__ on record)
         """
-        Removes object from idf.
+        Removes record from idf.
         Arguments
         ---------
-        object_to_remove: object to remove
+        record_to_remove: record to remove
         raise_if_pointed: check if links have been broken.
             If check is True and broken links are detected, will raise an IdfError
             (nodes or branches checking has not been implemented).
         """
-        return self._.remove_object(object_to_remove, raise_if_pointed=raise_if_pointed)
+        return self._.remove_record(record_to_remove, raise_if_pointed=raise_if_pointed)
 
-    def add_object(self, new_str, position=None): # todo: change (now add on table)
+    def add_object(self, new_or_str, position=None): # todo: change (now add on table)
         """
-        Adds new object to the idf, at required position.
+        Adds new record to the idf, at required position.
+
         Arguments
         ---------
-        new_or_str: new object (or string describing new object) that will be added to idf
+        new_or_str: new record (or string describing new record) that will be added to idf
         position: if None, will be added at the end, else will be added at asked position
             (using 'insert' python builtin function for lists)
-        check: check if pointed objects of new object exists. If check is True and a non existing link is detected, will
-            raise an IdfError
+        position
         """
-        return self._.add_object(new_str, position=position)
+        return self._.add_record(new_or_str, position=position)
 
     def info(self, sort_by_group=False, detailed=False):
         """

@@ -7,7 +7,7 @@ from oplus.configuration import CONF
 from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
 
 
-schedule_test_object_str = """Schedule:Compact,
+schedule_test_record_str = """Schedule:Compact,
     %s,  !- Name
     Any Number,              !- Schedule Type Limits Name
     THROUGH: 12/31,          !- Field 1
@@ -55,7 +55,7 @@ class StaticIdfTest(unittest.TestCase):
     def test_idf_add_object(self):
         for eplus_version in eplus_tester(self):
             sch_name = "NEW TEST SCHEDULE"
-            sch = self.idfs_d[eplus_version].add_object(schedule_test_object_str % sch_name)
+            sch = self.idfs_d[eplus_version].add_object(schedule_test_record_str % sch_name)
             self.assertTrue(isinstance(sch, Record))
 
     def test_multi_level_filter(self):
@@ -66,7 +66,7 @@ class StaticIdfTest(unittest.TestCase):
                 if bsd["Zone name"][4] == 0:
                     simple_filter_l.append(bsd)
             multi_filter_l = self.idfs_d[eplus_version]("BuildingSurface:Detailed")\
-                .filter(("Zone Name", 4), 0).objects_l
+                .filter(("Zone Name", 4), 0).records
             self.assertEqual(simple_filter_l, multi_filter_l)
 
 
@@ -79,28 +79,28 @@ class DynamicIdfTest(unittest.TestCase):
     def get_idf():
         return Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 
-    def test_idf_add_object(self):
+    def test_idf_add_record(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
-            idf.add_object(schedule_test_object_str % sch_name)
+            idf.add_object(schedule_test_record_str % sch_name)
             self.assertEqual(idf("Schedule:Compact").filter("name", sch_name).one["name"], sch_name)
 
-    def test_idf_remove_object(self):
+    def test_idf_remove_record(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
-            sch = idf.add_object(schedule_test_object_str % sch_name)
+            sch = idf.add_object(schedule_test_record_str % sch_name)
             idf.remove_object(sch)
             self.assertEqual(len(idf("Schedule:Compact").filter("name", sch_name)), 0)
 
-    def test_idf_remove_object_raise(self):
+    def test_idf_remove_record_raise(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             zone = idf("Zone").one
             self.assertRaises(IsPointedError, lambda: idf.remove_object(zone))
 
-    def test_idf_remove_object_dont_raise(self):
+    def test_idf_remove_record_dont_raise(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             zone = idf("Zone").one
@@ -123,7 +123,7 @@ class DynamicIdfTest(unittest.TestCase):
                 set([bsd["name"] for bsd in zone.pointing_records("BuildingSurface:Detailed")])
             )
 
-    def test_pointed_objects(self):
+    def test_pointed_records(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             bsd = idf("BuildingSurface:Detailed").filter("name", "Zn001:Wall001").one
@@ -141,28 +141,28 @@ class DynamicIdfTest(unittest.TestCase):
             new["name"] = new_name
             self.assertNotEqual(old, new)
 
-    def test_set_object_simple(self):
+    def test_set_record_simple(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             new_name = "Fan Availability Schedule - 2"
             supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
-            supply_fan["availability schedule name"] = schedule_test_object_str % new_name
+            supply_fan["availability schedule name"] = schedule_test_record_str % new_name
             # check set
             self.assertEqual(
                 idf("Fan:ConstantVolume").filter("name", "Supply Fan").one["AvaiLABIlity schedule name"]["name"],
                 new_name)
 
-    def test_set_object_broken(self):
+    def test_set_record_broken(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
             name = supply_fan["availability schedule name"]["name"]
 
             def raise_if_you_care():
-                supply_fan["availability schedule name"] = schedule_test_object_str % name
+                supply_fan["availability schedule name"] = schedule_test_record_str % name
             self.assertRaises(BrokenIdfError, raise_if_you_care)
 
-    def test_set_object_broken_constructing_mode(self):
+    def test_set_record_broken_constructing_mode(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
@@ -170,7 +170,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             with self.assertRaises(BrokenIdfError):
                 with idf.under_construction:
-                    supply_fan["availability schedule name"] = schedule_test_object_str % name
+                    supply_fan["availability schedule name"] = schedule_test_record_str % name
 
     def test_extensible(self):
         for _ in eplus_tester(self):

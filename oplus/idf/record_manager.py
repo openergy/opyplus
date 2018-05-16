@@ -80,7 +80,7 @@ class RecordManager:
             new_record_manager.add_field(raw_value, comment=self.get_field_comment(i))
 
         # add record to idf
-        return self._idf_manager.add_object_from_parsed(new_record_manager)
+        return self._idf_manager.add_record_from_parsed(new_record_manager)
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
     @clear_cache
@@ -193,7 +193,7 @@ class RecordManager:
     #     links_l = []
     #     for i in index_l:
     #         value = self._fields_l[i][self._VALUE]
-    #         if isinstance(value, IdfObject):
+    #         if isinstance(value, Record):
     #             links_l.append((value, self._fields_l[i][self._POINTED_INDEX]))
     #
     #     return links_l
@@ -252,13 +252,13 @@ class RecordManager:
             else:
                 if isinstance(raw_value_or_value, str):
                     try:
-                        value = self._idf_manager.add_object(raw_value_or_value)
+                        value = self._idf_manager.add_record(raw_value_or_value)
                     except BrokenIdfError as e:
                         raise e
                 elif isinstance(raw_value_or_value, Record):
                     value = raw_value_or_value
                 else:
-                    raise ValueError("Wrong value descriptor: '%s' (instead of IdfObject)." % type(raw_value_or_value))
+                    raise ValueError("Wrong value descriptor: '%s' (instead of Record)." % type(raw_value_or_value))
 
                 # check if correct idf
                 assert value._.idf_manager is self._idf_manager, \

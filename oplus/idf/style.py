@@ -1,8 +1,8 @@
 class IdfStyle:
     head_key = None
     chapter_key = None
-    object_key = None
-    tail_object_key = None
+    record_key = None
+    tail_record_key = None
     tail_type = None
 
     def get_chapter_title(self, content):
@@ -18,8 +18,8 @@ class IdfStyle:
         return s
 
     def get_record_comment(self, comment, line_jump=True):
-        prefix = "!" + self.object_key
-        if self.object_key != " ":
+        prefix = "!" + self.record_key
+        if self.record_key != " ":
             prefix += " "
         s = prefix + comment
         if line_jump:
@@ -27,8 +27,8 @@ class IdfStyle:
         return s
 
     def get_tail_record_comment(self, comment, line_jump=True):
-        prefix = "!" + self.tail_object_key
-        if self.tail_object_key != " ":
+        prefix = "!" + self.tail_record_key
+        if self.tail_record_key != " ":
             prefix += " "
         s = prefix + comment
         if line_jump:
@@ -57,32 +57,32 @@ class IdfStyle:
 class OplusIdfStyle(IdfStyle):
     head_key = " "
     chapter_key = "#"
-    object_key = "-"
-    tail_object_key = "-"
+    record_key = "-"
+    tail_record_key = "-"
     tail_type = "after"
 
 
 class DefaultWriteIdfStyle(IdfStyle):
     head_key = " "
     chapter_key = " "
-    object_key = " "
-    tail_object_key = " "
+    record_key = " "
+    tail_record_key = " "
     tail_type = "after"
 
 
 class DesignBuilderIdfStyle(IdfStyle):
     head_key = " "
     chapter_key = "#"
-    object_key = "-"
-    tail_object_key = " "
+    record_key = "-"
+    tail_record_key = " "
     tail_type = "before"
 
 
 class ASHRAEIdfStyle(IdfStyle):
     head_key = " "
     chapter_key = " -"
-    object_key = "  -"
-    tail_object_key = " "
+    record_key = "  -"
+    tail_record_key = " "
     tail_type = "before"
 
     def get_chapter_title(self, content):

@@ -22,7 +22,7 @@ def one_zone_pre_process(idf):
 
     # set all time steps
     for time_step in ["TimeStep", "Hourly", "Daily", "Monthly", "RunPeriod"]:
-        idf.add_object("Output:Variable,*,Site Outdoor Air Drybulb Temperature,%s;" % time_step)
+        idf.add_record("Output:Variable,*,Site Outdoor Air Drybulb Temperature,%s;" % time_step)
 
 
 to_simulate = [

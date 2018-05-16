@@ -1,2 +1,2 @@
 from .idf import Idf
-from .exceptions import MultipleObjectsReturned, ObjectDoesNotExist, BrokenIdfError, IsPointedError
+from .exceptions import MultipleRecordsReturned, RecordDoesNotExist, BrokenIdfError, IsPointedError

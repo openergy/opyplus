@@ -5,13 +5,13 @@ Manages the EPlus idd file.
 
 Definitions
 -----------
-object: EPlus object
+record: EPlus object
 field: EPlus object field
-object descriptor: description of an object, given by the idd. An object descriptor has a unique ref (given by idd)
-field descriptor: object descriptor field
+record descriptor: description of a record, given by the idd. A record descriptor has a unique ref (given by idd)
+field descriptor: descriptor of a field of a record
 
-pointing object (has tag 'object-list'): object that points towards another object
-pointed object (has tag 'reference'): object being pointed by another object
+pointing records (has tag 'object-list'): object that points towards another object
+pointed record (has tag 'reference'): object being pointed by another object
 
 """
 
@@ -172,7 +172,7 @@ class Idd:
                     assert group_name is not None, "No group name."
                     # store
                     rd = RecordDescriptor(ref, group_name=group_name)
-                    assert ref not in self._rds_d, "Object descriptor already registered."
+                    assert ref not in self._rds_d, "Record descriptor already registered."
                     self._rds_d[ref.lower()] = rd
                     self._groups_d[group_name].append(rd)
 
@@ -215,9 +215,8 @@ class Idd:
 
         Returns
         -------
-        object descriptor
+        record descriptor
         """
-
         return self._rds_d[rd_ref.lower()]
 
     def get_record_descriptors_by_group(self, group_name):

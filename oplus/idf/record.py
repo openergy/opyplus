@@ -60,7 +60,7 @@ class Record:
     @property
     def ref(self):
         """
-        Object descriptor ref
+        Record descriptor ref
         """
         return self._.ref
 
