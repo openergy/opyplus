@@ -64,30 +64,33 @@ class Idf:
     def copy(self, add_copyright=True):
         return self._.copy(add_copyright=add_copyright)
 
-    def remove_object(self, record_to_remove, raise_if_pointed=True):  # todo: remove (now __del__ on record)
-        """
-        Removes record from idf.
-        Arguments
-        ---------
-        record_to_remove: record to remove
-        raise_if_pointed: check if links have been broken.
-            If check is True and broken links are detected, will raise an IdfError
-            (nodes or branches checking has not been implemented).
-        """
-        return self._.remove_record(record_to_remove, raise_if_pointed=raise_if_pointed)
-
-    def add_object(self, new_or_str, position=None): # todo: change (now add on table)
+    def add(self, new_record_str, position=None):
         """
         Adds new record to the idf, at required position.
 
         Arguments
         ---------
-        new_or_str: new record (or string describing new record) that will be added to idf
+        new_record_str: string describing the new record that will be added to idf
         position: if None, will be added at the end, else will be added at asked position
             (using 'insert' python builtin function for lists)
         position
         """
-        return self._.add_record(new_or_str, position=position)
+        return self._.add_record(new_record_str, position=position)
+
+    def remove(self, record):
+        """
+        removes record from idf.
+        This record must not be pointed by other records, or removal will fail
+
+        Parameters
+        ----------
+        record
+
+        Raises
+        ------
+        IsPointedError
+        """
+        self._.remove_record(record)
 
     def info(self, sort_by_group=False, detailed=False):
         """

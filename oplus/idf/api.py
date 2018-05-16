@@ -1,2 +1,3 @@
 from .idf import Idf
-from .exceptions import MultipleRecordsReturned, RecordDoesNotExist, BrokenIdfError, IsPointedError
+from .exceptions import MultipleRecordsReturnedError, RecordDoesNotExistError, BrokenIdfError, IsPointedError, \
+    ObsoleteRecordError

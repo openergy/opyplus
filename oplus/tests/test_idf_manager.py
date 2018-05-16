@@ -67,7 +67,7 @@ class StaticIdfTest(unittest.TestCase):
     
             # check all pointing
             _d = {}
-            for pointing_record, pointing_index in zone._.get_pointing_links_l():
+            for pointing_record, pointing_index in zone._.get_pointing_links():
                 # check points
                 self.assertEqual(pointing_record._.get_value(pointing_index), zone)
                 # verify all are identified
@@ -79,8 +79,8 @@ class StaticIdfTest(unittest.TestCase):
             self.assertEqual(d, _d)
     
             # check pointing on pointed_index
-            self.assertEqual(len(zone._.get_pointing_links_l(0)), 9)  # 9 pointing
-            self.assertEqual(len(zone._.get_pointing_links_l(3)), 0)  # no pointing
+            self.assertEqual(len(zone._.get_pointing_links(0)), 9)  # 9 pointing
+            self.assertEqual(len(zone._.get_pointing_links(3)), 0)  # no pointing
 
 
 class DynamicIdfTest(unittest.TestCase):
@@ -144,17 +144,22 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
             zone = idf_manager.filter_by_ref("Zone").one
-            self.assertRaises(IsPointedError, lambda: idf_manager.remove_record(zone, raise_if_pointed=True))
+            self.assertRaises(IsPointedError, lambda: idf_manager.remove_record(zone))
 
-    def test_idf_remove_record_no_raise(self):
+    def test_idf_unlink_and_remove_record(self):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
             zone = idf_manager.filter_by_ref("Zone").one
-            pointing_links_l = zone._.get_pointing_links_l()
-            idf_manager.remove_record(zone, raise_if_pointed=False)
+
+            # unlink
+            zone.unlink_pointing_records()
+
             # check that pointing's pointed fields have been removed
-            for pointing_record, pointing_index in pointing_links_l:
+            for pointing_record, pointing_index in zone._.get_pointing_links():
                 self.assertEqual(pointing_record._.get_value(pointing_index), None)
+
+            # remove record should be possible
+            idf_manager.remove_record(zone)
 
     def test_set_value_record(self):
         for _ in eplus_tester(self):
@@ -179,7 +184,7 @@ class DynamicIdfTest(unittest.TestCase):
             # set
             new_zone_name = "new zone name"
             zone = idf_manager.filter_by_ref("Zone").one
-            pointing_links_l = zone._.get_pointing_links_l()
+            pointing_links_l = zone._.get_pointing_links()
             zone._.set_value("name", new_zone_name)
 
             # check
@@ -206,7 +211,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # get pointing
             sch = idf_manager.filter_by_ref("Schedule:Compact").filter("name", "Heating Setpoint Schedule").one
-            pointing_l = [o for (o, i) in sch._.get_pointing_links_l()]
+            pointing_l = [o for (o, i) in sch._.get_pointing_links()]
 
             # replace with bigger
             new_str = """
@@ -221,7 +226,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # check
             self.assertEqual(sch["name"], "Heating Setpoint Schedule")
-            self.assertEqual([o for (o, i) in sch._.get_pointing_links_l()], pointing_l)
+            self.assertEqual([o for (o, i) in sch._.get_pointing_links()], pointing_l)
 
             # replace with smaller
             new_str = """

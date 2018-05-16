@@ -8,7 +8,7 @@ from .cache import Cached, cached, clear_cache
 from .style import IdfStyle, style_library
 from .record_manager import RecordManager
 from .exceptions import BrokenIdfError, IsPointedError
-from .queryset import QuerySet
+from .queryset import Queryset
 
 
 class IdfManager(Cached):
@@ -202,7 +202,7 @@ class IdfManager(Cached):
         )
 
     @cached
-    def get_pointing_links_l(self, pointed_ref, pointed_index, pointed_raw_value):
+    def get_pointing_links(self, pointed_ref, pointed_index, pointed_raw_value):
         # get field descriptor
         fieldd = self.idd.get_record_descriptor(pointed_ref).get_field_descriptor(pointed_index)
 
@@ -231,7 +231,7 @@ class IdfManager(Cached):
             return None
         # check that there is no duplicate reference (i.e. none of the links which will point to this field already
         # points to another field with the same reference)
-        links_l = self.get_pointing_links_l(new_record_ref, new_record_index, reference)
+        links_l = self.get_pointing_links(new_record_ref, new_record_index, reference)
         if len(links_l) != 0:
             raise BrokenIdfError(
                 "New record has same reference at index '%s' as other record of same link name. "
@@ -299,27 +299,22 @@ class IdfManager(Cached):
         return new_record
 
     @clear_cache
-    def remove_record(self, record, raise_if_pointed=True):
+    def remove_record(self, record):
         """
         Arguments
         ---------
+        record
         raise_if_pointed: raises Exception if is pointed by other records.
             Else, sets all pointing record fields to None.
         """
         # check if record is pointed, if asked
-        pointing_links_l = record._.get_pointing_links_l()
-        if raise_if_pointed and len(pointing_links_l) > 0:
+        pointing_links_l = record._.get_pointing_links()
+        if len(pointing_links_l) > 0:
             raise IsPointedError(
-                "Can't remove record if other records are pointing to it and 'check' is "
-                "True. Pointing records: '%s'" % [o for (o, i) in pointing_links_l]
+                "Can't remove record if other records are pointing to it. "
+                "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
+                % [o for (o, i) in pointing_links_l]
             )
-
-        # remove from pointing
-        for pointing_record, pointing_index in pointing_links_l:
-            pointing_record._.remove_values_that_point(record)
-
-        # remove pointed
-        record._.remove_values_that_point()
 
         # delete obsolete attributes
         record._.neutralize()
@@ -328,13 +323,11 @@ class IdfManager(Cached):
         index = self._records.index(record)
         del self._records[index]
 
-        return index
-
     @cached
     def filter_by_ref(self, ref=None):
         if ref is None:
-            return QuerySet(self._records)
-        return QuerySet(self._records)(ref)
+            return Queryset(self._records)
+        return Queryset(self._records)(ref)
 
     # ------------------------------------------ MANAGE COMMENTS -------------------------------------------------------
     def get_comment(self):

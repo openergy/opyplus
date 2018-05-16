@@ -5,7 +5,10 @@ from oplus import Idf, BrokenIdfError, IsPointedError
 from oplus.idf.record import Record
 from oplus.configuration import CONF
 from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
+from oplus import ObsoleteRecordError
 
+
+# todo: test Table and batch add
 
 schedule_test_record_str = """Schedule:Compact,
     %s,  !- Name
@@ -55,7 +58,7 @@ class StaticIdfTest(unittest.TestCase):
     def test_idf_add_object(self):
         for eplus_version in eplus_tester(self):
             sch_name = "NEW TEST SCHEDULE"
-            sch = self.idfs_d[eplus_version].add_object(schedule_test_record_str % sch_name)
+            sch = self.idfs_d[eplus_version].add(schedule_test_record_str % sch_name)
             self.assertTrue(isinstance(sch, Record))
 
     def test_multi_level_filter(self):
@@ -83,28 +86,34 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
-            idf.add_object(schedule_test_record_str % sch_name)
+            idf.add(schedule_test_record_str % sch_name)
             self.assertEqual(idf("Schedule:Compact").filter("name", sch_name).one["name"], sch_name)
 
     def test_idf_remove_record(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
-            sch = idf.add_object(schedule_test_record_str % sch_name)
-            idf.remove_object(sch)
+            sch = idf.add(schedule_test_record_str % sch_name)
+            idf.remove(sch)
+
+            # check removed
             self.assertEqual(len(idf("Schedule:Compact").filter("name", sch_name)), 0)
+
+            # check obsolete
+            self.assertRaises(ObsoleteRecordError, lambda: print(sch))
 
     def test_idf_remove_record_raise(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             zone = idf("Zone").one
-            self.assertRaises(IsPointedError, lambda: idf.remove_object(zone))
+            self.assertRaises(IsPointedError, lambda: idf.remove(zone))
 
-    def test_idf_remove_record_dont_raise(self):
+    def test_idf_unlink_and_remove(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             zone = idf("Zone").one
-            idf.remove_object(zone, raise_if_pointed=False)
+            zone.unlink_pointing_records()
+            idf.remove(zone)
             self.assertEqual(len(idf("Zone")), 0)
 
     def test_pointing_records(self):
@@ -128,8 +137,17 @@ class DynamicIdfTest(unittest.TestCase):
             idf = self.get_idf()
             bsd = idf("BuildingSurface:Detailed").filter("name", "Zn001:Wall001").one
             zone = idf("Zone").filter("name", "Main Zone").one
+            construction = idf("Construction").filter("name", "R13WALL").one
+
+            # single pointing field
             self.assertEqual(bsd["zone name"], zone)
             self.assertEqual(bsd[3], zone)
+
+            # get all pointed
+            self.assertEqual(
+                {zone, construction},
+                set(bsd.pointed_records.records)
+            )
 
     def test_idf_copy(self):
         for _ in eplus_tester(self):

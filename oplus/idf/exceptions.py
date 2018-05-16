@@ -10,9 +10,13 @@ class IsPointedError(IdfError):
     pass
 
 
-class RecordDoesNotExist(IdfError):
+class RecordDoesNotExistError(IdfError):
     pass
 
 
-class MultipleRecordsReturned(IdfError):
+class MultipleRecordsReturnedError(IdfError):
+    pass
+
+
+class ObsoleteRecordError(IdfError):
     pass

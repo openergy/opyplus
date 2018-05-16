@@ -1,8 +1,8 @@
-from .exceptions import RecordDoesNotExist, MultipleRecordsReturned
+from .exceptions import RecordDoesNotExistError, MultipleRecordsReturnedError
 from .cache import clear_cache
 
 
-class QuerySet:
+class Queryset:
     """Contains record, and enables filtering or other operations. Is allowed to access record._."""
     def __init__(self, records):
         self._records = records
@@ -53,7 +53,7 @@ class QuerySet:
             else:
                 raise ValueError("unknown condition : '%s'" % condition)
 
-        return QuerySet(result_l)
+        return Queryset(result_l)
 
     @property
     def one(self):
@@ -61,9 +61,9 @@ class QuerySet:
         Checks that query set only contains one record and returns it.
         """
         if len(self._records) == 0:
-            raise RecordDoesNotExist("Query set contains no value.")
+            raise RecordDoesNotExistError("Query set contains no value.")
         if len(self._records) > 1:
-            raise MultipleRecordsReturned("Query set contains more than one value.")
+            raise MultipleRecordsReturnedError("Query set contains more than one value.")
         return self[0]
 
     def __getitem__(self, item):
@@ -78,8 +78,8 @@ class QuerySet:
     def __call__(self, record_descriptor_ref=None):
         """Returns all records having given record descriptor ref (not case sensitive)."""
         if record_descriptor_ref is None:  # return a copy
-            return QuerySet([r for r in self._records])
-        return QuerySet([r for r in self._records if r._.ref.lower() == record_descriptor_ref.lower()])
+            return Queryset([r for r in self._records])
+        return Queryset([r for r in self._records if r._.ref.lower() == record_descriptor_ref.lower()])
 
     @clear_cache
     def __add__(self, other):
@@ -94,7 +94,7 @@ class QuerySet:
         for record in other.records:
             if record not in intersect_set:
                 new_records.append(record)
-        return QuerySet(new_records)
+        return Queryset(new_records)
 
     def __len__(self):
         return len(self._records)

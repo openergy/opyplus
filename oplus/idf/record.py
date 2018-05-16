@@ -68,6 +68,13 @@ class Record:
     def pointing_records(self):
         return self._.pointing_records
 
+    @property
+    def pointed_records(self):
+        return self._.get_pointed_records()
+
+    def unlink_pointing_records(self):
+        return self._.unlink_pointing_records()
+
     def to_str(self, style="idf"):
         return self._.to_str(style=style)
 

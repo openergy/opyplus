@@ -4,8 +4,8 @@ import io
 from oplus import CONF
 from .record import Record
 from .cache import clear_cache, cached
-from .queryset import QuerySet
-from .exceptions import IsPointedError, BrokenIdfError
+from .queryset import Queryset
+from .exceptions import IsPointedError, BrokenIdfError, ObsoleteRecordError
 from .style import style_library, IdfStyle
 
 
@@ -30,31 +30,42 @@ class RecordManager:
 
         self._record = self.record_cls(self)
 
+    def _check_obsolescence(self):
+        if self._idf_manager is None:
+            raise ObsoleteRecordError(
+                "current record is obsolete (has been removed from it's idf), can't use it)")
+
     # ---------------------------------------------- EXPOSE ------------------------------------------------------------
     @property
     def ref(self):
+        self._check_obsolescence()
         return self._ref
 
     @property
     def record(self):
+        self._check_obsolescence()
         return self._record
 
     @property
     def fields_nb(self):
+        self._check_obsolescence()
         return len(self._fields_l)
 
     @property
     def idf_manager(self):
+        self._check_obsolescence()
         return self._idf_manager
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
     @clear_cache
     def add_field(self, raw_value, comment=""):
+        self._check_obsolescence()
         assert isinstance(raw_value, str), "'raw_value' must be a string."
         self._fields_l.append([raw_value, comment])
 
     @clear_cache
     def add_tail_comment(self, comment):
+        self._check_obsolescence()
         stripped = comment.strip()
         if stripped == "":
             return None
@@ -63,6 +74,7 @@ class RecordManager:
         self._tail_comment += "%s\n" % stripped
 
     def copy(self):
+        self._check_obsolescence()
         # create new record
         new_record_manager = self._idf_manager.record_manager_cls(
             self._ref,
@@ -84,21 +96,36 @@ class RecordManager:
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
     @clear_cache
-    def remove_values_that_point(self, pointed_record=None):
+    def clear_pointing_fields(self, only_on_pointed_record=None):
         """
-        Removes all fields that point at pointed_record if not None (if you want a specific index, use remove_value).
+        Removes all fields that point
+
+        Parameters
+        ----------
+        only_on_pointed_record: record, default None
+            if not None, only fields pointing on only_on_pointed_record will be cleared
         """
+        self._check_obsolescence()
         for i in range(len(self._fields_l)):
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "object-list":
-                if (pointed_record is None) or (self.get_value(i) is pointed_record):
+                if (only_on_pointed_record is None) or (self.get_value(i) is only_on_pointed_record):
                     self.set_value(i, None)
+
+    @clear_cache
+    def unlink_pointing_records(self):
+        self._check_obsolescence()
+        # remove from pointing
+        for pointing_record, pointing_index in self.get_pointing_links():
+            pointing_record._.clear_pointing_fields(only_on_pointed_record=self.record)
 
     @clear_cache
     def neutralize(self):
         """
         remove values and links of fields, idf_manager, descriptor, pointing_d.
         """
+        self._check_obsolescence()
+
         self._idf_manager = None
         self._descriptor = None
 
@@ -109,6 +136,8 @@ class RecordManager:
         used on extensible fields.
         For the moment, only extensible=1 is coded.
         """
+        self._check_obsolescence()
+
         # check extensible
         extensible_cycle_len, extensible_start_index = self._descriptor.extensible
         assert extensible_cycle_len == 1, "Can only use pop on fields defined as 'extensible:1'."
@@ -131,18 +160,24 @@ class RecordManager:
         """
         Returns field index (>=0).
         """
+        self._check_obsolescence()
+
         if isinstance(field_index_or_name, int):
-            field_index_or_name = (field_index_or_name if field_index_or_name >= 0 else
-                                   self.fields_nb + field_index_or_name)
+            field_index_or_name = (
+                field_index_or_name if field_index_or_name >= 0 else self.fields_nb + field_index_or_name)
         return self._descriptor.get_field_index(field_index_or_name)
 
     def get_raw_value(self, field_index_or_name):
+        self._check_obsolescence()
+
         field_index = self.get_field_index(field_index_or_name)
         return self._fields_l[field_index][self._RAW_VALUE]
 
     @cached
     def get_value(self, field_index_or_name):
         # parsed value and/or record
+        self._check_obsolescence()
+
         index = self.get_field_index(field_index_or_name)
         raw_value = self._fields_l[index][self._RAW_VALUE]
         fieldd = self._descriptor.get_field_descriptor(index)
@@ -155,34 +190,41 @@ class RecordManager:
         return value
 
     def get_field_comment(self, field_index_or_name):
+        self._check_obsolescence()
+
         field_index = self.get_field_index(field_index_or_name)
         comment = self._fields_l[field_index][self._COMMENT]
         return "" if comment is None else comment
 
     def get_head_comment(self):
+        self._check_obsolescence()
         return "" if self._head_comment is None else self._head_comment
 
     def get_tail_comment(self):
+        self._check_obsolescence()
         return "" if self._tail_comment is None else self._tail_comment
 
     @cached
-    def get_pointing_links_l(self, field_index_or_name=None):
-        index_l = (range(len(self._fields_l)) if field_index_or_name is None
-                   else [self.get_field_index(field_index_or_name)])
+    def get_pointing_links(self, field_index_or_name=None):
+        index_l = (
+            range(len(self._fields_l)) if field_index_or_name is None else [self.get_field_index(field_index_or_name)]
+        )
 
-        links_l = []
+        all_pointing_links = []
         for i in index_l:
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type != "reference":
                 continue
-            links_l.extend(self.idf_manager.get_pointing_links_l(self._ref, i, self.get_raw_value(i)))
+            all_pointing_links.extend(self.idf_manager.get_pointing_links(self._ref, i, self.get_raw_value(i)))
 
-        return links_l
+        return all_pointing_links
 
     @property
     @cached
     def pointing_records(self):
-        return QuerySet([pointing_record for pointing_record, pointing_index in self.get_pointing_links_l()])
+        self._check_obsolescence()
+
+        return Queryset([pointing_record for pointing_record, pointing_index in self.get_pointing_links()])
 
     # def get_pointed_links_l(self, field_index_or_name=None):
     #     """
@@ -193,7 +235,7 @@ class RecordManager:
     #     links_l = []
     #     for i in index_l:
     #         value = self._fields_l[i][self._VALUE]
-    #         if isinstance(value, Record):
+    #         if isinstance(value, IdfObject):
     #             links_l.append((value, self._fields_l[i][self._POINTED_INDEX]))
     #
     #     return links_l
@@ -203,8 +245,10 @@ class RecordManager:
         """
         not used, not tested
         """
-        index_l = (range(len(self._fields_l)) if field_index_or_name is None
-                   else [self.get_field_index(field_index_or_name)])
+        self._check_obsolescence()
+
+        index_l = (
+            range(len(self._fields_l)) if field_index_or_name is None else [self.get_field_index(field_index_or_name)])
 
         records = []
         for i in index_l:
@@ -212,11 +256,13 @@ class RecordManager:
             if isinstance(value, Record):
                 records.append(value)
 
-        return records
+        return Queryset(records)
 
     # ------------------------------------------------ SET -------------------------------------------------------------
     @clear_cache
     def set_value(self, field_index_or_name, raw_value_or_value, raise_if_pointed=False):
+        self._check_obsolescence()
+
         field_index = self.get_field_index(field_index_or_name)
         fieldd = self._descriptor.get_field_descriptor(field_index)
 
@@ -228,13 +274,13 @@ class RecordManager:
 
         elif fieldd.detailed_type == "reference":
             if raise_if_pointed:
-                if len(self.get_pointing_links_l(field_index)) > 0:
+                if len(self.get_pointing_links(field_index)) > 0:
                     raise IsPointedError(
                         "Set field is already pointed by another record. "
                         "First remove this record, or disable 'raise_if_pointed' argument."
                     )
             # remove all pointing
-            pointing_links_l = self.get_pointing_links_l(field_index)
+            pointing_links_l = self.get_pointing_links(field_index)
             for pointing_record, pointing_index in pointing_links_l:
                 pointing_record._.set_value(pointing_index, None)
             # store and parse
@@ -258,7 +304,7 @@ class RecordManager:
                 elif isinstance(raw_value_or_value, Record):
                     value = raw_value_or_value
                 else:
-                    raise ValueError("Wrong value descriptor: '%s' (instead of Record)." % type(raw_value_or_value))
+                    raise ValueError("Wrong value descriptor: '%s' (instead of IdfObject)." % type(raw_value_or_value))
 
                 # check if correct idf
                 assert value._.idf_manager is self._idf_manager, \
@@ -302,6 +348,8 @@ class RecordManager:
         """
         Purpose: keep old pointed links
         """
+        self._check_obsolescence()
+
         # create record (but it will not be linked to idf)
         records_l, comments = self._idf_manager.parse(io.StringIO(new_record_str))  # comments not used
         assert len(records_l) == 1, "Wrong number of records created: %i" % len(records_l)
@@ -331,6 +379,8 @@ class RecordManager:
 
     @clear_cache
     def set_field_comment(self, field_index_or_name, comment):
+        self._check_obsolescence()
+
         field_index = self.get_field_index(field_index_or_name)
         comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
         self._fields_l[field_index][self._COMMENT] = comment
@@ -340,16 +390,22 @@ class RecordManager:
         """
         All line return will be replaced by a blank.
         """
+        self._check_obsolescence()
+
         comment = None if comment.strip() == "" else str(comment).replace("\n", " ").strip()
         self._head_comment = comment
 
     @clear_cache
     def set_tail_comment(self, comment):
+        self._check_obsolescence()
+
         comment = None if comment.strip() == "" else str(comment).strip()
         self._tail_comment = comment
 
     # ------------------------------------------------ COMMUNICATE -----------------------------------------------------
     def to_str(self, style="idf", idf_style=None):
+        self._check_obsolescence()
+
         if style == "idf":
             if idf_style is None:
                 idf_style = style_library[CONF.default_write_style]
@@ -429,6 +485,8 @@ class RecordManager:
         ---------
             detailed: include all field tags information
         """
+        self._check_obsolescence()
+
         msg = "%s\n%s\n%s" % ("-"*len(self._ref), self._ref, "-"*len(self._ref))
         for i, fd in enumerate(self._descriptor.field_descriptors_l):
             msg += "\n%i: %s" % (i, fd.name)
