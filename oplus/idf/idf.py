@@ -51,9 +51,8 @@ class Idf:
             style=style
         )
 
-    def __call__(self, record_descriptor_ref=None):
-        """returns all records of given record descriptor"""
-        return self._.filter_by_ref(record_descriptor_ref)
+    def __getitem__(self, item):
+        return self._.get_table(item)
 
     def to_str(self, add_copyright=True):
         return self._.to_str(add_copyright=add_copyright)
@@ -64,33 +63,39 @@ class Idf:
     def copy(self, add_copyright=True):
         return self._.copy(add_copyright=add_copyright)
 
-    def add(self, new_record_str, position=None):
+    def add(self, record_str_s, position=None):
         """
         Adds new record to the idf, at required position.
 
         Arguments
         ---------
-        new_record_str: string describing the new record that will be added to idf
+        record_str_s: string describing the new record(s) that will be added to idf
         position: if None, will be added at the end, else will be added at asked position
             (using 'insert' python builtin function for lists)
         position
         """
-        return self._.add_record(new_record_str, position=position)
+        return self._.add_records(record_str_s, position=position)
 
-    def remove(self, record):
+    def remove(self, record_s):
         """
         removes record from idf.
         This record must not be pointed by other records, or removal will fail
 
         Parameters
         ----------
-        record
+        record_s: record or list of records
 
         Raises
         ------
         IsPointedError
         """
-        self._.remove_record(record)
+        self._.remove_records(record_s)
+
+    def one(self, filter_by=None):
+        return self._.one(filter_by=filter_by)
+
+    def select(self, filter_by=None):
+        return self._.select(filter_by=filter_by)
 
     def info(self, sort_by_group=False, detailed=False):
         """

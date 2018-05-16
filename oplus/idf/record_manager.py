@@ -42,6 +42,10 @@ class RecordManager:
         return self._ref
 
     @property
+    def table(self):
+        return self._idf_manager.get_table(self.ref)
+
+    @property
     def record(self):
         self._check_obsolescence()
         return self._record
@@ -223,7 +227,6 @@ class RecordManager:
     @cached
     def pointing_records(self):
         self._check_obsolescence()
-
         return Queryset([pointing_record for pointing_record, pointing_index in self.get_pointing_links()])
 
     # def get_pointed_links_l(self, field_index_or_name=None):
@@ -298,7 +301,7 @@ class RecordManager:
             else:
                 if isinstance(raw_value_or_value, str):
                     try:
-                        value = self._idf_manager.add_record(raw_value_or_value)
+                        value = self._idf_manager.add_records(raw_value_or_value)
                     except BrokenIdfError as e:
                         raise e
                 elif isinstance(raw_value_or_value, Record):

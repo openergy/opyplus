@@ -1,3 +1,6 @@
+# todo: remove record ref concept
+
+
 class Record:
     """
     Record is allowed to access private keys/methods of Idf.
@@ -11,7 +14,7 @@ class Record:
 
     def __repr__(self):
         """concise print"""
-        return "<Record: %s>" % self.ref
+        return "<Record: %s>" % self.table.ref
 
     def __getitem__(self, item):
         """
@@ -48,21 +51,18 @@ class Record:
         """
         Iter through fields of record.
         """
-        def iter_var():
-            for i in range(len(self)):
-                yield self[i]
-        return iter_var()
+        return (self[i] for i in range(len(self)))
 
     @property
     def idf(self):
         return self._.idf_manager.idf
 
     @property
-    def ref(self):
+    def table(self):
         """
         Record descriptor ref
         """
-        return self._.ref
+        return self._.table
 
     @property
     def pointing_records(self):

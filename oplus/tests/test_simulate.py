@@ -27,9 +27,9 @@ class SimulateTest(unittest.TestCase):
 
             # prepare a quick simulation
             idf = Idf(idf_path)
-            sc = idf("SimulationControl").one
+            sc = idf["SimulationControl"].one()
             sc["Run Simulation for Sizing Periods"] = "No"
-            rp = idf("RunPeriod").one
+            rp = idf["RunPeriod"].one()
             rp["End Month"] = 1
             rp["End Day of Month"] = 1
 

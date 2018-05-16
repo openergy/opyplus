@@ -64,6 +64,7 @@ class CacheKey:
     emulated a dict that can store hashable types
     """
     def __init__(self, obj, method,  *args, **kwargs):
+        # todo: use __code__.co_code for functions (and investigate to make sure it works)
         self._value = tuple([obj, method] + list(args) + [(k, v) for k, v in sorted(kwargs.items())])
 
     def __hash__(self):

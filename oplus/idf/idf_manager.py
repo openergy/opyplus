@@ -6,9 +6,11 @@ from oplus.idd.idd import Idd
 from oplus.util import get_copyright_comment, get_string_buffer
 from .cache import Cached, cached, clear_cache
 from .style import IdfStyle, style_library
+from .record import Record
 from .record_manager import RecordManager
 from .exceptions import BrokenIdfError, IsPointedError
 from .queryset import Queryset
+from .table import Table
 
 
 class IdfManager(Cached):
@@ -21,6 +23,7 @@ class IdfManager(Cached):
         self._idd = Idd.get_idd(idd_or_path, encoding=encoding)
         self._encoding = CONF.encoding if encoding is None else encoding
         self._constructing_mode = False
+        self._tables = {}  # {lower_ref: table, ...}
 
         # get string buffer and store path (for info)
         buffer, path = get_string_buffer(path_or_content, "idf", self._encoding)
@@ -191,13 +194,13 @@ class IdfManager(Cached):
         # iter through link possibilities and return if found
         link_names_l = fieldd.get_tag("object-list")
         for link_name in link_names_l:
-            for od, field_index in self._idd.pointed_links(link_name):
-                for record in self.filter_by_ref(od.ref):
+            for rd, field_index in self._idd.pointed_links(link_name):
+                for record in self.select(lambda x: x.table.ref == rd.ref.lower()):
                     if record._.get_raw_value(field_index) == pointing_raw_value:
                         return record, field_index
 
         raise RuntimeError(
-            f"Link not found. "
+            f"Link not found. " \
             f"Field 'object-list' tag values: {str(link_names_l)}, field value : '{pointing_raw_value}'"
         )
 
@@ -219,7 +222,7 @@ class IdfManager(Cached):
         links_l = []
         for link_name in fieldd.get_tag("reference"):
             for record_descriptor, pointing_index in self.idd.pointing_links(link_name):
-                for record in self.filter_by_ref(record_descriptor.ref):
+                for record in self.select(lambda x: x.table.ref == record_descriptor.ref.lower()):
                     if pointing_index >= record._.fields_nb:
                         continue
                     if record._.get_raw_value(pointing_index) == pointed_raw_value:
@@ -262,20 +265,37 @@ class IdfManager(Cached):
                             )
                         ref_d[link_name].add(reference)
 
+    # ---------------------------------------------- TABLES ------------------------------------------------------------
+    def get_table(self, ref):
+        lower_ref = ref.lower()
+        if lower_ref not in self._tables:
+            # check ref exists
+            if not self.idd.has_ref(ref):
+                raise KeyError(f"unknown table: {ref}")
+            # create table
+            self._tables[lower_ref] = Table(ref, self)
+        return self._tables[lower_ref]
+
     # ------------------------------------------ MANAGE RECORDS --------------------------------------------------------
     def has_record(self, record):
         return record in self._records
 
     @clear_cache
-    def add_record(self, new_str, position=None):
+    def add_records(self, new_str_s, position=None):
         """
         From str
         """
-        # create record
-        records, comments_l = self.parse(io.StringIO(new_str))  # comments not used (only for global idf parse)
-        assert len(records) == 1, "Wrong number of records created: %i" % len(records)
-        new_record = records[0]
-        return self.add_record_from_parsed(new_record._, position=position)
+        # transform to iterable
+        if isinstance(new_str_s, str):
+            new_str_s = [new_str_s]
+
+        # create records, using under construction
+        with self.under_construction:
+            for new_str in new_str_s:
+                records, comments_l = self.parse(io.StringIO(new_str))  # comments not used (only for global idf parse)
+                assert len(records) == 1, "Wrong number of records created: %i" % len(records)
+                new_record = records[0]
+                return self.add_record_from_parsed(new_record._, position=position)
 
     @clear_cache
     def add_record_from_parsed(self, raw_parsed_record_manager, position=None):  # todo: change name and move to table
@@ -299,35 +319,42 @@ class IdfManager(Cached):
         return new_record
 
     @clear_cache
-    def remove_record(self, record):
+    def remove_records(self, record_s):
         """
         Arguments
         ---------
-        record
-        raise_if_pointed: raises Exception if is pointed by other records.
-            Else, sets all pointing record fields to None.
+        record_s
         """
-        # check if record is pointed, if asked
-        pointing_links_l = record._.get_pointing_links()
-        if len(pointing_links_l) > 0:
-            raise IsPointedError(
-                "Can't remove record if other records are pointing to it. "
-                "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
-                % [o for (o, i) in pointing_links_l]
-            )
+        # transform to iterable if only one record
+        if isinstance(record_s, Record):
+            record_s = [record_s]
 
-        # delete obsolete attributes
-        record._.neutralize()
+        # remove all
+        with self.under_construction:
+            for record in record_s:
+                # check if record is pointed, if asked
+                pointing_links_l = record._.get_pointing_links()
+                if len(pointing_links_l) > 0:
+                    raise IsPointedError(
+                        "Can't remove record if other records are pointing to it. "
+                        "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
+                        % [o for (o, i) in pointing_links_l]
+                    )
 
-        # remove from idf
-        index = self._records.index(record)
-        del self._records[index]
+                # delete obsolete attributes
+                record._.neutralize()
+
+                # remove from idf
+                index = self._records.index(record)
+                del self._records[index]
 
     @cached
-    def filter_by_ref(self, ref=None):
-        if ref is None:
-            return Queryset(self._records)
-        return Queryset(self._records)(ref)
+    def one(self, filter_by=None):
+        return Queryset(self._records).one(filter_by=filter_by)
+
+    @cached
+    def select(self, filter_by=None):
+        return Queryset(self._records).select(filter_by=filter_by)
 
     # ------------------------------------------ MANAGE COMMENTS -------------------------------------------------------
     def get_comment(self):

@@ -40,18 +40,19 @@ class StaticIdfTest(unittest.TestCase):
     def tearDownClass(cls):
         del cls.idfs_d
 
-    def test_idf_call(self):
+    def test_get_table(self):
         for eplus_version in eplus_tester(self):
-            qs = self.idfs_d[eplus_version]("Construction")
+            table = self.idfs_d[eplus_version]["Construction"]
             self.assertEqual(
                 {"R13WALL", "FLOOR", "ROOF31"},
-                set([c["name"] for c in qs])
+                set([c["name"] for c in table.select()])
             )
 
     def test_qs_one(self):
         for eplus_version in eplus_tester(self):
             self.assertEqual(
-                self.idfs_d[eplus_version]("BuildingSurface:Detailed").filter("naMe", "Zn001:Roof001").one["name"],
+                self.idfs_d[eplus_version]["BuildingSurface:Detailed"].one(
+                    lambda x: x["naMe"] == "Zn001:Roof001")["name"],
                 "Zn001:Roof001"
             )
 
@@ -65,11 +66,14 @@ class StaticIdfTest(unittest.TestCase):
         for eplus_version in eplus_tester(self):
             # get all building surfaces that have a zone with Z-Origin 0
             simple_filter_l = []
-            for bsd in self.idfs_d[eplus_version]("BuildingSurface:Detailed"):
+            for bsd in self.idfs_d[eplus_version]["BuildingSurface:Detailed"].select():
                 if bsd["Zone name"][4] == 0:
                     simple_filter_l.append(bsd)
-            multi_filter_l = self.idfs_d[eplus_version]("BuildingSurface:Detailed")\
-                .filter(("Zone Name", 4), 0).records
+            multi_filter_l = list(
+                self.idfs_d[eplus_version]["BuildingSurface:Detailed"].select(
+                    lambda x: x["Zone Name"][4] == 0
+                )
+            )
             self.assertEqual(simple_filter_l, multi_filter_l)
 
 
@@ -87,7 +91,7 @@ class DynamicIdfTest(unittest.TestCase):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
             idf.add(schedule_test_record_str % sch_name)
-            self.assertEqual(idf("Schedule:Compact").filter("name", sch_name).one["name"], sch_name)
+            self.assertEqual(idf["Schedule:Compact"].one(lambda x: x["name"] == sch_name)["name"], sch_name)
 
     def test_idf_remove_record(self):
         for _ in eplus_tester(self):
@@ -97,7 +101,7 @@ class DynamicIdfTest(unittest.TestCase):
             idf.remove(sch)
 
             # check removed
-            self.assertEqual(len(idf("Schedule:Compact").filter("name", sch_name)), 0)
+            self.assertEqual(len(idf["Schedule:Compact"].select(lambda x: x["name"] ==  sch_name)), 0)
 
             # check obsolete
             self.assertRaises(ObsoleteRecordError, lambda: print(sch))
@@ -105,21 +109,21 @@ class DynamicIdfTest(unittest.TestCase):
     def test_idf_remove_record_raise(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            zone = idf("Zone").one
+            zone = idf["Zone"].one()
             self.assertRaises(IsPointedError, lambda: idf.remove(zone))
 
     def test_idf_unlink_and_remove(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            zone = idf("Zone").one
+            zone = idf["Zone"].one()
             zone.unlink_pointing_records()
             idf.remove(zone)
-            self.assertEqual(len(idf("Zone")), 0)
+            self.assertEqual(len(idf["Zone"].select()), 0)
 
     def test_pointing_records(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            zone = idf("Zone").one
+            zone = idf["Zone"].one()
             self.assertEqual(
                 {
                     "Zn001:Wall001",
@@ -129,15 +133,17 @@ class DynamicIdfTest(unittest.TestCase):
                     "Zn001:Flr001",
                     "Zn001:Roof001"
                 },
-                set([bsd["name"] for bsd in zone.pointing_records("BuildingSurface:Detailed")])
+                set([bsd["name"] for bsd in zone.pointing_records.select(
+                    lambda x: x.table.ref == "BuildingSurface:Detailed".lower())
+                     ])
             )
 
     def test_pointed_records(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            bsd = idf("BuildingSurface:Detailed").filter("name", "Zn001:Wall001").one
-            zone = idf("Zone").filter("name", "Main Zone").one
-            construction = idf("Construction").filter("name", "R13WALL").one
+            bsd = idf["BuildingSurface:Detailed"].one(lambda x: x["name"] == "Zn001:Wall001")
+            zone = idf["Zone"].one(lambda x: x["name"] == "Main Zone")
+            construction = idf["Construction"].one(lambda x: x["name"] == "R13WALL")
 
             # single pointing field
             self.assertEqual(bsd["zone name"], zone)
@@ -146,14 +152,14 @@ class DynamicIdfTest(unittest.TestCase):
             # get all pointed
             self.assertEqual(
                 {zone, construction},
-                set(bsd.pointed_records.records)
+                set(bsd.pointed_records)
             )
 
     def test_idf_copy(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             old_name = "System Availability Schedule"
-            old = idf("Schedule:Compact").filter("name", old_name).one
+            old = idf["Schedule:Compact"].one(lambda x: x["name"] == old_name)
             new = old.copy()
             new_name = old_name + "- new"
             new["name"] = new_name
@@ -163,17 +169,17 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf = self.get_idf()
             new_name = "Fan Availability Schedule - 2"
-            supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
+            supply_fan = idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "Supply Fan")
             supply_fan["availability schedule name"] = schedule_test_record_str % new_name
             # check set
             self.assertEqual(
-                idf("Fan:ConstantVolume").filter("name", "Supply Fan").one["AvaiLABIlity schedule name"]["name"],
+                idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "Supply Fan")["AvaiLABIlity schedule name"]["name"],
                 new_name)
 
     def test_set_record_broken(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
+            supply_fan = idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "Supply Fan")
             name = supply_fan["availability schedule name"]["name"]
 
             def raise_if_you_care():
@@ -183,7 +189,7 @@ class DynamicIdfTest(unittest.TestCase):
     def test_set_record_broken_constructing_mode(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            supply_fan = idf("Fan:ConstantVolume").filter("name", "Supply Fan").one
+            supply_fan = idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "Supply Fan")
             name = supply_fan["availability schedule name"]["name"]
 
             with self.assertRaises(BrokenIdfError):
@@ -193,7 +199,7 @@ class DynamicIdfTest(unittest.TestCase):
     def test_extensible(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "System Availability Schedule")
             for i in range(1500):
                 sch.add_field("12:00")
             self.assertEqual(sch[1300], "12:00")
@@ -201,7 +207,7 @@ class DynamicIdfTest(unittest.TestCase):
     def test_pop_end(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "System Availability Schedule")
             ini_len = len(sch)
             self.assertEqual("1", sch.pop())
             self.assertEqual(ini_len-1, len(sch))
@@ -209,7 +215,7 @@ class DynamicIdfTest(unittest.TestCase):
     def test_pop_middle(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "System Availability Schedule")
 
             # before pop
             self.assertEqual(
@@ -240,13 +246,13 @@ class DynamicIdfTest(unittest.TestCase):
     def test_pop_raises(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "System Availability Schedule")
             self.assertRaises(AssertionError, lambda: sch.pop(1))
 
     def test_cache_on_filter(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()
-            sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "System Availability Schedule")
             self.assertTrue(len(idf._.cache) > 0)
 
             # clear
@@ -254,7 +260,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertEqual(0, len(idf._.cache))
 
             # retry
-            sch = idf("Schedule:Compact").filter("name", "System Availability Schedule").one
+            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "System Availability Schedule")
             self.assertTrue(len(idf._.cache) > 0)
 
 
@@ -267,6 +273,6 @@ class MiscellaneousIdfTest(unittest.TestCase):
     def test_multiple_branch_links(self):
         for _ in eplus_tester(self):
             idf = Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
-            bl = idf("BranchList").filter("Name", "Heating Supply Side Branches").one
-            b3 = idf("Branch").filter("Name", "Heating Supply Bypass Branch").one
+            bl = idf["BranchList"].one(lambda x: x["Name"] == "Heating Supply Side Branches")
+            b3 = idf["Branch"].one(lambda x: x["Name"] == "Heating Supply Bypass Branch")
             self.assertEqual(bl[3], b3)

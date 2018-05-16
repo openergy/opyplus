@@ -35,13 +35,15 @@ class StaticIdfTest(unittest.TestCase):
 
     def test_idf_call(self):
         for eplus_version in eplus_tester(self):
-            qs = self.idf_managers_d[eplus_version].filter_by_ref("Construction")
+            qs = self.idf_managers_d[eplus_version].get_table("Construction").select()
             self.assertEqual({"R13WALL", "FLOOR", "ROOF31"}, set([c._.get_value("name") for c in qs]))
 
     def test_qs_one(self):
         for eplus_version in eplus_tester(self):
             idf = self.idf_managers_d[eplus_version]
-            obj = idf.filter_by_ref("BuildingSurface:Detailed").filter("naMe", "Zn001:Roof001").one
+            obj = idf.get_table("BuildingSurface:Detailed").one(
+                lambda x: x["naMe"] == "Zn001:Roof001"
+            )
             name = obj._.get_value("name")
 
             self.assertEqual(
@@ -52,12 +54,12 @@ class StaticIdfTest(unittest.TestCase):
     def test_idf_create_record(self):
         for eplus_version in eplus_tester(self):
             sch_name = "NEW TEST SCHEDULE"
-            sch = self.idf_managers_d[eplus_version].add_record(schedule_test_record_str % sch_name)
+            sch = self.idf_managers_d[eplus_version].add_records(schedule_test_record_str % sch_name)
             self.assertTrue(isinstance(sch, Record))
 
     def test_pointing_links_l(self):
         for eplus_version in eplus_tester(self):
-            zone = self.idf_managers_d[eplus_version].filter_by_ref("Zone").one
+            zone = self.idf_managers_d[eplus_version].get_table("Zone").one()
             d = {  # ref: [pointing_index, nb of records], ...
                 "BuildingSurface:Detailed": [3, 6],  # index 3
                 "ZoneInfiltration:DesignFlowRate": [1, 1],  # index 1
@@ -95,7 +97,7 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
             sch_name = "NEW TEST SCHEDULE"
-            new_record = idf_manager.add_record(schedule_test_record_str % sch_name)
+            new_record = idf_manager.add_records(schedule_test_record_str % sch_name)
             self.assertEqual(new_record._.idf_manager, idf_manager)
 
     def test_idf_add_record_broken(self):
@@ -103,7 +105,7 @@ class DynamicIdfTest(unittest.TestCase):
             idf_manager = self.get_idf_manager()
             self.assertRaises(
                 BrokenIdfError,
-                lambda: idf_manager.add_record("""Material,
+                lambda: idf_manager.add_records("""Material,
     C5 - 4 IN HW CONCRETE,   !- Name
     MediumRough,             !- Roughness
     0.1014984,               !- Thickness {m}
@@ -120,7 +122,7 @@ class DynamicIdfTest(unittest.TestCase):
             idf_manager = self.get_idf_manager()
             with self.assertRaises(BrokenIdfError):
                 with idf_manager.under_construction:
-                    idf_manager.add_record("""
+                    idf_manager.add_records("""
                     Material,
                         C5 - 4 IN HW CONCRETE,   !- Name
                         MediumRough,             !- Roughness
@@ -136,20 +138,23 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
             sch_name = "NEW TEST SCHEDULE"
-            sch = idf_manager.add_record(schedule_test_record_str % sch_name)
-            idf_manager.remove_record(sch)
-            self.assertEqual(len(idf_manager.filter_by_ref("Schedule:Compact").filter("name", sch_name)), 0)
+            sch = idf_manager.add_records(schedule_test_record_str % sch_name)
+            idf_manager.remove_records(sch)
+            self.assertEqual(
+                len(idf_manager.get_table("Schedule:Compact").select(lambda x: x["name"] == sch_name)),
+                0
+            )
 
     def test_idf_remove_record_raise(self):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
-            zone = idf_manager.filter_by_ref("Zone").one
-            self.assertRaises(IsPointedError, lambda: idf_manager.remove_record(zone))
+            zone = idf_manager.get_table("Zone").one()
+            self.assertRaises(IsPointedError, lambda: idf_manager.remove_records(zone))
 
     def test_idf_unlink_and_remove_record(self):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
-            zone = idf_manager.filter_by_ref("Zone").one
+            zone = idf_manager.get_table("Zone").one()
 
             # unlink
             zone.unlink_pointing_records()
@@ -159,7 +164,7 @@ class DynamicIdfTest(unittest.TestCase):
                 self.assertEqual(pointing_record._.get_value(pointing_index), None)
 
             # remove record should be possible
-            idf_manager.remove_record(zone)
+            idf_manager.remove_records(zone)
 
     def test_set_value_record(self):
         for _ in eplus_tester(self):
@@ -167,11 +172,13 @@ class DynamicIdfTest(unittest.TestCase):
 
             # set
             new_name = "Fan Availability Schedule - 2"
-            supply_fan = idf_manager.filter_by_ref("Fan:ConstantVolume").filter("name", "Supply Fan").one
+            supply_fan = idf_manager.get_table("Fan:ConstantVolume").one(
+                lambda x: x["name"] == "Supply Fan")
             supply_fan._.set_value("availability schedule name", schedule_test_record_str % new_name)
 
             # get
-            obj = idf_manager.filter_by_ref("Fan:ConstantVolume").filter("name", "Supply Fan").one
+            obj = idf_manager.get_table("Fan:ConstantVolume").one(
+                lambda x: x["name"] == "Supply Fan")
             name = obj._.get_value("AvaiLABIlity schedule name")._.get_value("NAME")
 
             # check
@@ -183,7 +190,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # set
             new_zone_name = "new zone name"
-            zone = idf_manager.filter_by_ref("Zone").one
+            zone = idf_manager.get_table("Zone").one()
             pointing_links_l = zone._.get_pointing_links()
             zone._.set_value("name", new_zone_name)
 
@@ -197,7 +204,7 @@ class DynamicIdfTest(unittest.TestCase):
     def test_copy_record(self):
         for _ in eplus_tester(self):
             idf_manager = self.get_idf_manager()
-            zone = idf_manager.filter_by_ref("Zone").one
+            zone = idf_manager.get_table("Zone").one()
             new = zone._.copy()
             for i in range(zone._.fields_nb):
                 if i == 0:
@@ -210,7 +217,8 @@ class DynamicIdfTest(unittest.TestCase):
             idf_manager = self.get_idf_manager()
 
             # get pointing
-            sch = idf_manager.filter_by_ref("Schedule:Compact").filter("name", "Heating Setpoint Schedule").one
+            sch = idf_manager.get_table("Schedule:Compact").one(
+                lambda x: x["name"] == "Heating Setpoint Schedule")
             pointing_l = [o for (o, i) in sch._.get_pointing_links()]
 
             # replace with bigger

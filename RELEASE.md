@@ -2,6 +2,28 @@
 
 **M: major, m: minor, p: patch**
 
+### next
+
+useful pycharm replace in path
+
+    # __call__ => __getitem__
+    idf\("([^"]*)"\)
+    idf["$1"]
+    
+    # qs.one => table.one()
+    (idf\["[^"]*"\])\.one
+    $1.one()
+    
+    # [""].filter => .select
+    (\["[^"]*"\])\.filter\("([^"]*)",([^\)]*)\)
+    $1.select(lambda x: x["$2"] == $3)
+    
+    # .select(condition).one => .one(condition)
+    \.select\(([^\)]*)\).one
+    .one($1)
+    
+    
+
 ### 5.1.2
 * p: tests are now properly organized
 

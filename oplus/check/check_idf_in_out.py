@@ -2,12 +2,12 @@ import os
 import tempfile
 
 from oplus.configuration import CONF
-from oplus.idf import Idf
+from oplus import Idf
 
 
 idf = Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
-zone = idf("Zone").filter("name", "Main Zone").one
-building = idf("Building").filter("name", "Bldg").one
+zone = idf["Zone"].one(lambda x: x["name"] == "Main Zone")
+building = idf["Building"].one(lambda x: x["name"] == "Bldg")
 
 # check info
 if True:

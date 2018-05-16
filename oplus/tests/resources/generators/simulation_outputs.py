@@ -6,7 +6,7 @@ from oplus.tests.util import TESTED_EPLUS_VERSIONS
 
 def one_zone_pre_process(idf):
     # set simulation control
-    sc = idf("SimulationControl").one
+    sc = idf["SimulationControl"].one()
     sc["Do Zone Sizing Calculation"] = "Yes"
     sc["Do System Sizing Calculation"] = "Yes"
     sc["Do Plant Sizing Calculation"] = "Yes"
@@ -14,7 +14,7 @@ def one_zone_pre_process(idf):
     sc["Run Simulation for Weather File Run Periods"] = "Yes"
 
     # set run period
-    rp = idf("RunPeriod").one
+    rp = idf["RunPeriod"].one()
     rp["Begin Month"] = 1
     rp["Begin Day of Month"] = 1
     rp["End Month"] = 1
@@ -22,7 +22,7 @@ def one_zone_pre_process(idf):
 
     # set all time steps
     for time_step in ["TimeStep", "Hourly", "Daily", "Monthly", "RunPeriod"]:
-        idf.add_record("Output:Variable,*,Site Outdoor Air Drybulb Temperature,%s;" % time_step)
+        idf.add_records("Output:Variable,*,Site Outdoor Air Drybulb Temperature,%s;" % time_step)
 
 
 to_simulate = [

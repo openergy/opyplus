@@ -59,6 +59,9 @@ class Idd:
         self._parse()
         self._link()
 
+    def has_ref(self, ref):
+        return ref.lower() in self._rds_d
+
     def pointed_links(self, link_name):
         """
         Returns all the possible links named 'link_name' to pointed records. A link is a combination of an record
