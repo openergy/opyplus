@@ -36,18 +36,18 @@ class StaticIdfTest(unittest.TestCase):
     def test_idf_call(self):
         for eplus_version in eplus_tester(self):
             qs = self.idf_managers_d[eplus_version].get_table("Construction").select()
-            self.assertEqual({"R13WALL", "FLOOR", "ROOF31"}, set([c._.get_value("name") for c in qs]))
+            self.assertEqual({"r13wall", "floor", "roof31"}, set([c._.get_value("name") for c in qs]))
 
     def test_qs_one(self):
         for eplus_version in eplus_tester(self):
             idf = self.idf_managers_d[eplus_version]
             obj = idf.get_table("BuildingSurface:Detailed").one(
-                lambda x: x["naMe"] == "Zn001:Roof001"
+                lambda x: x["naMe"] == "zn001:roof001"
             )
             name = obj._.get_value("name")
 
             self.assertEqual(
-                "Zn001:Roof001",
+                "zn001:roof001",
                 name
             )
 
@@ -171,14 +171,14 @@ class DynamicIdfTest(unittest.TestCase):
             idf_manager = self.get_idf_manager()
 
             # set
-            new_name = "Fan Availability Schedule - 2"
+            new_name = "fan availability schedule - 2"
             supply_fan = idf_manager.get_table("Fan:ConstantVolume").one(
-                lambda x: x["name"] == "Supply Fan")
+                lambda x: x["name"] == "supply fan")
             supply_fan._.set_value("availability schedule name", schedule_test_record_str % new_name)
 
             # get
             obj = idf_manager.get_table("Fan:ConstantVolume").one(
-                lambda x: x["name"] == "Supply Fan")
+                lambda x: x["name"] == "supply fan")
             name = obj._.get_value("AvaiLABIlity schedule name")._.get_value("NAME")
 
             # check
@@ -218,7 +218,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # get pointing
             sch = idf_manager.get_table("Schedule:Compact").one(
-                lambda x: x["name"] == "Heating Setpoint Schedule")
+                lambda x: x["name"] == "heating setpoint schedule")
             pointing_l = [o for (o, i) in sch._.get_pointing_links()]
 
             # replace with bigger
@@ -233,7 +233,7 @@ class DynamicIdfTest(unittest.TestCase):
             sch._.replace_values(new_str)
 
             # check
-            self.assertEqual(sch["name"], "Heating Setpoint Schedule")
+            self.assertEqual(sch["name"], "heating setpoint schedule")
             self.assertEqual([o for (o, i) in sch._.get_pointing_links()], pointing_l)
 
             # replace with smaller

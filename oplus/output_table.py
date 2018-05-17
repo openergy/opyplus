@@ -5,14 +5,9 @@ import pandas as pd
 from oplus.configuration import CONF
 
 
-class OutputTableError(Exception):
-    pass
-
-
 class OutputTable:
     def __init__(self, path, logger_name=None, encoding=None):
-        if not os.path.isfile(path):
-            raise OutputTableError("No file at given path: '%s'." % path)
+        assert os.path.isfile(path), "No file at given path: '%s'." % path
         self._path = path
         self._logger_name = logger_name
         self._encoding = encoding
@@ -105,11 +100,12 @@ class OutputTable:
             for rp_name, tables_d in self._reports_d.items():
                 if table_name in tables_d:
                     return tables_d[table_name]
-            raise OutputTableError("Table name '%s' not found." % table_name)
+            raise KeyError("Table name '%s' not found." % table_name)
 
-        if not report_name in self._reports_d:
-            raise OutputTableError("Report name '%s' not found." % report_name)
+        if report_name not in self._reports_d:
+            raise KeyError("Report name '%s' not found." % report_name)
         tables_d = self._reports_d[report_name]
-        if not table_name in tables_d:
-            raise OutputTableError("Table name '%s' not found in report '%s'." % (table_name, report_name))
+
+        if table_name not in tables_d:
+            raise KeyError("Table name '%s' not found in report '%s'." % (table_name, report_name))
         return tables_d[table_name]

@@ -16,10 +16,6 @@ from oplus.util import EPlusDt, get_start_dt
 logger = logging.getLogger(__name__)
 
 
-class StandardOutputFileError(Exception):
-    pass
-
-
 class StandardOutputFile:
     DETAILED = "Detailed"
     TIME_STEP = "TimeStep"
@@ -35,8 +31,7 @@ class StandardOutputFile:
     TIME_STEPS = (DETAILED, TIME_STEP, HOURLY, DAILY, MONTHLY, RUN_PERIOD)
 
     def __init__(self, path, encoding=None, start=None):
-        if not os.path.exists(path):
-            raise StandardOutputFileError("No file at given path: '%s'." % path)
+        assert os.path.exists(path), "No file at given path: '%s'." % path
         self._path = path
         self._encoding = encoding
 
@@ -71,11 +66,10 @@ class StandardOutputFile:
                     break
 
         # check if environment is ok
-        if not environment in self.ENVIRONMENTS:
-            raise StandardOutputFileError("Unknown environment: '%s'." % environment)
+        assert environment in self.ENVIRONMENTS, "Unknown environment: '%s'." % environment
 
         # check availability
-        if not environment in self._envs_d:  # no available environment
+        if environment not in self._envs_d:  # no available environment
             return None
 
         # set environment
@@ -89,9 +83,8 @@ class StandardOutputFile:
                     break
 
         # check if time step is ok
-        if not time_step in self.TIME_STEPS:
-            raise StandardOutputFileError("Unknown time_step: '%s' (must be: %s)." %
-                                          (time_step, ", ".join(self.TIME_STEPS)))
+        assert time_step in self.TIME_STEPS, \
+            "Unknown time_step: '%s' (must be: %s)." % (time_step, ", ".join(self.TIME_STEPS))
 
         # check availability
         if not time_step in env_d:  # no available time step
@@ -104,9 +97,10 @@ class StandardOutputFile:
         if datetime_index is None:
             datetime_index = start_dt is not None
         if (datetime_index is True) and (start_dt is None):
-            raise StandardOutputFileError("datetime_index mode can only be used if you indicated start. Use tuple "
-                                          "index mode or registered start (set_start, on initialization of Output "
-                                          "object or as df method argument.")
+            raise ValueError(
+                "datetime_index mode can only be used if you indicated start. Use tuple index mode or "
+                "registered start (set_start, on initialization of Output object or as df method argument."
+            )
 
         # ------------------------------------ manage data frame -------------------------------------------------------
         # fetch dataframe
@@ -221,16 +215,18 @@ def parse_output(file_like):
 
         # store information if interesting
         if report_code > 5:
-            for (interval, pattern) in ((_detailed_, "Each Call"),
-                                        (_timestep_, _timestep_),
-                                        (_hourly_, _hourly_),
-                                        (_daily_, _daily_),
-                                        (_monthly_, _monthly_),
-                                        (_run_period_, _run_period_)):
+            for (interval, pattern) in (
+                    (_detailed_, "Each Call"),
+                    (_timestep_, _timestep_),
+                    (_hourly_, _hourly_),
+                    (_daily_, _daily_),
+                    (_monthly_, _monthly_),
+                    (_run_period_, _run_period_)
+            ):
                 if pattern in comment:
                     break
             else:
-                raise StandardOutputFileError("Interval not found: '%s'" % line_s)
+                raise KeyError("Interval not found: '%s'" % line_s)
             codes_d[interval][report_code] = []
             for var_s in vars_l_s.split(",", items_number-1):
                 try:
@@ -281,7 +277,7 @@ def parse_output(file_like):
                     if item_num in codes_d[interval]:
                         break
                 else:
-                    raise StandardOutputFileError("Interval not found: '%s'." % line_s)
+                    raise KeyError("Interval not found: '%s'." % line_s)
 
                 # activate item
                 data_d = raw_env_d[interval][_data_d_]

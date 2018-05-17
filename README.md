@@ -29,3 +29,7 @@ outputs are saved in the source code. In order to keep the repo size low, we try
 tested outputs, and we limit it's size (limit simulation timestep, time range, ...).
 
 
+## String conventions
+Table refs have case (idd), but lookups are insensitive.
+Field keys have case (idd), but lookups are insensitive.
+Values don't have a case (forced to lower), no lookups.

@@ -15,8 +15,6 @@ import io
 import sys
 import threading
 import contextlib
-import traceback
-import warnings
 
 import pandas as pd
 
@@ -24,14 +22,6 @@ import pandas as pd
 from oplus import __version__, CONF
 
 logger = logging.getLogger(__name__)
-
-
-class UtilError(Exception):
-    pass
-
-
-class CachingNotAllowedError(Exception):
-    pass
 
 
 def sort_df(df):
@@ -107,7 +97,7 @@ class EPlusDt:
             my_dt.replace(year=year)  # we replace in case timedelta operation impacted year
         except ValueError as e:
             if (month, day) == (2, 29):
-                raise UtilError("%s (probable leap year problem: year=%s, month=%s, day=%s)" % (e, year, month, day))
+                raise RuntimeError("%s (probable leap year problem: year=%s, month=%s, day=%s)" % (e, year, month, day))
             raise e
 
         return my_dt
@@ -196,7 +186,7 @@ def get_start_dt(start):
     elif isinstance(start, int):
         start_dt = dt.datetime(start, 1, 1)
     else:
-        raise UtilError("Unknown start type: '%s'." % type(start))
+        raise RuntimeError("Unknown start type: '%s'." % type(start))
     return start_dt
 
 
@@ -318,6 +308,6 @@ def get_string_buffer(path_or_content, expected_extension, encoding):
     elif isinstance(path_or_content, io.BufferedIOBase):
         buffer = io.StringIO(path_or_content.read().decode(encoding=encoding))
     else:
-        raise UtilError("path_or_content type could not be identified")
+        raise ValueError("path_or_content type could not be identified")
 
     return buffer, path

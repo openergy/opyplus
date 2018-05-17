@@ -3,7 +3,7 @@ import os
 import io
 
 from oplus.configuration import CONF
-from oplus.epw import EPW
+from oplus.epw import Epw
 from oplus.tests.util import assert_epw_equal, eplus_tester
 
 from pandas.util.testing import assert_frame_equal
@@ -23,7 +23,7 @@ class EPlusWeatherData(unittest.TestCase):
                 expected_content = f.read()
 
             # read
-            epw = EPW(file_path)
+            epw = Epw(file_path)
 
             # write
             f = io.StringIO()
@@ -38,7 +38,7 @@ class EPlusWeatherData(unittest.TestCase):
             weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
 
             # check sf
-            epw = EPW(os.path.join(weather_dir, "USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"))
+            epw = Epw(os.path.join(weather_dir, "USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"))
 
             # read
             df = epw.df()

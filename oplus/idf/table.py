@@ -1,4 +1,3 @@
-from .queryset import Queryset
 from .record import Record
 
 
@@ -8,12 +7,19 @@ class Table:
     We use this class for api purpose only, but all logic is in idf and records.
     """
     def __init__(self, ref, idf_manager):
+        self._ref = ref
         self._lower_ref = ref.lower()
         self._idf_manager = idf_manager
 
+    def __iter__(self):
+        return iter(self.select())
+
+    def __len__(self):
+        return len(self.select())
+
     @property
     def ref(self):
-        return self._lower_ref
+        return self._ref
 
     def add(self, record_str_s):
         if isinstance(str, record_str_s):
@@ -43,7 +49,7 @@ class Table:
 
     def select(self, filter_by=None):
         return self._idf_manager.select(
-            filter_by=lambda x: x.table.ref == self._lower_ref
+            filter_by=lambda x: x.table.ref.lower() == self._lower_ref
         ).select(
             filter_by=filter_by
         )

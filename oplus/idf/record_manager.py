@@ -1,5 +1,5 @@
-import datetime as dt
 import io
+import uuid
 
 from oplus import CONF
 from .record import Record
@@ -10,6 +10,9 @@ from .style import style_library, IdfStyle
 
 
 class RecordManager:
+    """
+    raw_values are always strings, and are enforced lowercase
+    """
     record_cls = Record  # for subclassing
 
     _COMMENT_COLUMN_START = 35
@@ -21,6 +24,7 @@ class RecordManager:
 
     def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
         self._ref = ref
+        self._lower_ref = ref.lower()
         self._head_comment = head_comment
         self._tail_comment = tail_comment
         self._fields_l = []  # [[raw_value, comment], ...]
@@ -64,8 +68,10 @@ class RecordManager:
     @clear_cache
     def add_field(self, raw_value, comment=""):
         self._check_obsolescence()
-        assert isinstance(raw_value, str), "'raw_value' must be a string."
-        self._fields_l.append([raw_value, comment])
+        assert isinstance(raw_value, str), f"'raw_value' must be a string, got {type(raw_value)}"
+
+        # enforce lowercase and store
+        self._fields_l.append([raw_value.lower(), comment])
 
     @clear_cache
     def add_tail_comment(self, comment):
@@ -90,7 +96,7 @@ class RecordManager:
         for i in range(len(self._fields_l)):
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference":
-                raw_value = dt.datetime.now().strftime("%Y%m%d%H%M%S%f") + str(i)
+                raw_value = str(uuid.uuid4())  # dt.datetime.now().strftime("%Y%m%d%H%M%S%f-") + str(i)
             else:
                 raw_value = self.get_raw_value(i)
             new_record_manager.add_field(raw_value, comment=self.get_field_comment(i))
@@ -160,16 +166,18 @@ class RecordManager:
         return pop_value
 
     # ------------------------------------------------ GET -------------------------------------------------------------
-    def get_field_index(self, field_index_or_name):
+    def get_field_index(self, field_index_or_insensitive_name):
         """
         Returns field index (>=0).
         """
         self._check_obsolescence()
 
-        if isinstance(field_index_or_name, int):
-            field_index_or_name = (
-                field_index_or_name if field_index_or_name >= 0 else self.fields_nb + field_index_or_name)
-        return self._descriptor.get_field_index(field_index_or_name)
+        if isinstance(field_index_or_insensitive_name, int):
+            field_index_or_insensitive_name = (
+                field_index_or_insensitive_name if field_index_or_insensitive_name >= 0 else
+                self.fields_nb + field_index_or_insensitive_name
+            )
+        return self._descriptor.get_field_index(field_index_or_insensitive_name)
 
     def get_raw_value(self, field_index_or_name):
         self._check_obsolescence()
@@ -178,11 +186,11 @@ class RecordManager:
         return self._fields_l[field_index][self._RAW_VALUE]
 
     @cached
-    def get_value(self, field_index_or_name):
+    def get_value(self, field_index_or_insensitive_name):
         # parsed value and/or record
         self._check_obsolescence()
 
-        index = self.get_field_index(field_index_or_name)
+        index = self.get_field_index(field_index_or_insensitive_name)
         raw_value = self._fields_l[index][self._RAW_VALUE]
         fieldd = self._descriptor.get_field_descriptor(index)
         if fieldd.detailed_type in ("integer", "real", "alpha", "choice", "node", "reference", "external-list"):
@@ -282,14 +290,16 @@ class RecordManager:
                         "Set field is already pointed by another record. "
                         "First remove this record, or disable 'raise_if_pointed' argument."
                     )
+
             # remove all pointing
             pointing_links_l = self.get_pointing_links(field_index)
             for pointing_record, pointing_index in pointing_links_l:
                 pointing_record._.set_value(pointing_index, None)
+
             # store and parse
             raw_value = "" if raw_value_or_value is None else str(raw_value_or_value).strip()
             self._fields_l[field_index][self._RAW_VALUE] = raw_value
-            # self._parse_field(field_index)
+
             # re-set all pointing
             for pointing_record, pointing_index in pointing_links_l:
                 pointing_record._.set_value(pointing_index, self._record)
@@ -322,7 +332,7 @@ class RecordManager:
                         break
                     for record_descriptor, record_index in self._idf_manager.idd.pointed_links(link_name):
                         if (
-                                (value._.ref.lower() == record_descriptor.ref.lower()) and
+                                (value._.ref == record_descriptor.ref) and
                                 (value._.get_value(record_index) is not None)
                         ):
                             # ok, we fond an accepted combination
@@ -341,10 +351,6 @@ class RecordManager:
                 self._fields_l[field_index][self._RAW_VALUE] = raw_value
         else:
             raise ValueError("Unknown detailed type: '%s'." % fieldd.detailed_type)
-
-        # remove if last field and emptied
-        # if (len(self._fields_l) == (field_index+1)) and self._fields_l[-1][self._RAW_VALUE] == "":
-        #     self._fields_l.pop()
 
     @clear_cache
     def replace_values(self, new_record_str):
@@ -368,7 +374,7 @@ class RecordManager:
             fieldd = self._descriptor.get_field_descriptor(i)
 
             if fieldd.detailed_type in ("reference", "object-list"):
-                continue  # we do not modifiy links
+                continue  # we do not modify links
 
             if (i < old_nb) and (i < new_nb):
                 self.set_value(i, new_record._.get_raw_value(i))

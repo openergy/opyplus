@@ -10,11 +10,7 @@ import pandas as pd
 from . import CONF
 
 
-class ERRError(Exception):
-    pass
-
-
-class ERR:
+class Err:
     WARNING = 'Warning'
     FATAL = 'Fatal'
     SEVERE = 'Severe'
@@ -145,12 +141,11 @@ class ERR:
             return self.df.dropna(axis='rows', how='all')
 
         if simulation_step is not None:
-            if simulation_step not in self.simulation_step_list:
-                raise ERRError("The simulation_step '%s' is not referred in the error file." % simulation_step)
+            assert simulation_step in self.simulation_step_list,  \
+                "The simulation_step '%s' is not referred in the error file." % simulation_step
 
             if error_category is not None:
-                if error_category not in self.CATEGORIES:
-                    raise ERRError("The error_cat '%s' is wrong." % error_category)
+                assert error_category in self.CATEGORIES, "The error_cat '%s' is wrong." % error_category
                 iterables = [simulation_step, error_category]
                 columns = pd.MultiIndex.from_product(iterables)
                 series = self.df[simulation_step][error_category].dropna(axis='rows', how='all')
@@ -162,8 +157,7 @@ class ERR:
             return self.df[simulation_step].dropna(axis='rows', how='all')
 
         if error_category is not None:
-            if error_category not in self.CATEGORIES:
-                raise ERRError("The error_category '%s' is wrong." % error_category)
+            assert error_category in self.CATEGORIES, "The error_category '%s' is wrong." % error_category
             df = self.df.copy()
             df.columns = df.columns.swaplevel(0, 1)
             return df[error_category].dropna(axis='rows', how='all')

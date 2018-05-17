@@ -12,11 +12,11 @@ from oplus.configuration import CONF
 from oplus.util import run_subprocess, Enum, LoggerStreamWriter
 from oplus import Idf
 from oplus.idd.idd import Idd
-from oplus.epw import EPW
+from oplus.epw import Epw
 from oplus.standard_output import StandardOutputFile
-from oplus.mtd import MTD
-from oplus.eio import EIO
-from oplus.err import ERR
+from oplus.mtd import Mtd
+from oplus.eio import Eio
+from oplus.err import Err
 from oplus.summary_table import SummaryTable
 from .operating_system import OS_NAME
 
@@ -24,16 +24,17 @@ from .operating_system import OS_NAME
 DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
 
-class SimulationError(Exception):
-    pass
-
-
-class WrongExtensionError(SimulationError):
-    pass
-
-
 FILE_REFS = Enum(**dict((ref, ref) for ref in (
-    "idf", "epw", "eio", "eso", "mtr", "mtd", "mdd", "err", "summary_table")))
+    "idf",
+    "epw",
+    "eio",
+    "eso",
+    "mtr",
+    "mtd",
+    "mdd",
+    "err",
+    "summary_table"
+)))
 
 
 class FileInfo:
@@ -104,12 +105,12 @@ class Simulation:
     # for subclassing
     _idf_cls = Idf
     _idd_cls = Idd
-    _epw_cls = EPW
+    _epw_cls = Epw
     _standard_output_file_cls = StandardOutputFile
-    _mtd_cls = MTD
-    _eio_cls = EIO
+    _mtd_cls = Mtd
+    _eio_cls = Eio
     _summary_table_cls = SummaryTable
-    _err_cls = ERR
+    _err_cls = Err
 
     @classmethod
     def simulate(
@@ -145,8 +146,10 @@ class Simulation:
             _sizing_ = "Sizing"
             _run_periods_ = "RunPeriods"
             if simulation_control not in (_sizing_, _run_periods_):
-                raise SimulationError("Unknown simulation_control: '%s'. Must be in : %s." %
-                                      (simulation_control, (_sizing_, _run_periods_)))
+                raise KeyError(
+                    "Unknown simulation_control: '%s'. Must be in : %s." % (
+                        simulation_control, (_sizing_, _run_periods_))
+                )
             if not isinstance(idf_or_path, Idf):
                 idf_or_path = Idf(idf_or_path, encoding=encoding, idd_or_path=idd_or_path)
 
@@ -322,8 +325,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     dir_path = os.path.abspath(dir_path)
 
     # check dir path
-    if not os.path.isdir(dir_path):
-        raise SimulationError("Simulation directory does not exist: '%s'." % dir_path)
+    assert os.path.isdir(dir_path), "Simulation directory does not exist: '%s'." % dir_path
 
     # save files
     simulation_idf_path = os.path.join(dir_path, CONF.simulation_base_name + ".idf")
@@ -333,7 +335,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         _copy_without_read_only(idf_or_path, simulation_idf_path)
 
     simulation_epw_path = os.path.join(dir_path, CONF.simulation_base_name + ".epw")
-    if isinstance(epw_or_path, EPW):
+    if isinstance(epw_or_path, Epw):
         epw_or_path.save_as(simulation_epw_path)
     else:
         _copy_without_read_only(epw_or_path, simulation_epw_path)
@@ -364,7 +366,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         else:
             last_name = "energyplus"
     else:
-        raise SimulationError("unknown os name: %s" % OS_NAME)
+        raise OSError("unknown os name: %s" % OS_NAME)
 
     eplus_cmd = os.path.join(CONF.eplus_base_dir_path, last_name)
 
@@ -382,7 +384,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     elif OS_NAME == "linux":
         idf_file_cmd = simulation_idf_path
     else:
-        raise SimulationError("unknown os name: %s" % OS_NAME)
+        raise OSError("unknown os name: %s" % OS_NAME)
 
     # epw
     if OS_NAME == "windows":
@@ -395,7 +397,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     elif OS_NAME == "linux":
         epw_file_cmd = simulation_epw_path
     else:
-        raise SimulationError("unknown os name: %s" % OS_NAME)
+        raise OSError("unknown os name: %s" % OS_NAME)
 
     # command list
     if OS_NAME == "windows":
@@ -414,7 +416,7 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         else:
             cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     else:
-        raise SimulationError("unknown os name: %s" % OS_NAME)
+        raise OSError("unknown os name: %s" % OS_NAME)
     # launch calculation
     run_subprocess(
         cmd_l,

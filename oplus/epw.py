@@ -8,10 +8,6 @@ from oplus.configuration import CONF
 from oplus.util import EPlusDt, get_start_dt, get_copyright_comment, sort_df
 
 
-class EPWError(Exception):
-    pass
-
-
 EPW_COLUMNS = (
     "year",
     "month",
@@ -53,7 +49,7 @@ EPW_COLUMNS = (
 WEEK_DAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 
-class EPWHeader:
+class EpwHeader:
     LOCATION = 0
     DESIGN_CONDITIONS = 1
     TYPICAL_EXTREME_PERIODS = 2
@@ -73,9 +69,9 @@ class EPWHeader:
             self._l2.append([cell.strip() for cell in line_s.split(",")])
         # check
         if len(self._l2[self.DATA_PERIODS]) != 7:
-            raise EPWError("'DATA PERIODS' row must have 7 cells.")
+            raise ValueError("'DATA PERIODS' row must have 7 cells.")
         if self._l2[self.DATA_PERIODS][0] != "DATA PERIODS":
-            raise EPWError("Last line of header must be 'DATA PERIODS'.")
+            raise ValueError("Last line of header must be 'DATA PERIODS'.")
         if self._l2[self.DATA_PERIODS][1] != "1":
             raise NotImplementedError("Can only manage epws with one data period.")
         if self._l2[self.DATA_PERIODS][2] != "1":
@@ -122,8 +118,8 @@ class EPWHeader:
         return {"1": "H"}[self._l2[self.DATA_PERIODS][2]]
 
 
-class EPW:
-    epw_header_cls = EPWHeader
+class Epw:
+    epw_header_cls = EpwHeader
 
     @classmethod
     def get_epw_or_path(cls, epw_or_path, logger_name=None, encoding=None):
@@ -131,7 +127,7 @@ class EPW:
             return cls(epw_or_path, logger_name=logger_name, encoding=encoding)
         elif isinstance(epw_or_path, cls):
             return epw_or_path
-        raise EPWError("'epw_or_path' must be an EPW or path.  Given object: '%s', type: '%s'." %
+        raise ValueError("'epw_or_path' must be an EPW or path.  Given object: '%s', type: '%s'." %
                        (epw_or_path, type(epw_or_path)))
 
     def __init__(self, path_or_buffer, logger_name=None, encoding=None, start=None):
@@ -212,7 +208,7 @@ class EPW:
 
     def set_df(self, value):
         if not isinstance(value, pd.DataFrame):
-            raise EPWError("df must be a DataFrame")
+            raise ValueError("df must be a DataFrame")
         assert_index_equal(value.index, self._df.index)
         assert_index_equal(value.columns, self._df.columns)
 
@@ -225,7 +221,7 @@ def parse_epw(file_like, encoding=None, logger_name=None):
         header_s += line_s
         if re.match("^DATA PERIODS", line_s) is not None:
             break
-    header = EPWHeader(header_s)
+    header = EpwHeader(header_s)
 
     # data
     df = pd.read_csv(file_like, header=None, low_memory=False, encoding=encoding)

@@ -4,14 +4,9 @@ import re
 from oplus.configuration import CONF
 
 
-class MTDError(Exception):
-    pass
-
-
-class MTD:
+class Mtd:
     def __init__(self, path, logger_name=None, encoding=None):
-        if not os.path.isfile(path):
-            raise MTDError("No file at given path: '%s'." % path)
+        assert os.path.isfile(path), "No file at given path: '%s'." % path
         self._path = path
         self._logger_name = logger_name
         self._encoding = encoding
@@ -45,7 +40,7 @@ class MTD:
                     else:
                         match = re.search(meter_pattern, line_s)
                         if match is None:
-                            raise MTDError("Line was not parsed correctly: '%s'." % line_s)
+                            raise RuntimeError("Line was not parsed correctly: '%s'." % line_s)
                         kwargs = {}
                         for kv in line_s.split(",")[:-1]:
                             k, v = kv.split("=")
@@ -63,13 +58,13 @@ class MTD:
                 for v_s in v.split("\n")[:-1]:
                     match = re.search(meter_pattern, v_s)
                     if match is None:
-                        raise MTDError("Meter pattern not parsed: '%s'." % v_s)
+                        raise RuntimeError("Meter pattern not parsed: '%s'." % v_s)
                     k.link_meter(meters_d[match.group(1)])
             else:
                 for v_s in v.split("\n")[:-1]:
                     match = re.search(var_pattern, v_s)
                     if match is None:
-                        raise MTDError("Variable pattern not parsed: '%s'." % v_s)
+                        raise RuntimeError("Variable pattern not parsed: '%s'." % v_s)
                     k.link_variable(variables_d[match.group(1)])
 
         return variables_d, meters_d
@@ -91,7 +86,7 @@ class Meter:
 
     def link_variable(self, variable):
         if variable in self.variables_l:
-            raise MTDError("Variable already linked.")
+            raise RuntimeError("Variable already linked.")
         self.variables_l.append(variable)
 
 
@@ -105,5 +100,5 @@ class Variable:
 
     def link_meter(self, meter):
         if meter in self.meters_l:
-            raise MTDError("Meter already linked.")
+            raise RuntimeError("Meter already linked.")
         self.meters_l = []

@@ -14,10 +14,6 @@ import pandas as pd
 from oplus.configuration import CONF
 
 
-class SummaryTableError(Exception):
-    pass
-
-
 class SummaryTable:
     def __init__(self, path, encoding=None):
         assert os.path.isfile(path), "No file at given path: '%s'." % path
@@ -149,4 +145,3 @@ class SummaryTable:
         df.index.name = None
 
         return df
-

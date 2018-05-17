@@ -54,6 +54,12 @@ class Idf:
     def __getitem__(self, item):
         return self._.get_table(item)
 
+    def __iter__(self):
+        return iter(self._)
+
+    def __len__(self):
+        return len(self._)
+
     def to_str(self, add_copyright=True):
         return self._.to_str(add_copyright=add_copyright)
 

@@ -32,30 +32,30 @@ class FieldDescriptor:
     def has_tag(self, ref):
         return ref in self._tags_d
 
-    def basic_parse(self, value):
+    def basic_parse(self, raw_value):
         """
         Parses raw value (string or None) to string, int, float or None.
         """
         # no value
-        if (value is None) or (value == ""):
+        if (raw_value is None) or (raw_value == ""):
             return None
 
         # alphabetical
         if self.basic_type == "A":
-            return str(value)
+            return raw_value
 
         # numeric
-        if type(value) is str:
-            if value.lower() in ("autocalculate", "autosize"):
-                return value
+        if isinstance(raw_value, str):
+            if raw_value in ("autocalculate", "autosize"):  # raw_values are always lowercase
+                return raw_value
             try:
-                return int(value)
+                return int(raw_value)
             except ValueError:
-                return float(value)
+                return float(raw_value)
 
         # in case has already been parsed
-        elif type(value) in (int, float):
-            return value
+        elif type(raw_value) in (int, float):
+            return raw_value
 
     @property
     def detailed_type(self):
@@ -70,7 +70,7 @@ class FieldDescriptor:
             if "reference" in self._tags_d:
                 self._detailed_type = "reference"
             elif "type" in self._tags_d:
-                self._detailed_type = self._tags_d["type"][0].lower()
+                self._detailed_type = self._tags_d["type"][0].lower()  # idd is not very rigorous on case
             elif "key" in self._tags_d:
                 self._detailed_type = "choice"
             elif "object-list" in self._tags_d:
@@ -85,9 +85,3 @@ class FieldDescriptor:
                 raise ValueError("Can't find detailed type.")
         return self._detailed_type
 
-    @staticmethod
-    def name_to_formatted_name(name):
-        """
-        Returns formatted name of variable (lower case).
-        """
-        return name.lower()

@@ -78,7 +78,7 @@ class DesignBuilderIdfStyle(IdfStyle):
     tail_type = "before"
 
 
-class ASHRAEIdfStyle(IdfStyle):
+class AshraeIdfStyle(IdfStyle):
     head_key = " "
     chapter_key = " -"
     record_key = "  -"
@@ -96,7 +96,7 @@ class ASHRAEIdfStyle(IdfStyle):
 style_library = {
     None: None,
     "oplus": OplusIdfStyle(),
-    "ASHRAE": ASHRAEIdfStyle(),
+    "ASHRAE": AshraeIdfStyle(),
     "default write": DefaultWriteIdfStyle(),
     "design builder": DesignBuilderIdfStyle(),
 }

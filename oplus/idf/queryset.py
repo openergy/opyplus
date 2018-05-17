@@ -32,6 +32,8 @@ class Queryset:
     We only use lists (and not iterators), to avoid problems (could be done if optimization was needed):
         - exhaustion
         - iterator underlying list modification
+
+    Optimization can probably be performed using iterators.
     """
     def __init__(self, records=None):
         # manage empty
@@ -45,7 +47,7 @@ class Queryset:
         """
         select a sub queryset
         """
-        # !! we copy list !!
+        # !! we copy list so it can't change in the future !!
         iterator = list(self._records) if filter_by is None else list(filter(filter_by, self._records))
         return Queryset(iterator)
 

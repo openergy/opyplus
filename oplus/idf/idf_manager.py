@@ -46,6 +46,12 @@ class IdfManager(Cached):
     def idf(self):
         return self._idf
 
+    def __iter__(self):
+        return iter(Queryset(self._records))
+
+    def __len__(self):
+        return len(self._records)
+
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
     @property
     @contextmanager
@@ -195,7 +201,7 @@ class IdfManager(Cached):
         link_names_l = fieldd.get_tag("object-list")
         for link_name in link_names_l:
             for rd, field_index in self._idd.pointed_links(link_name):
-                for record in self.select(lambda x: x.table.ref == rd.ref.lower()):
+                for record in self.select(lambda x: x.table.ref == rd.ref):
                     if record._.get_raw_value(field_index) == pointing_raw_value:
                         return record, field_index
 
@@ -222,7 +228,7 @@ class IdfManager(Cached):
         links_l = []
         for link_name in fieldd.get_tag("reference"):
             for record_descriptor, pointing_index in self.idd.pointing_links(link_name):
-                for record in self.select(lambda x: x.table.ref == record_descriptor.ref.lower()):
+                for record in self.select(lambda x: x.table.ref == record_descriptor.ref):
                     if pointing_index >= record._.fields_nb:
                         continue
                     if record._.get_raw_value(pointing_index) == pointed_raw_value:
@@ -266,14 +272,14 @@ class IdfManager(Cached):
                         ref_d[link_name].add(reference)
 
     # ---------------------------------------------- TABLES ------------------------------------------------------------
-    def get_table(self, ref):
-        lower_ref = ref.lower()
+    def get_table(self, insensitive_ref):
+        lower_ref = insensitive_ref.lower()
         if lower_ref not in self._tables:
-            # check ref exists
-            if not self.idd.has_ref(ref):
-                raise KeyError(f"unknown table: {ref}")
+            # get table ref
+            table_ref = self.idd.get_table_ref(insensitive_ref)
+
             # create table
-            self._tables[lower_ref] = Table(ref, self)
+            self._tables[lower_ref] = Table(table_ref, self)
         return self._tables[lower_ref]
 
     # ------------------------------------------ MANAGE RECORDS --------------------------------------------------------
@@ -392,7 +398,7 @@ class IdfManager(Cached):
         name = "Idf: '%s'" % self._path
         msg = "%s\n%s\n%s" % ("-"*len(name), name, "-"*len(name))
         if sort_by_group:
-            for group_name in self._idd.groups_l:
+            for group_name in self._idd.group_names:
                 ods_l = []
                 for od in self._idd.get_record_descriptors_by_group(group_name):
                     if od.ref in rds_refs_set:
