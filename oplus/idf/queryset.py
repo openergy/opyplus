@@ -29,6 +29,7 @@ def unique_ever_seen(iterable, key=None):
 class Queryset:
     """
     Contains record, and enables filtering or other operations.
+    A queryset must be immutable (not a Python sense, but list must never be modified). OR CACHE SYSTEM WILL FAIL.
     We only use lists (and not iterators), to avoid problems (could be done if optimization was needed):
         - exhaustion
         - iterator underlying list modification
@@ -41,7 +42,7 @@ class Queryset:
             records = []
 
         # ensure unique
-        self._records = list(unique_ever_seen(records))
+        self._records = list(unique_ever_seen(records))  # !! MUST NEVER BE MODIFIED !!
 
     def select(self, filter_by=None):
         """

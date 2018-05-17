@@ -73,11 +73,11 @@ class StaticIdfTest(unittest.TestCase):
                 # check points
                 self.assertEqual(pointing_record._.get_value(pointing_index), zone)
                 # verify all are identified
-                if pointing_record._.ref not in _d:
-                    _d[pointing_record._.ref] = [pointing_index, 1]
+                if pointing_record._.table.ref not in _d:
+                    _d[pointing_record._.table.ref] = [pointing_index, 1]
                 else:
-                    self.assertEqual(pointing_index, _d[pointing_record._.ref][0])
-                    _d[pointing_record._.ref][1] += 1
+                    self.assertEqual(pointing_index, _d[pointing_record._.table.ref][0])
+                    _d[pointing_record._.table.ref][1] += 1
             self.assertEqual(d, _d)
     
             # check pointing on pointed_index
@@ -175,6 +175,7 @@ class DynamicIdfTest(unittest.TestCase):
             supply_fan = idf_manager.get_table("Fan:ConstantVolume").one(
                 lambda x: x["name"] == "supply fan")
             supply_fan._.set_value("availability schedule name", schedule_test_record_str % new_name)
+            print(idf_manager.to_str())
 
             # get
             obj = idf_manager.get_table("Fan:ConstantVolume").one(

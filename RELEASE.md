@@ -22,7 +22,7 @@ useful pycharm replace in path
     \.select\(([^\)]*)\).one
     .one($1)
     
-todo: ref, lambda cache, table cache, check oncreation record validation, manage to_str ordering (groups?), test lower, todos, class Eio (not EIO), remove custom errors when not necessary, do we limit values more than lowercase ?
+todo: check on creation record validation, test checks, manage to_str ordering (groups?), test lower, todos, remove custom errors when not necessary, do we limit values more than lowercase ?
 
 ### 5.1.2
 * p: tests are now properly organized

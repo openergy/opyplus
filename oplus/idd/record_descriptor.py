@@ -2,8 +2,8 @@ class RecordDescriptor:
     """
     Describes a EPlus record (see idd).
     """
-    def __init__(self, ref, group_name=None):
-        self.ref = ref
+    def __init__(self, table_ref, group_name=None):
+        self.table_ref = table_ref
         self.group_name = group_name
         self._fieldds_l = []
         self._tags_d = {}
@@ -81,7 +81,7 @@ class RecordDescriptor:
         for i, cur_field in enumerate(self._fieldds_l):
             if cur_field.name.lower() == lower_name:
                 return i
-        raise AttributeError("No field of '%s' is named '%s'." % (self.ref, index_or_insensitive_name))
+        raise AttributeError("No field of '%s' is named '%s'." % (self.table_ref, index_or_insensitive_name))
     #
     # @property
     # def formatted_ref(self):

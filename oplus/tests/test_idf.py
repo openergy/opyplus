@@ -254,17 +254,33 @@ class DynamicIdfTest(unittest.TestCase):
 
     def test_cache_on_filter(self):
         for _ in eplus_tester(self):
+            # load idf
             idf = self.get_idf()
-            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
-            self.assertTrue(len(idf._.cache) > 0)
+
+            # check that cache is empty
+            nb = len(idf._.cache)
+            self.assertEqual(0, nb)
+
+            # perform request
+            idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
+            nb = len(idf._.cache)
+
+            # check cache went up, and hits are 0
+            self.assertTrue(nb > 0)
+            self.assertEqual([0]*nb, [v["hits"] for v in idf._.cache.values()])
+
+            # retry
+            idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
+
+            # check cache didn't go up, and hits are 1
+            self.assertEqual(nb, len(idf._.cache))
+            self.assertEqual([1] * nb, [v["hits"] for v in idf._.cache.values()])
 
             # clear
             idf.clear_cache()
-            self.assertEqual(0, len(idf._.cache))
 
-            # retry
-            sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
-            self.assertTrue(len(idf._.cache) > 0)
+            # check cache was cleared
+            self.assertEqual(0, len(idf._.cache))
 
 
 class MiscellaneousIdfTest(unittest.TestCase):

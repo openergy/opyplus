@@ -65,7 +65,7 @@ class Idd:
         rd = self._rds_d.get(insensitive_ref.lower())
         if rd is None:
             raise KeyError(f"unknown table: {insensitive_ref}")
-        return rd.ref
+        return rd.table_ref
 
     def pointed_links(self, link_insensitive_name):
         """

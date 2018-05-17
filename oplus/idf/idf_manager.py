@@ -153,6 +153,7 @@ class IdfManager(Cached):
                     comment = None
 
             field_comment = comment
+
             # record creation if needed
             if make_new_record:
                 if not record_end and len(content_l) > 1:
@@ -201,12 +202,14 @@ class IdfManager(Cached):
         link_names_l = fieldd.get_tag("object-list")
         for link_name in link_names_l:
             for rd, field_index in self._idd.pointed_links(link_name):
-                for record in self.select(lambda x: x.table.ref == rd.ref):
+                tbl = self.get_table(rd.table_ref)
+                for record in self.get_table(rd.table_ref):
+                    rv = record._.get_raw_value(field_index)
                     if record._.get_raw_value(field_index) == pointing_raw_value:
                         return record, field_index
 
         raise RuntimeError(
-            f"Link not found. " \
+            f"Link not found. "
             f"Field 'object-list' tag values: {str(link_names_l)}, field value : '{pointing_raw_value}'"
         )
 
@@ -228,7 +231,7 @@ class IdfManager(Cached):
         links_l = []
         for link_name in fieldd.get_tag("reference"):
             for record_descriptor, pointing_index in self.idd.pointing_links(link_name):
-                for record in self.select(lambda x: x.table.ref == record_descriptor.ref):
+                for record in self.get_table(record_descriptor.table_ref):
                     if pointing_index >= record._.fields_nb:
                         continue
                     if record._.get_raw_value(pointing_index) == pointed_raw_value:
@@ -245,7 +248,7 @@ class IdfManager(Cached):
             raise BrokenIdfError(
                 "New record has same reference at index '%s' as other record of same link name. "
                 "Other record ref: '%s', index: '%s'. The value at that field must be changed." %
-                (new_record_index, links_l[0][0]._.ref, links_l[0][1])
+                (new_record_index, links_l[0][0]._.table.ref, links_l[0][1])
             )
 
     def check_duplicate_references(self):
@@ -253,7 +256,7 @@ class IdfManager(Cached):
         ref_d = dict()
         for record in self._records:
             # check reference uniqueness
-            record_descriptor = self._idd.get_record_descriptor(record._.ref)
+            record_descriptor = self._idd.get_record_descriptor(record._.table.ref)
             for i in range(record._.fields_nb):
                 fieldd = record_descriptor.get_field_descriptor(i)
                 if fieldd.detailed_type == "reference":
@@ -266,13 +269,16 @@ class IdfManager(Cached):
                             raise BrokenIdfError(
                                 "Reference duplicate for link name: {}\n".format(link_name) +
                                 "Reference: {}\n".format(reference) +
-                                "Detected while checking record ref: {}\n".format(record._.ref) +
+                                "Detected while checking record ref: {}\n".format(record._.table.ref) +
                                 "Field: {}".format(i)
                             )
                         ref_d[link_name].add(reference)
 
     # ---------------------------------------------- TABLES ------------------------------------------------------------
     def get_table(self, insensitive_ref):
+        """
+        we don't use cache system because each table is unique, and they are stored in a dict => would be useless
+        """
         lower_ref = insensitive_ref.lower()
         if lower_ref not in self._tables:
             # get table ref
@@ -309,11 +315,11 @@ class IdfManager(Cached):
         new_record = raw_parsed_record_manager.record  # change name since no more raw parsed
 
         # check reference uniqueness
-        record_descriptor = self._idd.get_record_descriptor(new_record._.ref)
+        record_descriptor = self._idd.get_record_descriptor(new_record._.table.ref)
         for i in range(new_record._.fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference" and not self._constructing_mode:
-                self.check_new_reference(record_descriptor.ref, i, new_record._.get_raw_value(i))
+                self.check_new_reference(record_descriptor.table_ref, i, new_record._.get_raw_value(i))
 
         # add record
         if position is None:
@@ -354,13 +360,18 @@ class IdfManager(Cached):
                 index = self._records.index(record)
                 del self._records[index]
 
-    @cached
     def one(self, filter_by=None):
-        return Queryset(self._records).one(filter_by=filter_by)
+        return self.select().one(filter_by=filter_by)
 
-    @cached
     def select(self, filter_by=None):
         return Queryset(self._records).select(filter_by=filter_by)
+
+    @cached
+    def select_all_table(self, table_ref):
+        """
+        purpose: this function is cached
+        """
+        return Queryset(self._records).select(lambda x: x.table.ref == table_ref)
 
     # ------------------------------------------ MANAGE COMMENTS -------------------------------------------------------
     def get_comment(self):
@@ -387,21 +398,21 @@ class IdfManager(Cached):
         # rds: records descriptors
         def _get_rds_info(_ods, _line_start=""):
             _msg = ""
-            for _rd in sorted(_ods, key=lambda x: x.ref):
-                _msg += "\n%s%s" % (_line_start, _rd.ref)
+            for _rd in sorted(_ods, key=lambda x: x.table_ref):
+                _msg += "\n%s%s" % (_line_start, _rd.table_ref)
                 if detailed:
                     for _tag in _rd.tags:
                         _msg += "\n%s\t* %s: %s" % (_line_start, _tag, _rd.get_tag(_tag))
             return _msg
 
-        rds_refs_set = set([record.ref for record in self._records])
+        rds_refs_set = set([record.table.ref for record in self._records])
         name = "Idf: '%s'" % self._path
         msg = "%s\n%s\n%s" % ("-"*len(name), name, "-"*len(name))
         if sort_by_group:
             for group_name in self._idd.group_names:
                 ods_l = []
                 for od in self._idd.get_record_descriptors_by_group(group_name):
-                    if od.ref in rds_refs_set:
+                    if od.table_ref in rds_refs_set:
                         ods_l.append(od)
                 if len(ods_l) > 0:
                     msg += "\nGroup - %s" % group_name
@@ -440,7 +451,7 @@ class IdfManager(Cached):
             # store records str (before order)
             records = []  # [(table_ref, record_str), ...]
             for obj in self._records:
-                records.append((obj.ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)))
+                records.append((obj.table.ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)))
 
             # iter sorted list and add chapter titles
             current_ref = None

@@ -70,7 +70,7 @@ class Mtd:
         return variables_d, meters_d
 
     def get_variable_refs(self, meter_ref):
-        return [v.ref for v in self._meters_d[meter_ref].variables_l]
+        return [v.table_ref for v in self._meters_d[meter_ref].variables_l]
 
     def has_meter(self, meter_ref):
         return meter_ref in self._meters_d

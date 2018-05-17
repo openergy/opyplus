@@ -23,8 +23,8 @@ class RecordManager:
     _COMMENT = 1
 
     def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
-        self._ref = ref
-        self._lower_ref = ref.lower()
+        self._table_ref = ref
+        self._table = idf_manager.get_table(ref)
         self._head_comment = head_comment
         self._tail_comment = tail_comment
         self._fields_l = []  # [[raw_value, comment], ...]
@@ -39,15 +39,11 @@ class RecordManager:
             raise ObsoleteRecordError(
                 "current record is obsolete (has been removed from it's idf), can't use it)")
 
-    # ---------------------------------------------- EXPOSE ------------------------------------------------------------
-    @property
-    def ref(self):
-        self._check_obsolescence()
-        return self._ref
-
+    # ---------------------------------------------- EXPOSE -----------------------------------------------------------
     @property
     def table(self):
-        return self._idf_manager.get_table(self.ref)
+        self._check_obsolescence()
+        return self._table
 
     @property
     def record(self):
@@ -68,10 +64,15 @@ class RecordManager:
     @clear_cache
     def add_field(self, raw_value, comment=""):
         self._check_obsolescence()
-        assert isinstance(raw_value, str), f"'raw_value' must be a string, got {type(raw_value)}"
 
-        # enforce lowercase and store
-        self._fields_l.append([raw_value.lower(), comment])
+        # get field descriptor
+        fieldd = self._descriptor.get_field_descriptor(self.fields_nb)
+
+        # cleanup
+        raw_value = fieldd.cleanup_and_check_raw_value(raw_value)
+
+        # append
+        self._fields_l.append([raw_value, comment])
 
     @clear_cache
     def add_tail_comment(self, comment):
@@ -87,7 +88,7 @@ class RecordManager:
         self._check_obsolescence()
         # create new record
         new_record_manager = self._idf_manager.record_manager_cls(
-            self._ref,
+            self._table_ref,
             self._idf_manager,
             head_comment=self._head_comment,
             tail_comment=self._tail_comment
@@ -183,9 +184,9 @@ class RecordManager:
         self._check_obsolescence()
 
         field_index = self.get_field_index(field_index_or_name)
+
         return self._fields_l[field_index][self._RAW_VALUE]
 
-    @cached
     def get_value(self, field_index_or_insensitive_name):
         # parsed value and/or record
         self._check_obsolescence()
@@ -193,10 +194,13 @@ class RecordManager:
         index = self.get_field_index(field_index_or_insensitive_name)
         raw_value = self._fields_l[index][self._RAW_VALUE]
         fieldd = self._descriptor.get_field_descriptor(index)
-        if fieldd.detailed_type in ("integer", "real", "alpha", "choice", "node", "reference", "external-list"):
+
+        if fieldd.detailed_type in (fieldd.BASIC_FIELDS + ("reference",)):
             value, pointed_index = fieldd.basic_parse(raw_value), None
+
         elif fieldd.detailed_type == "object-list":
-            value, pointed_index = self._idf_manager.get_pointed_link(self._ref, index, raw_value)
+            value, pointed_index = self._idf_manager.get_pointed_link(self._table_ref, index, raw_value)
+
         else:
             raise NotImplementedError("Unknown field type : '%s'." % fieldd.detailed_type)
         return value
@@ -227,7 +231,7 @@ class RecordManager:
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type != "reference":
                 continue
-            all_pointing_links.extend(self.idf_manager.get_pointing_links(self._ref, i, self.get_raw_value(i)))
+            all_pointing_links.extend(self.idf_manager.get_pointing_links(self._table_ref, i, self.get_raw_value(i)))
 
         return all_pointing_links
 
@@ -277,11 +281,12 @@ class RecordManager:
         field_index = self.get_field_index(field_index_or_name)
         fieldd = self._descriptor.get_field_descriptor(field_index)
 
-        if fieldd.detailed_type in ("integer", "real", "alpha", "choice", "node"):  # basic type
-            # store and parse
-            raw_value = "" if raw_value_or_value is None else str(raw_value_or_value).strip()
+        if fieldd.detailed_type in fieldd.BASIC_FIELDS:  # basic type
+            # cleanup
+            raw_value = fieldd.cleanup_and_check_raw_value(str(raw_value_or_value))
+
+            # set
             self._fields_l[field_index][self._RAW_VALUE] = raw_value
-            # self._parse_field(field_index)
 
         elif fieldd.detailed_type == "reference":
             if raise_if_pointed:
@@ -296,8 +301,10 @@ class RecordManager:
             for pointing_record, pointing_index in pointing_links_l:
                 pointing_record._.set_value(pointing_index, None)
 
-            # store and parse
-            raw_value = "" if raw_value_or_value is None else str(raw_value_or_value).strip()
+            # cleanup
+            raw_value = fieldd.cleanup_and_check_raw_value(str(raw_value_or_value))
+
+            # store
             self._fields_l[field_index][self._RAW_VALUE] = raw_value
 
             # re-set all pointing
@@ -307,7 +314,7 @@ class RecordManager:
         elif fieldd.detailed_type == "object-list":  # detailed type
             # convert to record if necessary
             if raw_value_or_value is None:
-                self._fields_l[field_index][self._RAW_VALUE] = ""
+                self._fields_l[field_index][self._RAW_VALUE] = fieldd.cleanup_and_check_raw_value(None)
             else:
                 if isinstance(raw_value_or_value, str):
                     try:
@@ -332,20 +339,21 @@ class RecordManager:
                         break
                     for record_descriptor, record_index in self._idf_manager.idd.pointed_links(link_name):
                         if (
-                                (value._.ref == record_descriptor.ref) and
+                                (value._.table.ref == record_descriptor.table_ref) and
                                 (value._.get_value(record_index) is not None)
                         ):
                             # ok, we fond an accepted combination
                             pointed_index = record_index
                             break
                 assert pointed_index is not None, \
-                    f"Wrong value ref: '{value._.ref}' for field '{field_index}' " \
-                    f"of record descriptor ref '{self._ref}'. Can't set record."
+                    f"Wrong value ref: '{value._.table.ref}' for field '{field_index}' " \
+                    f"of record descriptor ref '{self._table_ref}'. Can't set record."
+
                 # get raw value
                 raw_value = value._.get_raw_value(pointed_index)
 
                 # now we checked everything was ok, we remove old field (so pointed record unlinks correctly)
-                self._fields_l[field_index][self._RAW_VALUE] = ""
+                self._fields_l[field_index][self._RAW_VALUE] = fieldd.cleanup_and_check_raw_value(None)
 
                 # store and parse
                 self._fields_l[field_index][self._RAW_VALUE] = raw_value
@@ -364,8 +372,9 @@ class RecordManager:
         assert len(records_l) == 1, "Wrong number of records created: %i" % len(records_l)
         new_record = records_l[0]
 
-        assert self.ref == new_record._.ref, \
-            f"New record ({self.ref}) does not have same reference as new record ({new_record._.ref}). Can't replace."
+        assert self._table_ref == new_record._.table.ref, \
+            f"New record ({self._table_ref}) does not have same reference as new record ({new_record._.table.ref}). " \
+            f"Can't replace."
 
         # replace fields using raw_values, one by one
         old_nb, new_nb = self.fields_nb, new_record._.fields_nb
@@ -428,7 +437,7 @@ class RecordManager:
             else:
                 idf_style = style_library[CONF.default_write_style]
             # record descriptor ref
-            content = "%s" % self._descriptor.ref + ("," if self.fields_nb != 0 else ";")
+            content = "%s" % self._descriptor.table_ref + ("," if self.fields_nb != 0 else ";")
             spaces_nb = self._COMMENT_COLUMN_START - len(content)
             if spaces_nb < 0:
                 spaces_nb = self._TAB_LEN
@@ -496,7 +505,7 @@ class RecordManager:
         """
         self._check_obsolescence()
 
-        msg = "%s\n%s\n%s" % ("-"*len(self._ref), self._ref, "-"*len(self._ref))
+        msg = "%s\n%s\n%s" % ("-" * len(self._table_ref), self._table_ref, "-" * len(self._table_ref))
         for i, fd in enumerate(self._descriptor.field_descriptors_l):
             msg += "\n%i: %s" % (i, fd.name)
             if detailed:

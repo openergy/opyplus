@@ -1,10 +1,10 @@
 from .record import Record
 
 
-# todo: cache table
 class Table:
     """
     We use this class for api purpose only, but all logic is in idf and records.
+    No need to cache table because it uses idf_manager which is cached.
     """
     def __init__(self, ref, idf_manager):
         self._ref = ref
@@ -38,8 +38,8 @@ class Table:
 
         # check all objects belong to table
         for r in record_s:
-            assert r.table.ref == self.ref, \
-                f"trying to remove record from other table ({record_s.table.ref}), can't perform removal"
+            assert r.table.table == self.ref, \
+                f"trying to remove record from other table ({record_s.table_ref}), can't perform removal"
 
         # ask idf manager to do the job
         self._idf_manager.remove_records(record_s)
@@ -48,8 +48,5 @@ class Table:
         return self.select(filter_by=filter_by).one()
 
     def select(self, filter_by=None):
-        return self._idf_manager.select(
-            filter_by=lambda x: x.table.ref.lower() == self._lower_ref
-        ).select(
-            filter_by=filter_by
-        )
+        # select_all_table is cached
+        return self._idf_manager.select_all_table(self._ref).select(filter_by=filter_by)

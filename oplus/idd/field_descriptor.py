@@ -1,7 +1,19 @@
+def to_num(raw_value):
+    if isinstance(raw_value, str):
+        if raw_value in ("autocalculate", "autosize"):  # raw_values are always lowercase
+            return raw_value
+        try:
+            return int(raw_value)
+        except ValueError:
+            return float(raw_value)
+
+
 class FieldDescriptor:
     """
     No checks implemented (idf is considered as ok).
     """
+    BASIC_FIELDS = ("integer", "real", "alpha", "choice", "node", "external-list")
+
     def __init__(self, field_basic_type, name=None):
         if field_basic_type not in ("A", "N"):
             raise ValueError("Unknown field type: '%s'." % field_basic_type)
@@ -32,6 +44,23 @@ class FieldDescriptor:
     def has_tag(self, ref):
         return ref in self._tags_d
 
+    def cleanup_and_check_raw_value(self, unsafe_raw_value):
+        # manage None
+        if unsafe_raw_value is None:
+            unsafe_raw_value = ""
+
+        # check is string
+        assert isinstance(unsafe_raw_value, str), f"'raw_value' must be a string, got {type(unsafe_raw_value)}"
+
+        # sanitize
+        raw_value = unsafe_raw_value.lower().strip()
+
+        # check if num and not None
+        if (raw_value != "") and (self.basic_type == "N"):
+            to_num(raw_value)
+
+        return raw_value
+
     def basic_parse(self, raw_value):
         """
         Parses raw value (string or None) to string, int, float or None.
@@ -46,12 +75,7 @@ class FieldDescriptor:
 
         # numeric
         if isinstance(raw_value, str):
-            if raw_value in ("autocalculate", "autosize"):  # raw_values are always lowercase
-                return raw_value
-            try:
-                return int(raw_value)
-            except ValueError:
-                return float(raw_value)
+            return to_num(raw_value)
 
         # in case has already been parsed
         elif type(raw_value) in (int, float):
