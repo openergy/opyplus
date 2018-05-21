@@ -307,28 +307,34 @@ class IdfManager(Cached):
                 records, comments_l = self.parse(io.StringIO(new_str))  # comments not used (only for global idf parse)
                 assert len(records) == 1, "Wrong number of records created: %i" % len(records)
                 new_record = records[0]
-                return self.add_record_from_parsed(new_record._, position=position)
+                return self.add_naive_record(new_record, position=position)
 
     @clear_cache
-    def add_record_from_parsed(self, raw_parsed_record_manager, position=None):  # todo: change name and move to table
-        """checks references uniqueness"""
-        new_record = raw_parsed_record_manager.record  # change name since no more raw parsed
+    def add_naive_record(self, naive_record, position=None):
+        """
+        checks references uniqueness
 
+        Parameters
+        ----------
+        naive_record: record
+            a record that has been created, but not inserted into idf
+        position: int
+        """
         # check reference uniqueness
-        record_descriptor = self._idd.get_record_descriptor(new_record._.table.ref)
-        for i in range(new_record._.fields_nb):
+        record_descriptor = self._idd.get_record_descriptor(naive_record._.table.ref)
+        for i in range(naive_record._.fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference" and not self._constructing_mode:
-                self.check_new_reference(record_descriptor.table_ref, i, new_record._.get_raw_value(i))
+                self.check_new_reference(record_descriptor.table_ref, i, naive_record._.get_raw_value(i))
 
         # add record
         if position is None:
-            self._records.append(new_record)
+            self._records.append(naive_record)
         else:
-            self._records.insert(position, new_record)
+            self._records.insert(position, naive_record)
 
         # return new record
-        return new_record
+        return naive_record
 
     @clear_cache
     def remove_records(self, record_s):
@@ -422,8 +428,7 @@ class IdfManager(Cached):
 
         return msg
 
-    def to_str(self, style=None, add_copyright=True, clean=False):
-        # todo: change clean to sort, make default true, (and order table refs by idd order ?)
+    def to_str(self, style=None, add_copyright=True, sort=True, with_chapters=True):
         if style is None:
             style = style_library[CONF.default_write_style]
         if isinstance(style, IdfStyle):
@@ -447,38 +452,42 @@ class IdfManager(Cached):
         for comment in idf_comment.split("\n")[:-1]:
             content += style.get_head_comment(comment)
 
-        if clean:
-            # store records str (before order)
-            records = []  # [(table_ref, record_str), ...]
-            for obj in self._records:
-                records.append((obj.table.ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)))
+        # prepare records content [(table_ref, record_str), ...]
+        formatted_records = [
+            (obj.table.ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)) for obj in self._records
+        ]
 
-            # iter sorted list and add chapter titles
-            current_ref = None
+        # sort if asked
+        if sort:
+            formatted_records = sorted(formatted_records)
 
-            for (record_ref, record_str) in sorted(records):
-                # write chapter title if needed
-                if record_ref != current_ref:
-                    current_ref = record_ref
-                    content += "\n" + style.get_chapter_title(current_ref)
+        # iter
+        current_ref = None
+        for (record_ref, record_str) in formatted_records:
+            # write chapter title if needed
+            if with_chapters and (record_ref != current_ref):
+                current_ref = record_ref
+                content += "\n" + style.get_chapter_title(current_ref)
 
-                # write record
-                content += record_str
-
-        else:
-            for record in self._records:
-                content += "\n%s" % record._.to_str(style="idf", idf_style=style)
+            # write record
+            content += record_str
 
         return content
 
-    def save_as(self, file_or_path, style=None, add_copyright=True, clean=False):
+    def save_as(self, file_or_path, style=None, add_copyright=True, sort=True, with_chapters=True):
         is_path = isinstance(file_or_path, str)
         f = open(file_or_path, "w", encoding=self._encoding) if is_path else file_or_path
-        f.write(self.to_str(style=style, add_copyright=add_copyright, clean=clean))
-        if is_path:
-            f.close()
+        try:
+            f.write(self.to_str(
+                style=style,
+                add_copyright=add_copyright,
+                sort=sort,
+                with_chapters=with_chapters
+            ))
+        finally:
+            if is_path:
+                f.close()
 
     def copy(self, add_copyright=True):
         content = self.to_str(add_copyright=add_copyright)
         return self.idf.__class__(content, self.idd, encoding=self._encoding)
-

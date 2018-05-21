@@ -1,6 +1,3 @@
-# todo: remove record ref concept
-
-
 class Record:
     """
     Record is allowed to access private keys/methods of Idf.
@@ -117,13 +114,14 @@ class Record:
         """
         Removes field from idf record and shift following rows upwards (value and comment will be removed).
         Can only be applied on extensible fields (for now, only extensible:1).
-        #todo: manage extensible > 1
-        Arguments
+
+        Parameters
         ---------
         index: index of field to remove (default -1)
+
         Returns
         -------
-        Value of poped field.
+        Value of popped field.
         """
         return self._.pop(index)
 

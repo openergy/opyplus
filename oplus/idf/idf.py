@@ -64,7 +64,7 @@ class Idf:
         return self._.to_str(add_copyright=add_copyright)
 
     def save_as(self, file_or_path, style=None, clean=False):
-        self._.save_as(file_or_path, style=style, clean=clean)
+        self._.save_as(file_or_path, style=style, sort=clean)
 
     def copy(self, add_copyright=True):
         return self._.copy(add_copyright=add_copyright)

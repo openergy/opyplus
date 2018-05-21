@@ -8,8 +8,6 @@ from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
 from oplus import ObsoleteRecordError
 
 
-# todo: test Table and batch add
-
 schedule_test_record_str = """Schedule:Compact,
     %s,  !- Name
     Any Number,              !- Schedule Type Limits Name

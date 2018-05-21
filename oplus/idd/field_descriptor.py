@@ -1,3 +1,9 @@
+import re
+import unidecode
+
+spaces_pattern = re.compile("\s+")
+
+
 def to_num(raw_value):
     if isinstance(raw_value, str):
         if raw_value in ("autocalculate", "autosize"):  # raw_values are always lowercase
@@ -52,8 +58,18 @@ class FieldDescriptor:
         # check is string
         assert isinstance(unsafe_raw_value, str), f"'raw_value' must be a string, got {type(unsafe_raw_value)}"
 
-        # sanitize
-        raw_value = unsafe_raw_value.lower().strip()
+        # change multiple spaces to mono spaces
+        raw_value = re.sub(spaces_pattern, lambda x: " ", unsafe_raw_value.strip())
+
+        # make ASCII compatible
+        raw_value = unidecode.unidecode(raw_value)
+
+        # make lower case if not retaincase
+        if not self.has_tag("retaincase"):
+            raw_value = raw_value.lower()
+
+        # check not too big
+        assert len(raw_value) <= 100, "Field has more than 100 characters which is the limit."
 
         # check if num and not None
         if (raw_value != "") and (self.basic_type == "N"):

@@ -92,6 +92,7 @@ class SummaryTable:
                 ):
                     self.report_tables_ref['{r}_{f}'.format(r=report, f=for_)][table_name]['linestart'] = line_nb
                     search_end = True
+
         # TODO: Manage key error correctly
         delete_t = []
         for report_key in self.report_tables_ref.keys():
@@ -100,6 +101,7 @@ class SummaryTable:
                     continue
                 if 'linestart' not in self.report_tables_ref[report_key][table_key].keys():
                     delete_t.append((report_key, table_key))
+
         # remove table ref
         for (r_key, t_key) in delete_t:
             del self.report_tables_ref[r_key][t_key]

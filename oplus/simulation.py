@@ -7,9 +7,10 @@ import os
 import shutil
 import stat
 import logging
+import collections
 
 from oplus.configuration import CONF
-from oplus.util import run_subprocess, Enum, LoggerStreamWriter
+from oplus.util import run_subprocess, LoggerStreamWriter
 from oplus import Idf
 from oplus.idd.idd import Idd
 from oplus.epw import Epw
@@ -18,13 +19,13 @@ from oplus.mtd import Mtd
 from oplus.eio import Eio
 from oplus.err import Err
 from oplus.summary_table import SummaryTable
-from .operating_system import OS_NAME
+from . import operating_system as ops  # oplus os => ops
 
 
 DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
 
-FILE_REFS = Enum(**dict((ref, ref) for ref in (
+_refs = (
     "idf",
     "epw",
     "eio",
@@ -34,7 +35,10 @@ FILE_REFS = Enum(**dict((ref, ref) for ref in (
     "mdd",
     "err",
     "summary_table"
-)))
+)
+_FileRefEnum = collections.namedtuple("_FileRefEnum", _refs)
+
+FILE_REFS = _FileRefEnum(**dict([(k, k) for k in _refs]))
 
 
 class FileInfo:
@@ -48,51 +52,45 @@ def get_input_file_path(dir_path, file_ref):
     return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
 
 
-def get_common_output_file_path(dir_path, file_ref):
-    assert file_ref in (FILE_REFS.eio, FILE_REFS.eso, FILE_REFS.mtr, FILE_REFS.mtd, FILE_REFS.mdd, FILE_REFS.err), \
-        "'%s' file ref is not a common output file"
+def get_output_file_path(dir_path, file_ref):
+    # set category
+    if file_ref in (
+        FILE_REFS.idf,
+        FILE_REFS.epw
+    ):
+        output_category = "inputs"
 
-    if OS_NAME == "windows":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
-        else:
-            return os.path.join(dir_path, "eplusout.%s" % file_ref)
-    elif OS_NAME == "osx":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
-        else:
-            if file_ref in ("idf", "epw"):
-                return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
-            else:
-                return os.path.join(dir_path, "eplusout.%s" % file_ref)
-    elif OS_NAME == "linux":
-        if CONF.eplus_version[:2] < (8, 5):  # todo: check that it is not 8.2 or 8.3
-            return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
-        else:
-            return os.path.join(dir_path, "eplusout.%s" % file_ref)
+    elif file_ref == FILE_REFS.summary_table:
+        output_category = "table"
+
+    elif file_ref in (FILE_REFS.eio, FILE_REFS.eso, FILE_REFS.mtr, FILE_REFS.mtd, FILE_REFS.mdd, FILE_REFS.err):
+        output_category = "other"
     else:
-        raise NotImplementedError("Linux not implemented yet.")
+        raise ValueError(f"unknown file_ref: {file_ref}")
 
+    # get layout
+    layout = ops.get_output_files_layout(output_category)
 
-def get_summary_table_file_path(dir_path):
-    # TODO: code and test properly
-    if OS_NAME == "windows":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            return os.path.join(dir_path, "%sTable.csv" % CONF.simulation_base_name)
-        else:
-            return os.path.join(dir_path, "eplustbl.csv")
-    elif OS_NAME == "osx":
-        if CONF.eplus_version[:2] <= (8, 1):
-            return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
-        else:
-            return os.path.join(dir_path, "eplustbl.csv")
+    # return path
+    if layout == ops.OUTPUT_FILES_LAYOUTS.eplusout:
+        return os.path.join(dir_path, "eplusout.%s" % file_ref)
 
-    elif OS_NAME == "linux":
-        if CONF.eplus_version[:2] < (8, 5):
-            return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
-        else:
-            return os.path.join(dir_path, "eplustbl.csv")
-    raise NotImplemented()
+    if layout == ops.OUTPUT_FILES_LAYOUTS.simu:
+        return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
+
+    if layout == ops.OUTPUT_FILES_LAYOUTS.output_simu:
+        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+
+    if layout == ops.OUTPUT_FILES_LAYOUTS.simu_table:
+        return os.path.join(dir_path, "%sTable.csv" % CONF.simulation_base_name)
+
+    if layout == ops.OUTPUT_FILES_LAYOUTS.output_simu_table:
+        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
+
+    if layout == ops.OUTPUT_FILES_LAYOUTS.eplustbl:
+        return os.path.join(dir_path, "eplustbl.csv")
+
+    raise RuntimeError("unknown file_ref")
 
 
 def _copy_without_read_only(src, dst):
@@ -120,7 +118,6 @@ class Simulation:
             base_dir_path,
             simulation_name=None,
             start=None,
-            simulation_control=None,  # todo: remove
             encoding=None,
             idd_or_path=None,
             stdout=None,
@@ -139,34 +136,6 @@ class Simulation:
         # make directory if does not exist
         if not os.path.exists(simulation_dir_path):
             os.mkdir(simulation_dir_path)
-
-        # simulation control
-        # todo: remove, this is idf manipluation
-        if simulation_control is not None:
-            _sizing_ = "Sizing"
-            _run_periods_ = "RunPeriods"
-            if simulation_control not in (_sizing_, _run_periods_):
-                raise KeyError(
-                    "Unknown simulation_control: '%s'. Must be in : %s." % (
-                        simulation_control, (_sizing_, _run_periods_))
-                )
-            if not isinstance(idf_or_path, Idf):
-                idf_or_path = Idf(idf_or_path, encoding=encoding, idd_or_path=idd_or_path)
-
-            sc = idf_or_path("SimulationControl").one
-            if simulation_control == _sizing_:
-                # prepare SimulationControl
-                sc["Do Zone Sizing Calculation"] = "Yes"
-                sc["Do System Sizing Calculation"] = "Yes"
-                sc["Do Plant Sizing Calculation"] = "Yes"
-                sc["Run Simulation for Sizing Periods"] = "Yes"
-                sc["Run Simulation for Weather File Run Periods"] = "No"
-            if simulation_control == _run_periods_:
-                sc["Do Zone Sizing Calculation"] = "Yes"
-                sc["Do System Sizing Calculation"] = "Yes"
-                sc["Do Plant Sizing Calculation"] = "Yes"
-                sc["Run Simulation for Sizing Periods"] = "No"
-                sc["Run Simulation for Weather File Run Periods"] = "Yes"
 
         # run simulation
         stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
@@ -226,7 +195,7 @@ class Simulation:
 
                 FILE_REFS.eio: FileInfo(
                     constructor=lambda path: self._eio_cls(path, encoding=self._encoding),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.eio)
+                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.eio)
                 ),
 
                 FILE_REFS.eso: FileInfo(
@@ -235,7 +204,7 @@ class Simulation:
                         encoding=self._encoding,
                         start=self._start
                     ),
-                    get_path=lambda: get_common_output_file_path(
+                    get_path=lambda: get_output_file_path(
                         self.dir_path,
                         FILE_REFS.eso
                     )
@@ -246,28 +215,28 @@ class Simulation:
                         path,
                         encoding=self._encoding,
                         start=self._start),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.mtr)
+                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mtr)
                 ),
 
                 FILE_REFS.mtd: FileInfo(
                     constructor=lambda path: self._mtd_cls(path, encoding=self._encoding),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.mtd)
+                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mtd)
                 ),
 
                 FILE_REFS.mdd: FileInfo(
                     constructor=lambda path: open(path, encoding=self._encoding).read(),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.mdd)
+                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mdd)
 
                 ),
 
                 FILE_REFS.err: FileInfo(
                     constructor=lambda path: self._err_cls(path, encoding=self._encoding),
-                    get_path=lambda: get_common_output_file_path(self.dir_path, FILE_REFS.err)
+                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.err)
                 ),
 
                 FILE_REFS.summary_table: FileInfo(
                     constructor=lambda path: self._summary_table_cls(path, encoding=self._encoding),
-                    get_path=lambda: get_summary_table_file_path(self.dir_path)
+                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.summary_table)
                 )
             }
         return self._file_refs
@@ -290,7 +259,7 @@ class Simulation:
 
     def exists(self, file_ref):
         assert file_ref in FILE_REFS, \
-            "Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS.keys())))
+            "Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS._fields)))
         return os.path.isfile(self._path(file_ref))
 
     def path(self, file_ref):
@@ -340,83 +309,42 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
     else:
         _copy_without_read_only(epw_or_path, simulation_epw_path)
 
-    # copy epw on windows (on linux or osx, epw may remain in current directory)
-    if OS_NAME == "windows":
-        temp_epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", "%s.epw" % CONF.simulation_base_name)
+    # copy epw if needed
+    temp_epw_path = ops.get_simulated_epw_path()
+    if temp_epw_path is not None:
         _copy_without_read_only(simulation_epw_path, temp_epw_path)
-    else:
-        temp_epw_path = None
 
     # prepare command
-    if OS_NAME == "windows":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            last_name = "RunEPlus.bat"
-        else:
-            last_name = "energyplus"
-    elif OS_NAME == "osx":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            last_name = "runenergyplus"
-        else:
-            last_name = "energyplus"
-    elif OS_NAME == "linux":
-        if CONF.eplus_version[:2] < (8, 1):  # todo: check this limit is right
-            last_name = "bin/runenergyplus"
-        elif CONF.eplus_version[:2] < (8, 4):  # todo: check this limit is right
-            last_name = "runenergyplus"
-        else:
-            last_name = "energyplus"
-    else:
-        raise OSError("unknown os name: %s" % OS_NAME)
-
-    eplus_cmd = os.path.join(CONF.eplus_base_dir_path, last_name)
+    eplus_relative_cmd = ops.get_simulation_base_command()
+    eplus_cmd = os.path.join(CONF.eplus_base_dir_path, eplus_relative_cmd)
 
     # idf
-    if OS_NAME == "windows":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
-        else:
-            idf_file_cmd = simulation_idf_path
-    elif OS_NAME == "osx":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
-        else:
-            idf_file_cmd = simulation_idf_path
-    elif OS_NAME == "linux":
+    idf_command_style = ops.get_simulation_input_command_style("idf")
+    if idf_command_style == ops.SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
+        idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
+    elif idf_command_style == ops.SIMULATION_INPUT_COMMAND_STYLES.file_path:
         idf_file_cmd = simulation_idf_path
     else:
-        raise OSError("unknown os name: %s" % OS_NAME)
+        raise RuntimeError("should not be here")
 
     # epw
-    if OS_NAME == "windows":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            epw_file_cmd = CONF.simulation_base_name,  # only weather data name
-        else:
-            epw_file_cmd = simulation_epw_path
-    elif OS_NAME == "osx":
-        epw_file_cmd = simulation_epw_path
-    elif OS_NAME == "linux":
+    epw_command_style = ops.get_simulation_input_command_style("epw")
+    if epw_command_style == ops.SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
+        epw_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
+    elif epw_command_style == ops.SIMULATION_INPUT_COMMAND_STYLES.file_path:
         epw_file_cmd = simulation_epw_path
     else:
-        raise OSError("unknown os name: %s" % OS_NAME)
+        raise RuntimeError("should not be here")
 
     # command list
-    if OS_NAME == "windows":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
-        else:
-            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
-    elif OS_NAME == "osx":
-        if CONF.eplus_version[:2] <= (8, 1):  # todo: check that it is not 8.2 or 8.3
-            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
-        else:
-            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
-    elif OS_NAME == "linux":
-        if CONF.eplus_version[:2] <= (8, 4):  # todo: check that it is not 8.2 or 8.3
-            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
-        else:
-            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
+    simulation_command_style = ops.get_simulation_command_style()
+    if simulation_command_style == ops.SIMULATION_COMMAND_STYLES.args:
+        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+    elif simulation_command_style == ops.SIMULATION_COMMAND_STYLES.kwargs:
+        cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
     else:
-        raise OSError("unknown os name: %s" % OS_NAME)
+        raise RuntimeError("should not be here")
+
     # launch calculation
     run_subprocess(
         cmd_l,

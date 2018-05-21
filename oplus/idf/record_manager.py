@@ -39,6 +39,15 @@ class RecordManager:
             raise ObsoleteRecordError(
                 "current record is obsolete (has been removed from it's idf), can't use it)")
 
+    def _cleanup_and_check_raw_value(self, fieldd, raw_value):
+        try:
+            return fieldd.cleanup_and_check_raw_value(raw_value)
+        except Exception as e:
+            raise ValueError(
+                f"Error while parsing field 'f{fieldd.name}', value '{raw_value}'. "
+                f"Table: {self.table.ref}. Error message:\n{str(e)}."
+            ) from None
+
     # ---------------------------------------------- EXPOSE -----------------------------------------------------------
     @property
     def table(self):
@@ -69,7 +78,7 @@ class RecordManager:
         fieldd = self._descriptor.get_field_descriptor(self.fields_nb)
 
         # cleanup
-        raw_value = fieldd.cleanup_and_check_raw_value(raw_value)
+        raw_value = self._cleanup_and_check_raw_value(fieldd, raw_value)
 
         # append
         self._fields_l.append([raw_value, comment])
@@ -103,7 +112,7 @@ class RecordManager:
             new_record_manager.add_field(raw_value, comment=self.get_field_comment(i))
 
         # add record to idf
-        return self._idf_manager.add_record_from_parsed(new_record_manager)
+        return self._idf_manager.add_naive_record(new_record_manager)
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
     @clear_cache
@@ -283,7 +292,7 @@ class RecordManager:
 
         if fieldd.detailed_type in fieldd.BASIC_FIELDS:  # basic type
             # cleanup
-            raw_value = fieldd.cleanup_and_check_raw_value(str(raw_value_or_value))
+            raw_value = self._cleanup_and_check_raw_value(fieldd, str(raw_value_or_value))
 
             # set
             self._fields_l[field_index][self._RAW_VALUE] = raw_value
@@ -302,7 +311,7 @@ class RecordManager:
                 pointing_record._.set_value(pointing_index, None)
 
             # cleanup
-            raw_value = fieldd.cleanup_and_check_raw_value(str(raw_value_or_value))
+            raw_value = self._cleanup_and_check_raw_value(fieldd, str(raw_value_or_value))
 
             # store
             self._fields_l[field_index][self._RAW_VALUE] = raw_value
@@ -314,7 +323,7 @@ class RecordManager:
         elif fieldd.detailed_type == "object-list":  # detailed type
             # convert to record if necessary
             if raw_value_or_value is None:
-                self._fields_l[field_index][self._RAW_VALUE] = fieldd.cleanup_and_check_raw_value(None)
+                self._fields_l[field_index][self._RAW_VALUE] = self._cleanup_and_check_raw_value(fieldd, None)
             else:
                 if isinstance(raw_value_or_value, str):
                     try:
@@ -353,7 +362,7 @@ class RecordManager:
                 raw_value = value._.get_raw_value(pointed_index)
 
                 # now we checked everything was ok, we remove old field (so pointed record unlinks correctly)
-                self._fields_l[field_index][self._RAW_VALUE] = fieldd.cleanup_and_check_raw_value(None)
+                self._fields_l[field_index][self._RAW_VALUE] = self._cleanup_and_check_raw_value(fieldd, None)
 
                 # store and parse
                 self._fields_l[field_index][self._RAW_VALUE] = raw_value

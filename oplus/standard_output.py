@@ -45,12 +45,11 @@ class StandardOutputFile:
         self._start_dt = get_start_dt(start)
 
     def _parse(self):
-        # todo: optimize (maybe readvarseso)
         with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
             return parse_output(f)
 
     def df(self, environment=None, time_step=None, start=None, datetime_index=None):
-        # todo: start does not always work
+        # todo: start does not always work. Do datetime work well ? Do EPlusDt work well ?
         """
         environment: 'RunPeriod', 'SummerDesignDay', 'WinterDesignDay' (default: first available)
         time_step: 'Detailed', 'TimeStep', 'Hourly', 'Daily', 'Monthly', 'RunPeriod' (default: first available)
@@ -87,7 +86,7 @@ class StandardOutputFile:
             "Unknown time_step: '%s' (must be: %s)." % (time_step, ", ".join(self.TIME_STEPS))
 
         # check availability
-        if not time_step in env_d:  # no available time step
+        if time_step not in env_d:  # no available time step
             return None
 
         # start_dt
@@ -209,7 +208,7 @@ def parse_output(file_like):
         if content_s == "End of Data Dictionary":
             break
 
-        #report code
+        # report code
         content_l = content_s.split(",", 2)
         report_code, items_number, vars_l_s = int(content_l[0]), int(content_l[1]), content_l[2]
 
@@ -446,7 +445,7 @@ def __parse_out_optimized1(file_like):
             break
         line_l = line_s.split(",", 2)
 
-        #report code
+        # report code
         report_code, items_number, vars_l_s = int(line_l[0]), int(line_l[1]), line_l[2]
 
         if report_code > 5:
