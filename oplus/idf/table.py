@@ -10,6 +10,7 @@ class Table:
         self._ref = ref
         self._lower_ref = ref.lower()
         self._idf_manager = idf_manager
+        self._descriptor = self._idf_manager.idd.get_record_descriptor(ref)
 
     def __iter__(self):
         return iter(self.select())
@@ -17,19 +18,28 @@ class Table:
     def __len__(self):
         return len(self.select())
 
+    def __repr__(self):
+        return f"<Table: {self.ref}>"
+
+    def __str__(self):
+        return f"<Table: {self.ref} ({len(self)} records)>"
+
+    def info(self, how="txt"):
+        return self._descriptor.info(how=how)
+
     @property
     def ref(self):
         return self._ref
 
     def add(self, record_str_s):
-        if isinstance(str, record_str_s):
+        if isinstance(record_str_s, str):
             record_str_s = [record_str_s]
         completed_l = []  # we complete with table ref
         for record_str in record_str_s:
             assert isinstance(record_str, str), f"must provide record string to add record, got {type(record_str)}"
             completed_l.append(f"{self.ref},\n{record_str}")
 
-        self._idf_manager.add(completed_l)
+        return self._idf_manager.add_records(completed_l)
 
     def remove(self, record_s):
         # make iterable if needed
@@ -38,7 +48,7 @@ class Table:
 
         # check all objects belong to table
         for r in record_s:
-            assert r.table.table == self.ref, \
+            assert r.table.ref == self.ref, \
                 f"trying to remove record from other table ({record_s.table_ref}), can't perform removal"
 
         # ask idf manager to do the job

@@ -177,6 +177,15 @@ class DynamicIdfTest(unittest.TestCase):
                 new_name
             )
 
+    def test_set_record_wrong_type(self):
+        for _ in eplus_tester(self):
+            idf = self.get_idf()
+
+            def set_field():
+                idf["Building"].one()["North Axis"] = "I'm a text, not a real"
+
+            self.assertRaises(ValueError, set_field)
+
     def test_set_record_broken(self):
         for _ in eplus_tester(self):
             idf = self.get_idf()

@@ -60,6 +60,14 @@ class Idf:
     def __len__(self):
         return len(self._)
 
+    def __repr__(self):
+        building_records = self["Building"].select()
+        building = None if len(building_records) == 0 else building_records[0]
+        return "<Idf>" if building is None else f"<Idf: {building['name']}>"
+
+    def __str__(self):
+        return repr(self)
+
     def to_str(self, add_copyright=True):
         return self._.to_str(add_copyright=add_copyright)
 

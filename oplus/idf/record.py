@@ -5,14 +5,6 @@ class Record:
     def __init__(self, record_manager):
         self._ = record_manager
 
-    def __str__(self):
-        """pretty prints"""
-        return self._.to_str(style="console")
-
-    def __repr__(self):
-        """concise print"""
-        return "<Record: %s>" % self.table.ref
-
     def __getitem__(self, item):
         """
         Arguments
@@ -50,6 +42,13 @@ class Record:
         """
         return (self[i] for i in range(len(self)))
 
+    def __str__(self):
+        return self._.to_str(style="console")
+
+    def __repr__(self):
+        name = self._.get_name()
+        return f"<{self.table.ref}>" if name is None else f"<{self.table.ref}: {name}>"
+
     @property
     def idf(self):
         return self._.idf_manager.idf
@@ -75,15 +74,16 @@ class Record:
     def to_str(self, style="idf"):
         return self._.to_str(style=style)
 
-    def info(self, detailed=False):
+    def info(self, how="txt"):
         """
         Returns a string with all available fields of record (information provided by the idd).
+
         Arguments
         ---------
-        detailed: bool
-            include all field tags information
+        how: str
+            txt, dict
         """
-        return self._.info(detailed=detailed)
+        return self._.info(how=how)
 
     def copy(self):
         return self._.copy()

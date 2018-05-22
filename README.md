@@ -2,6 +2,10 @@
 
 A python package wrapper of Energy Plus.
 
+## Documentation
+* For users: see doc-users.md (use odocgen to improve)
+* For developers: see doc-developers.md
+
 ## Tests
 
 ### Energy plus versions
@@ -27,9 +31,3 @@ a simulation (one simulation per eplus version). This simulation must be as quic
 When testing objects that manipulate simulation outputs, simulation must be performed once by the developer, and it's
 outputs are saved in the source code. In order to keep the repo size low, we try as much as possible to mutualize
 tested outputs, and we limit it's size (limit simulation timestep, time range, ...).
-
-
-## String conventions
-Table refs have case (idd), but lookups are insensitive.
-Field keys have case (idd), but lookups are insensitive.
-Values don't have a case (forced to lower), no lookups.

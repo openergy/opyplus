@@ -1,3 +1,6 @@
+import collections
+
+
 class RecordDescriptor:
     """
     Describes a EPlus record (see idd).
@@ -75,6 +78,9 @@ class RecordDescriptor:
             if cur_field.name.lower() == lower_name:
                 return i
         raise AttributeError("No field of '%s' is named '%s'." % (self.table_ref, index_or_insensitive_name))
+
+    def get_field_name(self, index):
+        return None if len(self._fieldds_l) == 0 else self._fieldds_l[0].name
     #
     # @property
     # def formatted_ref(self):
@@ -95,3 +101,20 @@ class RecordDescriptor:
                 raise KeyError("begin-extensible tag not found.")
             self._extensible_cycle_start = i
         return self._extensible_cycle_len, self._extensible_cycle_start
+
+    def info(self, how="txt"):
+        assert how in ("txt", "dict")
+        d = collections.OrderedDict()
+        for fd in self.field_descriptors_l:
+            fields_d = {}
+            d[fd.name] = fields_d
+            for tag in fd.tags:
+                fields_d[tag] = fd.get_tag(tag)
+        if how == "dict":
+            return d
+        msg = "%s\n%s\n%s" % ("-" * len(self.table_ref), self.table_ref, "-" * len(self.table_ref))
+        for i, (field_name, field_tags) in enumerate(d.items()):
+            msg += "\n%i: %s" % (i, field_name)
+            for (tag_name, values) in field_tags.items():
+                msg += "\n\t* %s: %s" % (tag_name, values)
+        return msg

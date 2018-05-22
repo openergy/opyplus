@@ -44,7 +44,7 @@ class RecordManager:
             return fieldd.cleanup_and_check_raw_value(raw_value)
         except Exception as e:
             raise ValueError(
-                f"Error while parsing field 'f{fieldd.name}', value '{raw_value}'. "
+                f"Error while parsing field '{fieldd.name}', value '{raw_value}'. "
                 f"Table: {self.table.ref}. Error message:\n{str(e)}."
             ) from None
 
@@ -68,6 +68,13 @@ class RecordManager:
     def idf_manager(self):
         self._check_obsolescence()
         return self._idf_manager
+
+    def get_name(self):
+        self._check_obsolescence()
+        field0_name = self._descriptor.get_field_name(0)
+        if (field0_name is None) or ("name" not in field0_name.lower()):
+            return None
+        return self.get_value(0)
 
     # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
     @clear_cache
@@ -433,7 +440,7 @@ class RecordManager:
     def to_str(self, style="idf", idf_style=None):
         self._check_obsolescence()
 
-        if style == "idf":
+        if style in ("idf", "console"):
             if idf_style is None:
                 idf_style = style_library[CONF.default_write_style]
             if isinstance(idf_style, IdfStyle):
@@ -497,27 +504,19 @@ class RecordManager:
                     s += "\n"
                     for line in self._tail_comment.strip().split("\n"):
                         s += idf_style.get_tail_record_comment(line)
-
-        elif style == "console":
-            s = "%s\n%s%s\n" % ("-" * self._ROWS_NB, str(self.to_str(style="idf")), "-" * self._ROWS_NB)
         else:
             raise ValueError("Unknown style: '%s'." % style)
 
         return s
 
-    def info(self, detailed=False):
+    def info(self, how=False):
         """
         Returns a string with all available fields of record (information provided by the idd).
-        Arguments
-        ---------
-            detailed: include all field tags information
+
+        Parameters
+        ----------
+        how: str
+            txt, dict
         """
         self._check_obsolescence()
-
-        msg = "%s\n%s\n%s" % ("-" * len(self._table_ref), self._table_ref, "-" * len(self._table_ref))
-        for i, fd in enumerate(self._descriptor.field_descriptors_l):
-            msg += "\n%i: %s" % (i, fd.name)
-            if detailed:
-                for tag in fd.tags:
-                    msg += "\n\t* %s: %s" % (tag, fd.get_tag(tag))
-        return msg
+        return self._descriptor.info(how=how)

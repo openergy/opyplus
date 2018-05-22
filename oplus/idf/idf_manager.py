@@ -302,12 +302,15 @@ class IdfManager(Cached):
             new_str_s = [new_str_s]
 
         # create records, using under construction
+        created_records = []
         with self.under_construction:
             for new_str in new_str_s:
                 records, comments_l = self.parse(io.StringIO(new_str))  # comments not used (only for global idf parse)
                 assert len(records) == 1, "Wrong number of records created: %i" % len(records)
                 new_record = records[0]
-                return self.add_naive_record(new_record, position=position)
+                created_records.append(self.add_naive_record(new_record, position=position))
+
+        return created_records[0] if (len(created_records) == 1) else created_records
 
     @clear_cache
     def add_naive_record(self, naive_record, position=None):

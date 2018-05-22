@@ -34,9 +34,9 @@ class Err:
             return f.read()
 
     def _parse(self):
-        # TODO: Manage information with ahead '*************'
-        # TODO: Manage 'error flag' :
-        # TODO:  it corresponds to error type for each error_category lines_s.split('=')[0] --> MultiIndex
+        # todo: Manage information with ahead '*************'
+        # todo: Manage 'error flag' :
+        # todo:  it corresponds to error type for each error_category lines_s.split('=')[0] --> MultiIndex
 
         # first step: warmup
         simulation_step = 'Warmup'

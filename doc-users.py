@@ -27,25 +27,57 @@ idf_path = os.path.join(
 
 idf = op.Idf(idf_path)
 idf.save_as(os.path.join(work_dir_path, "my_idf.idf"))
+print(idf)
 
 ## ------------------------------------------------- table -------------------------------------------------------------
 #@ ### table
+#@ A table is a collection of records of the same type.
+
+zones = idf["Zone"]
+print(zones)
+print(f"\nzones: {len(zones)}\n")
+for z in zones:
+    print(z["name"])
 
 
 ## ----------------------------------------------- queryset ------------------------------------------------------------
 #@ ### queryset
+#@ A queryset is the result of a select query.
 
+# query may be performed on an idf
+qs = idf.select(lambda x: x.table.ref == "Zone" and x["name"] == "main zone")
+
+# or a table
+qs = idf["Zone"].select(lambda x: x["name"] == "main zone")
+
+# or another queryset
+qs = qs.select(lambda x: x["name"] == "main zone")
+
+print("records: ", qs)
+print("\niter:")
+for r in qs:
+    print(r["name"])
+print("\nget item:")
+print(qs[0])
 
 ## ------------------------------------------------ record -------------------------------------------------------------
 #@ ### record
 
 #@ #### get record
-building = idf["Building"].one(lambda x: x["name"] == "Bldg")  # !! retains case (talk about case) !!
-idf["Building"].one(lambda x: x["nAmE"] == "Bldg")
-idf["Building"].one(lambda x: x[0] == "Bldg")
+
+# directly from idf
+building = idf.one(lambda x: (x.table.ref == "Building") and (x["name"] == "Bldg"))
+
+# or from table
+building = idf["Building"].one(lambda x: x["name"] == "Bldg")
+
+# or from queryset
+building = idf["Building"].select(lambda x: x["name"] == "Bldg").one()
+
 
 #@ #### add record
-## todo: show table syntax
+
+# add from idf
 new_sch = idf.add(
     """Schedule:Compact,
     Heating Setpoint Schedule - new,  !- Name
@@ -58,19 +90,67 @@ new_sch = idf.add(
 
 print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new") is new_sch)
 
+# or add from table
+new_sch = idf["Schedule:Compact"].add(
+    """Heating Setpoint Schedule - new2,  !- Name
+    Any Number,              !- Schedule Type Limits Name
+    Through: 12/31,          !- Field 1
+    For: AllDays,            !- Field 2
+    Until: 24:00,20.0;       !- Field 3
+    """
+)
 
 #@ #### remove record
 idf.remove(new_sch)
 print("found: ", len(idf["Schedule:Compact"].select(lambda x: x["name"] == "heating setpoint schedule - new")) == 1)
 
+#@ #### batch add (and remove)
+schedules = [
+    """Schedule:Compact,
+        Heating Setpoint Schedule - 0,  !- Name
+        Any Number,              !- Schedule Type Limits Name
+        Through: 12/31,          !- Field 1
+        For: AllDays,            !- Field 2
+        Until: 24:00,20.0;       !- Field 3
+    """,
+    """Schedule:Compact,
+        Heating Setpoint Schedule - 1,  !- Name
+        Any Number,              !- Schedule Type Limits Name
+        Through: 12/31,          !- Field 1
+        For: AllDays,            !- Field 2
+        Until: 24:00,20.0;       !- Field 3
+    """,
+    """Schedule:Compact,
+        Heating Setpoint Schedule - 2,  !- Name
+        Any Number,              !- Schedule Type Limits Name
+        Through: 12/31,          !- Field 1
+        For: AllDays,            !- Field 2
+        Until: 24:00,20.0;       !- Field 3
+    """
+]
+
+# idf syntax
+added = idf.add(schedules)
+print("added:")
+for a in added:
+    print(a["name"])
+
+idf.remove(added)
+
+# or table syntax
+truncated_schedules = ["\n".join(s.split("\n")[1:]) for s in schedules]
+added = idf["Schedule:Compact"].add(truncated_schedules)
+idf["Schedule:Compact"].remove(added)
 
 #@ #### display info
-print(building.info(detailed=False))
+print(building.info())
+print("")
 print(building)
 
 #@ #### get field value
-#@ todo
-## sch[-2] = "Until: 22:00"
+print("name: ", building["name"])
+print("name: ", building["nAmE"])
+print("name: ", building[0])
 
 #@ #### set basic field
 old_name = building["TeRRain"]
@@ -150,6 +230,43 @@ print("pointed by setpoint:")
 for _pointed in setpoint.pointed_records:
     print(_pointed)
 
+
+## ------------------------------------------ case management ----------------------------------------------------------
+#@ ### case management
+
+#@ #### tables
+# table refs have a case, but getitem on idf is case insensitive
+print("tables:")
+print(idf["Zone"])
+print(idf["zOnE"])
+
+#@ #### record field keys
+# record field keys have a case, but getitem on a key is case insensitive
+print("\nbuilding name:")
+print(building["name"])
+print(building["nAmE"])
+
+#@ #### record field values
+# some record field values retain case (are case sensitive) others not
+info = building.info(how="dict")
+print("Name: ", info["Name"])
+print("Terrain: ", info["Terrain"])
+
+#@ => building name retains case, terrain doesn't
+#@
+#@ **Field values that don't retain case are always forced to lowercase. Field values that retain case keep their
+#@ case sensitive value.**
+
+building["name"] = "StaysCamelCase"
+building["terrain"] = "Suburbs"  # will be set to lowercase
+print(building)
+
+#@ don't forget these rules when filtering
+
+print("retains, case not respected:", len(idf["Building"].select(lambda x: x["name"] == "stayscamelcase")))  # not ok
+print("retains, case respected:", len(idf["Building"].select(lambda x: x["name"] == "StaysCamelCase")))  # ok
+print("doesn't retain, uppercase: ", len(idf["Building"].select(lambda x: x["terrain"] == "Suburbs")))  # not ok
+print("doesn't retain, lowercase: ", len(idf["Building"].select(lambda x: x["terrain"] == "suburbs")))  # ok
 
 ## ---------------------------------------------------------------------------------------------------------------------
 ## ---------------------------------------------- simulation -----------------------------------------------------------
