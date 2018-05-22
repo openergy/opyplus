@@ -54,7 +54,7 @@ class SimulateTest(unittest.TestCase):
 
             # check err (manage differences between eplus versions)
             expected = "" if eplus_version == (8, 3, 0) else "EnergyPlus Completed Successfully.\n"
-            self.assertEqual(expected, err_f.getvalue())
+            self.assertIn(expected, err_f.getvalue())
 
             # check beat
             out_str = out_f.getvalue()

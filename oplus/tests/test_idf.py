@@ -153,7 +153,7 @@ class DynamicIdfTest(unittest.TestCase):
                 set(bsd.pointed_records)
             )
 
-    def test_idf_copy(self):
+    def test_copy_record(self):
         for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             old_name = "system availability schedule"

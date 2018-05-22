@@ -119,7 +119,7 @@ class RecordManager:
             new_record_manager.add_field(raw_value, comment=self.get_field_comment(i))
 
         # add record to idf
-        return self._idf_manager.add_naive_record(new_record_manager)
+        return self._idf_manager.add_naive_record(new_record_manager.record)
 
     # ---------------------------------------------- DESTROY -----------------------------------------------------------
     @clear_cache
