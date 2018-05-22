@@ -1,6 +1,7 @@
  # oplus
 
  ## imports
+
 	import os
 	import oplus as op
 
@@ -8,6 +9,7 @@
  ## idf
 
  ### idf
+
 
 	idf_path = os.path.join(
 	    op.CONF.eplus_base_dir_path,
@@ -27,6 +29,7 @@
  ### table
  A table is a collection of records of the same type.
 
+
 	zones = idf["Zone"]
 	print(zones)
 	print(f"\nzones: {len(zones)}\n")
@@ -45,6 +48,7 @@
 
  ### queryset
  A queryset is the result of a select query.
+
 
 	# query may be performed on an idf
 	qs = idf.select(lambda x: x.table.ref == "Zone" and x["name"] == "main zone")
@@ -86,7 +90,9 @@
  ### record
 
 
+
  #### get record
+
 
 	# directly from idf
 	building = idf.one(lambda x: (x.table.ref == "Building") and (x["name"] == "Bldg"))
@@ -101,10 +107,11 @@
 
  #### add record
 
+
 	# add from idf
 	new_sch = idf.add(
 	    """Schedule:Compact,
-	    Heating Setpoint Schedule - new,  !- Name
+	    Heating Setpoint Schedule - new[1],  !- Name
 	    Any Number,              !- Schedule Type Limits Name
 	    Through: 12/31,          !- Field 1
 	    For: AllDays,            !- Field 2
@@ -112,11 +119,11 @@
 	    """
 	)
 
-	print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new") is new_sch)
+	print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new[1]") is new_sch)
 
 	# or add from table
 	new_sch = idf["Schedule:Compact"].add(
-	    """Heating Setpoint Schedule - new2,  !- Name
+	    """Heating Setpoint Schedule - new[2],  !- Name
 	    Any Number,              !- Schedule Type Limits Name
 	    Through: 12/31,          !- Field 1
 	    For: AllDays,            !- Field 2
@@ -130,15 +137,17 @@
 	found:  True
 
  #### remove record
+
 	idf.remove(new_sch)
-	print("found: ", len(idf["Schedule:Compact"].select(lambda x: x["name"] == "heating setpoint schedule - new")) == 1)
+	print("found: ", len(idf["Schedule:Compact"].select(lambda x: x["name"] == "heating setpoint schedule - new[2]")) == 1)
 
 
 *out:*
 
-	found:  True
+	found:  False
 
  #### batch add (and remove)
+
 	schedules = [
 	    """Schedule:Compact,
 	        Heating Setpoint Schedule - 0,  !- Name
@@ -167,7 +176,7 @@
 	added = idf.add(schedules)
 	print("added:")
 	for a in added:
-	    print(a)
+	    print(a["name"])
 
 	idf.remove(added)
 
@@ -180,32 +189,12 @@
 *out:*
 
 	added:
-	Schedule:Compact,
-	    heating setpoint schedule - 0, ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    20.0;                          ! - Field 3
-
-	Schedule:Compact,
-	    heating setpoint schedule - 1, ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    20.0;                          ! - Field 3
-
-	Schedule:Compact,
-	    heating setpoint schedule - 2, ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    20.0;                          ! - Field 3
-
+	heating setpoint schedule - 0
+	heating setpoint schedule - 1
+	heating setpoint schedule - 2
 
  #### display info
+
 	print(building.info())
 	print("")
 	print(building)
@@ -269,6 +258,7 @@
 
 
  #### get field value
+
 	print("name: ", building["name"])
 	print("name: ", building["nAmE"])
 	print("name: ", building[0])
@@ -281,6 +271,7 @@
 	name:  Bldg
 
  #### set basic field
+
 	old_name = building["TeRRain"]
 	print(f"old name: {old_name}")
 
@@ -297,6 +288,7 @@
 	new name: downtown
 
  #### replace basic fields
+
 	sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule")
 	sch.replace_values(
 	    """Schedule:Compact,
@@ -357,6 +349,7 @@
 
 
  #### set record fields
+
 	# work with setpoint record
 	setpoint = idf["ThermostatSetpoint:SingleHeating"].one(lambda x: x["name"] == "heating setpoint")
 	print(setpoint)
@@ -390,6 +383,7 @@
 
 
  #### add fields
+
 	sch.add_field("Until: 24:00", comment="added 1")
 	sch.add_field("25")
 	print(sch)
@@ -414,6 +408,7 @@
 
 
  #### explore links
+
 	pointing = sch.pointing_records
 	print("pointing on sch:")
 	for _pointing in sch.pointing_records:
@@ -452,7 +447,9 @@
  ### case management
 
 
+
  #### tables
+
 	# table refs have a case, but getitem on idf is case insensitive
 	print("tables:")
 	print(idf["Zone"])
@@ -466,6 +463,7 @@
 	<Table: Zone (1 records)>
 
  #### record field keys
+
 	# record field keys have a case, but getitem on a key is case insensitive
 	print("\nbuilding name:")
 	print(building["name"])
@@ -480,6 +478,7 @@
 	Bldg
 
  #### record field values
+
 	# some record field values retain case (are case sensitive) others not
 	info = building.info(how="dict")
 	print("Name: ", info["Name"])
@@ -495,6 +494,7 @@
 
  **Field values that don't retain case are always forced to lowercase. Field values that retain case keep their
  case sensitive value.**
+
 
 	building["name"] = "StaysCamelCase"
 	building["terrain"] = "Suburbs"  # will be set to lowercase
@@ -516,6 +516,7 @@
 
  don't forget these rules when filtering
 
+
 	print("retains, case not respected:", len(idf["Building"].select(lambda x: x["name"] == "stayscamelcase")))  # not ok
 	print("retains, case respected:", len(idf["Building"].select(lambda x: x["name"] == "StaysCamelCase")))  # ok
 	print("doesn't retain, uppercase: ", len(idf["Building"].select(lambda x: x["terrain"] == "Suburbs")))  # not ok
@@ -532,6 +533,7 @@
  ## simulation
 
  ### simulate
+
 	simulation_dir = os.path.join(work_dir_path, "simulation")
 	os.mkdir(simulation_dir)
 	s = op.simulate(
@@ -546,6 +548,7 @@
 
 
  ### standard output
+
 	# explore environements
 	print("environments: ", s.eso.environments, "\n")
 
@@ -593,6 +596,7 @@
 		RunPeriod: Hourly
 
  ### standard output
+
 	epw = op.Epw(os.path.join(
 	    op.configuration.CONF.eplus_base_dir_path,
 	    "WeatherData",

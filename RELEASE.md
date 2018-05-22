@@ -2,10 +2,15 @@
 
 **M: major, m: minor, p: patch**
 
-### next
+### 6.0.0-beta.0
 *tested on Windows 10*
-    
-todo: todos
+* M: new syntax (idf/table/queryset/record with select and one)
+* m: pointing/pointed records managed
+* p: operating system management has been structured
+* p: logging is improved
+* p: big source code files have been split
+* p: __str__, __repr__ and .info has been improved / simplified
+* M: unused custom exceptions have been removed
 
 ### 5.1.2
 * p: tests are now properly organized

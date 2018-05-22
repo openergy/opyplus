@@ -80,7 +80,7 @@ building = idf["Building"].select(lambda x: x["name"] == "Bldg").one()
 # add from idf
 new_sch = idf.add(
     """Schedule:Compact,
-    Heating Setpoint Schedule - new,  !- Name
+    Heating Setpoint Schedule - new[1],  !- Name
     Any Number,              !- Schedule Type Limits Name
     Through: 12/31,          !- Field 1
     For: AllDays,            !- Field 2
@@ -88,11 +88,11 @@ new_sch = idf.add(
     """
 )
 
-print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new") is new_sch)
+print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new[1]") is new_sch)
 
 # or add from table
 new_sch = idf["Schedule:Compact"].add(
-    """Heating Setpoint Schedule - new2,  !- Name
+    """Heating Setpoint Schedule - new[2],  !- Name
     Any Number,              !- Schedule Type Limits Name
     Through: 12/31,          !- Field 1
     For: AllDays,            !- Field 2
@@ -102,7 +102,7 @@ new_sch = idf["Schedule:Compact"].add(
 
 #@ #### remove record
 idf.remove(new_sch)
-print("found: ", len(idf["Schedule:Compact"].select(lambda x: x["name"] == "heating setpoint schedule - new")) == 1)
+print("found: ", len(idf["Schedule:Compact"].select(lambda x: x["name"] == "heating setpoint schedule - new[2]")) == 1)
 
 #@ #### batch add (and remove)
 schedules = [

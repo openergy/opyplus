@@ -71,7 +71,7 @@ try:
                     continue
 
                 # write code
-                __file_content += __textwrap.indent(__s.text, "\t") + "\n"
+                __file_content += "\n" + __textwrap.indent(__s.text, "\t") + "\n"
 
                 # write output
                 __output_content = __out.getvalue()
