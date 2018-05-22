@@ -53,9 +53,11 @@ class SimulateTest(unittest.TestCase):
                 self.assertEqual(24, len(eso_df))
 
             # check err (manage differences between eplus versions)
-            expected = "" if eplus_version == (8, 3, 0) else "EnergyPlus Completed Successfully.\n"
-            self.assertIn(expected, err_f.getvalue())
-
+            err_out = err_f.getvalue()
+            self.assertTrue(
+                (err_out == "") or
+                ("EnergyPlus Completed Successfully.\n" in err_out)
+            )
             # check beat
             out_str = out_f.getvalue()
             self.assertIn("subprocess is still running", out_str)
