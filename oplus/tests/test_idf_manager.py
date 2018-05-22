@@ -4,7 +4,7 @@ import os
 from oplus import BrokenIdfError, IsPointedError, Idf
 from oplus.idf.record import Record
 from oplus.configuration import CONF
-from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
+from oplus.tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
 
 schedule_test_record_str = """Schedule:Compact,
@@ -34,12 +34,12 @@ class StaticIdfTest(unittest.TestCase):
             )._
 
     def test_idf_call(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             qs = self.idf_managers_d[eplus_version].get_table("Construction").select()
             self.assertEqual({"r13wall", "floor", "roof31"}, set([c._.get_value("name") for c in qs]))
 
     def test_qs_one(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             idf = self.idf_managers_d[eplus_version]
             obj = idf.get_table("BuildingSurface:Detailed").one(
                 lambda x: x["naMe"] == "zn001:roof001"
@@ -52,13 +52,13 @@ class StaticIdfTest(unittest.TestCase):
             )
 
     def test_idf_create_record(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             sch_name = "NEW TEST SCHEDULE"
             sch = self.idf_managers_d[eplus_version].add_records(schedule_test_record_str % sch_name)
             self.assertTrue(isinstance(sch, Record))
 
     def test_pointing_links_l(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             zone = self.idf_managers_d[eplus_version].get_table("Zone").one()
             d = {  # ref: [pointing_index, nb of records], ...
                 "BuildingSurface:Detailed": [3, 6],  # index 3
@@ -94,14 +94,14 @@ class DynamicIdfTest(unittest.TestCase):
         return Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))._
 
     def test_idf_add_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             sch_name = "NEW TEST SCHEDULE"
             new_record = idf_manager.add_records(schedule_test_record_str % sch_name)
             self.assertEqual(new_record._.idf_manager, idf_manager)
 
     def test_idf_add_record_broken(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             self.assertRaises(
                 BrokenIdfError,
@@ -118,7 +118,7 @@ class DynamicIdfTest(unittest.TestCase):
                               )
 
     def test_idf_add_record_broken_construct_mode(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             with self.assertRaises(BrokenIdfError):
                 with idf_manager.under_construction:
@@ -135,7 +135,7 @@ class DynamicIdfTest(unittest.TestCase):
                         0.6500000;               !- Visible Absorptance""")
 
     def test_idf_remove_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             sch_name = "NEW TEST SCHEDULE"
             sch = idf_manager.add_records(schedule_test_record_str % sch_name)
@@ -146,13 +146,13 @@ class DynamicIdfTest(unittest.TestCase):
             )
 
     def test_idf_remove_record_raise(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             zone = idf_manager.get_table("Zone").one()
             self.assertRaises(IsPointedError, lambda: idf_manager.remove_records(zone))
 
     def test_idf_unlink_and_remove_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             zone = idf_manager.get_table("Zone").one()
 
@@ -167,7 +167,7 @@ class DynamicIdfTest(unittest.TestCase):
             idf_manager.remove_records(zone)
 
     def test_set_value_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
 
             # set
@@ -186,7 +186,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertEqual(new_name, name)
 
     def test_set_value_reference(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
 
             # set
@@ -203,7 +203,7 @@ class DynamicIdfTest(unittest.TestCase):
                 self.assertEqual(pointing_record._.get_raw_value(pointing_index), new_zone_name)
 
     def test_copy_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             zone = idf_manager.get_table("Zone").one()
             new = zone._.copy()
@@ -214,7 +214,7 @@ class DynamicIdfTest(unittest.TestCase):
                     self.assertEqual(zone._.get_value(i), new._.get_value(i))
 
     def test_replace_values(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
 
             # get pointing

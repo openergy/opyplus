@@ -1,13 +1,13 @@
 import unittest
 import os
 
-from oplus.tests.util import eplus_tester, RESOURCES_DIR_PATH
+from oplus.tests.util import iter_eplus_versions, RESOURCES_DIR_PATH
 from oplus import Simulation
 
 
 class TestValues(unittest.TestCase):
     def test_values(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             version_str = "-".join([str(v) for v in eplus_version])
             s = Simulation(os.path.join(
                 RESOURCES_DIR_PATH,

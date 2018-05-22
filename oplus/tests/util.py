@@ -10,7 +10,7 @@ TESTED_EPLUS_VERSIONS = (
 )
 
 
-def eplus_tester(test_case):
+def iter_eplus_versions(test_case):
     for eplus_version in TESTED_EPLUS_VERSIONS:
         with test_case.subTest(eplus_version=eplus_version):
             CONF.eplus_version = eplus_version

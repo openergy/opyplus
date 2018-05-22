@@ -4,7 +4,7 @@ import io
 
 from oplus.configuration import CONF
 from oplus.epw import Epw
-from oplus.tests.util import assert_epw_equal, eplus_tester
+from oplus.tests.util import assert_epw_equal, iter_eplus_versions
 
 from pandas.util.testing import assert_frame_equal
 
@@ -14,7 +14,7 @@ class EPlusWeatherData(unittest.TestCase):
         """
         tests if epw to df to epw works
         """
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
 
             # check Chicago
@@ -34,7 +34,7 @@ class EPlusWeatherData(unittest.TestCase):
             assert_epw_equal(expected_content, new_content)
 
     def test_df_get_and_set_integrity(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
 
             # check sf

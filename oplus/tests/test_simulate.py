@@ -4,7 +4,7 @@ import tempfile
 import io
 
 from oplus import simulate, CONF, Idf
-from oplus.tests.util import eplus_tester
+from oplus.tests.util import iter_eplus_versions
 
 
 class SimulateTest(unittest.TestCase):
@@ -12,7 +12,7 @@ class SimulateTest(unittest.TestCase):
     we test everything in one simulation, for performance reasons
     """
     def test_simulate(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             # prepare paths
             idf_path = os.path.join(
                 CONF.eplus_base_dir_path,

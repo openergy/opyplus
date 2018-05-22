@@ -4,7 +4,7 @@ import os
 from oplus import Idf, BrokenIdfError, IsPointedError
 from oplus.idf.record import Record
 from oplus.configuration import CONF
-from oplus.tests.util import TESTED_EPLUS_VERSIONS, eplus_tester
+from oplus.tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 from oplus import ObsoleteRecordError
 
 
@@ -39,7 +39,7 @@ class StaticIdfTest(unittest.TestCase):
         del cls.idfs_d
 
     def test_get_table(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             table = self.idfs_d[eplus_version]["Construction"]
             self.assertEqual(
                 {"r13wall", "floor", "roof31"},
@@ -47,7 +47,7 @@ class StaticIdfTest(unittest.TestCase):
             )
 
     def test_qs_one(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             self.assertEqual(
                 self.idfs_d[eplus_version]["BuildingSurface:Detailed"].one(
                     lambda x: x["naMe"] == "zn001:roof001")["name"],
@@ -55,13 +55,13 @@ class StaticIdfTest(unittest.TestCase):
             )
 
     def test_idf_add_object(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             sch_name = "NEW TEST SCHEDULE"
             sch = self.idfs_d[eplus_version].add(schedule_test_record_str % sch_name)
             self.assertTrue(isinstance(sch, Record))
 
     def test_multi_level_filter(self):
-        for eplus_version in eplus_tester(self):
+        for eplus_version in iter_eplus_versions(self):
             # get all building surfaces that have a zone with Z-Origin 0
             simple_filter_l = []
             for bsd in self.idfs_d[eplus_version]["BuildingSurface:Detailed"].select():
@@ -85,14 +85,14 @@ class DynamicIdfTest(unittest.TestCase):
         return Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 
     def test_idf_add_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch_name = "new test schedule"
             idf.add(schedule_test_record_str % sch_name)
             self.assertEqual(idf["Schedule:Compact"].one(lambda x: x["name"] == sch_name)["name"], sch_name)
 
     def test_idf_remove_record(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
             sch = idf.add(schedule_test_record_str % sch_name)
@@ -105,13 +105,13 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertRaises(ObsoleteRecordError, lambda: print(sch))
 
     def test_idf_remove_record_raise(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             zone = idf["Zone"].one()
             self.assertRaises(IsPointedError, lambda: idf.remove(zone))
 
     def test_idf_unlink_and_remove(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             zone = idf["Zone"].one()
             zone.unlink_pointing_records()
@@ -119,7 +119,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertEqual(len(idf["Zone"].select()), 0)
 
     def test_pointing_records(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             zone = idf["Zone"].one()
             self.assertEqual(
@@ -137,7 +137,7 @@ class DynamicIdfTest(unittest.TestCase):
             )
 
     def test_pointed_records(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             bsd = idf["BuildingSurface:Detailed"].one(lambda x: x["name"] == "zn001:wall001")
             zone = idf["Zone"].one(lambda x: x["name"] == "main zone")
@@ -154,7 +154,7 @@ class DynamicIdfTest(unittest.TestCase):
             )
 
     def test_idf_copy(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             old_name = "system availability schedule"
             old = idf["Schedule:Compact"].one(lambda x: x["name"] == old_name)
@@ -164,7 +164,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertNotEqual(old, new)
 
     def test_set_record_simple(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             new_name = "fan availability schedule - 2"
             supply_fan = idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "supply fan")
@@ -178,7 +178,7 @@ class DynamicIdfTest(unittest.TestCase):
             )
 
     def test_set_record_wrong_type(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
 
             def set_field():
@@ -187,7 +187,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertRaises(ValueError, set_field)
 
     def test_set_record_broken(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             supply_fan = idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "supply fan")
             name = supply_fan["availability schedule name"]["name"]
@@ -197,7 +197,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertRaises(BrokenIdfError, raise_if_you_care)
 
     def test_set_record_broken_constructing_mode(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             supply_fan = idf["Fan:ConstantVolume"].one(lambda x: x["name"] == "supply fan")
             name = supply_fan["availability schedule name"]["name"]
@@ -207,7 +207,7 @@ class DynamicIdfTest(unittest.TestCase):
                     supply_fan["availability schedule name"] = schedule_test_record_str % name
 
     def test_extensible(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
             for i in range(1500):
@@ -215,7 +215,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertEqual(sch[1300], "12:00")
 
     def test_pop_end(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
             ini_len = len(sch)
@@ -223,7 +223,7 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertEqual(ini_len-1, len(sch))
 
     def test_pop_middle(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
 
@@ -254,13 +254,13 @@ class DynamicIdfTest(unittest.TestCase):
                 sch.to_str())
 
     def test_pop_raises(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "system availability schedule")
             self.assertRaises(AssertionError, lambda: sch.pop(1))
 
     def test_cache_on_filter(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             # load idf
             idf = self.get_idf()
 
@@ -292,12 +292,12 @@ class DynamicIdfTest(unittest.TestCase):
 
 class MiscellaneousIdfTest(unittest.TestCase):
     def test_simple_read(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             for idf_name in ("4ZoneWithShading_Simple_1",):
                 Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", f"{idf_name}.idf"))
 
     def test_multiple_branch_links(self):
-        for _ in eplus_tester(self):
+        for _ in iter_eplus_versions(self):
             idf = Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
             bl = idf["BranchList"].one(lambda x: x["Name"] == "heating supply side branches")
             b3 = idf["Branch"].one(lambda x: x["Name"] == "heating supply bypass branch")
