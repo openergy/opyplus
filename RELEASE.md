@@ -2,7 +2,7 @@
 
 **M: major, m: minor, p: patch**
 
-### next
+### 6.0.0-beta.1
 * p: __getitem__ added to table
 
 ### 6.0.0-beta.0
