@@ -15,6 +15,9 @@ class Table:
     def __iter__(self):
         return iter(self.select())
 
+    def __getitem__(self, item):
+        return self.select()[item]
+
     def __len__(self):
         return len(self.select())
 
