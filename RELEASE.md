@@ -2,7 +2,7 @@
 
 **M: major, m: minor, p: patch**
 
-## 6.0.0.dev0
+## 6.0.1.dev0
 *tested on Windows 10*
 * p: __getitem__ added to table
 * M: new syntax (idf/table/queryset/record with select and one)
