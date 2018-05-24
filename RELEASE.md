@@ -2,20 +2,23 @@
 
 **M: major, m: minor, p: patch**
 
-### 5.1.3
+## 5.1.4
+* p: compatibility with the new CI workflow to conda
+
+## 5.1.3
 * p: 5.1.2 was no properly created
 
-### 5.1.2
+## 5.1.2
 * p: tests are now properly organized
 
-### 5.1.1
+## 5.1.1
 * p: Fixed bug on the caching system for IDF objects
 
-### 5.1.0
+## 5.1.0
 * m: Caching is now managed automatically
 * m: Added the under_construction mode to add several objects in a more efficient manner
 
-### 5.0.0
+## 5.0.0
 * p: debug architecture linux for 8.5.0 EnergyPlus version 
 (Output directory no longer exists)
 * m: EIO logger name argument
@@ -35,39 +38,39 @@ never encountered
 * p: redirect stream debug
 * p: run_subprocess encoding
 
-### 4.6.0
+## 4.6.0
 * m: idf styles added
 * m: epw header completed
 * p: err debug
 * m: simulation beat_freq implemented
 * p: subprocess management enhanced
 
-### 4.5.1
+## 4.5.1
 * **p conda-requirements.txt added, setup.py enhanced**
 
-### 4.5.0
+## 4.5.0
 * **psimulation.py**:
     * debug: simulate failed to return Simulation object if simulation_name was not none. Corrected.
     * debug: osx summary table file name was wrong
 * **m idf.py**: new filter condition added : 'in', debug of filter with no condition
 
-### 4.4.3
+## 4.4.3
 * corrected PyPi hosting issues
 
-### 4.4.2
+## 4.4.2
 * implemented continuous integration
 
-### 4.4.1
+## 4.4.1
 * simulation debug: simulate failed to return Simulation object if simulation_name was not none. Corrected.
 
-### 4.4.0
+## 4.4.0
 * simulation api changed
 * summary table object implemented
 * err object implemented
 * can create idf and epw from path, content or buffer
 * can copy idf
 
-### 4.3.0
+## 4.3.0
 * new cache system
 * new configuration system
 * CONF functions changed
