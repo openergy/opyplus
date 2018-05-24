@@ -2,11 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
-## 6.0.0.beta.1
-* p: __getitem__ added to table
-
-## 6.0.0.beta.0
+## 6.0.0.dev0
 *tested on Windows 10*
+* p: __getitem__ added to table
 * M: new syntax (idf/table/queryset/record with select and one)
 * m: pointing/pointed records managed
 * p: operating system management has been structured
