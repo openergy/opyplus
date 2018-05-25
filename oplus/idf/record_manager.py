@@ -32,7 +32,7 @@ class RecordManager:
         self._idf_manager = idf_manager
         self._descriptor = self._idf_manager.idd.get_record_descriptor(ref)
 
-        self._record = self.record_cls(self)
+        self._record = self.record_cls.init_instance(self)
 
     def _check_obsolescence(self):
         if self._idf_manager is None:

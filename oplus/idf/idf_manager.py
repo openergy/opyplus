@@ -15,6 +15,7 @@ from .table import Table
 
 class IdfManager(Cached):
     record_manager_cls = RecordManager  # for subclassing
+    table_cls = Table  # for subclassing
 
     # ----------------------------------------------- INITIALIZE -------------------------------------------------------
     def __init__(self, idf, path_or_content, idd_or_path=None, encoding=None, style=None):
@@ -285,7 +286,7 @@ class IdfManager(Cached):
             table_ref = self.idd.get_table_ref(insensitive_ref)
 
             # create table
-            self._tables[lower_ref] = Table(table_ref, self)
+            self._tables[lower_ref] = self.table_cls(table_ref, self)
         return self._tables[lower_ref]
 
     # ------------------------------------------ MANAGE RECORDS --------------------------------------------------------

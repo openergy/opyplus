@@ -2,6 +2,10 @@
 
 **M: major, m: minor, p: patch**
 
+* m: table class can now be subclassed
+* m: record may now implement init_instance class method
+* m: table now has an idf property 
+
 ## 6.0.0.beta.1
 * p: __getitem__ added to table
 
@@ -80,4 +84,3 @@
 * new cache system
 * new configuration system
 * CONF functions changed
-

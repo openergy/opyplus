@@ -2,6 +2,10 @@ class Record:
     """
     Record is allowed to access private keys/methods of Idf.
     """
+    @classmethod
+    def init_instance(cls, record_manager):
+        return cls(record_manager)
+
     def __init__(self, record_manager):
         self._ = record_manager
 

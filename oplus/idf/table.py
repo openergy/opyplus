@@ -31,6 +31,10 @@ class Table:
         return self._descriptor.info(how=how)
 
     @property
+    def idf(self):
+        return self._idf_manager.idf
+
+    @property
     def ref(self):
         return self._ref
 
