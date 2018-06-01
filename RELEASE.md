@@ -2,6 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
+## 6.0.2.dev2
+* p: improved idf.under_construction decorator
+
 ## 6.0.1.dev1
 * m: table class can now be subclassed
 * m: record may now implement init_instance class method
