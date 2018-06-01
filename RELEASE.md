@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 6.0.2.dev2
 * p: improved idf.under_construction decorator
 
