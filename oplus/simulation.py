@@ -119,7 +119,7 @@ class Simulation:
             simulation_name=None,
             start=None,
             encoding=None,
-            idd_or_path=None,
+            idd_or_path_or_key=None,
             stdout=None,
             stderr=None,
             beat_freq=None
@@ -137,12 +137,17 @@ class Simulation:
         if not os.path.exists(simulation_dir_path):
             os.mkdir(simulation_dir_path)
 
+        # idd
+        idd_or_path_or_key = idd_or_path_or_key if isinstance(idd_or_path_or_key, Idd) \
+            else cls._idd_cls.get_idd_path(idd_or_path_or_key)
+
         # run simulation
         stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
         stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
         run_eplus(
             idf_or_path,
             epw_or_path,
+            idd_or_path_or_key,
             simulation_dir_path,
             stdout=stdout,
             stderr=stderr,
@@ -155,7 +160,7 @@ class Simulation:
             simulation_name=simulation_name,
             start=start,
             encoding=encoding,
-            idd_or_path=idd_or_path
+            idd_or_path=idd_or_path_or_key
         )
 
     def __init__(
@@ -279,12 +284,13 @@ class Simulation:
 simulate = Simulation.simulate
 
 
-def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat_freq=None):
+def run_eplus(idf_or_path, epw_or_path, idd_or_path, dir_path, stdout=None, stderr=None, beat_freq=None):
     """
     Parameters
     ----------
     idf_or_path
     epw_or_path
+    idd_or_path
     dir_path
     stdout: default sys.stdout
     stderr: default sys.stderr
@@ -335,13 +341,16 @@ def run_eplus(idf_or_path, epw_or_path, dir_path, stdout=None, stderr=None, beat
         epw_file_cmd = simulation_epw_path
     else:
         raise RuntimeError("should not be here")
+    
+    # idd
+    idd_file_cmd = idd_or_path.path if isinstance(idd_or_path, Idd) else idd_or_path
 
     # command list
     simulation_command_style = ops.get_simulation_command_style()
     if simulation_command_style == ops.SIMULATION_COMMAND_STYLES.args:
         cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
     elif simulation_command_style == ops.SIMULATION_COMMAND_STYLES.kwargs:
-        cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
+        cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-i", idd_file_cmd, "-r", idf_file_cmd]
     else:
         raise RuntimeError("should not be here")
 

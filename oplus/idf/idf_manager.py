@@ -16,12 +16,13 @@ from .table import Table
 class IdfManager(Cached):
     record_manager_cls = RecordManager  # for subclassing
     table_cls = Table  # for subclassing
+    idd_cls = Idd
 
     # ----------------------------------------------- INITIALIZE -------------------------------------------------------
     def __init__(self, idf, path_or_content, idd_or_path=None, encoding=None, style=None):
         self.activate_cache()
         self._idf = idf
-        self._idd = Idd.get_idd(idd_or_path, encoding=encoding)
+        self._idd = self.idd_cls.get_idd(idd_or_path, encoding=encoding)
         self._encoding = CONF.encoding if encoding is None else encoding
         self._constructing_mode = False
         self._tables = {}  # {lower_ref: table, ...}
