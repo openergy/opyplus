@@ -3,6 +3,7 @@
 **M: major, m: minor, p: patch**
 
 ## next
+* p: requirements are now specified in the requirements.txt file
 
 ## 6.0.2.dev2
 * p: improved idf.under_construction decorator
