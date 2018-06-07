@@ -24,7 +24,7 @@ class IdfManager(Cached):
         self._idf = idf
         self._idd = self.idd_cls.get_idd(idd_or_path, encoding=encoding)
         self._encoding = CONF.encoding if encoding is None else encoding
-        self._constructing_mode = False
+        self._constructing_mode_counter = 0
         self._tables = {}  # {lower_ref: table, ...}
 
         # get string buffer and store path (for info)
@@ -62,10 +62,11 @@ class IdfManager(Cached):
         Allows the user to deactivate new reference checks while adding records. The whole idf is checked afterwards.
         This allows to construct idfs more efficiently.
         """
-        self._constructing_mode = True
+        self._constructing_mode_counter += 1
         yield
-        self.check_duplicate_references()
-        self._constructing_mode = False
+        self._constructing_mode_counter -= 1
+        if self._constructing_mode_counter == 0:
+            self.check_duplicate_references()
 
     def parse(self, file_like, style=None):
         """
@@ -329,7 +330,7 @@ class IdfManager(Cached):
         record_descriptor = self._idd.get_record_descriptor(naive_record._.table.ref)
         for i in range(naive_record._.fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
-            if fieldd.detailed_type == "reference" and not self._constructing_mode:
+            if fieldd.detailed_type == "reference" and self._constructing_mode_counter == 0:
                 self.check_new_reference(record_descriptor.table_ref, i, naive_record._.get_raw_value(i))
 
         # add record

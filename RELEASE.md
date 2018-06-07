@@ -2,7 +2,7 @@
 
 **M: major, m: minor, p: patch**
 
-## 6.0.1.dev2
+## 6.0.1.dev3
 * p: idd now keeps tags with no values
 * m: idd now has a record_descriptor_l property
 * m: ``__eq__`` magic method implemented for FieldDescriptor, RecordDescriptor objects, and Idd
@@ -21,6 +21,10 @@ to be parsed
 * p: Idd path becomes ``path_or_key``, through which the user can pass a key s.a.
 "energy+" to default the .idd file to EnergyPlus one. This was created so users could
 up-cast the Idd object and customize the different default .idd sources. 
+* p: requirements are now specified in the requirements.txt file
+
+## 6.0.2.dev2
+* p: improved idf.under_construction decorator
 
 ## 6.0.1.dev1
 * m: table class can now be subclassed
