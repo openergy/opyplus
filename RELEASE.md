@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 6.0.2.dev3
 * p: requirements are now specified in the requirements.txt file
 * m: raise_if_pointed keyword argument reintroduced in `idf.remove`
