@@ -30,15 +30,6 @@ from .record_descriptor import RecordDescriptor
 logger = logging.getLogger(__name__)
 
 
-def get_idd_path():
-    warnings.warn(
-        "get_idd_path is deprecated and will be removed in nfuture versions. "
-        "Use class method Idd.get_default_idd_path instead",
-        DeprecationWarning
-    )
-    return Idd.get_idd_path()
-
-
 class Idd:
     """
 
