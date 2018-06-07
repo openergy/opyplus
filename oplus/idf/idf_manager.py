@@ -342,11 +342,12 @@ class IdfManager(Cached):
         return naive_record
 
     @clear_cache
-    def remove_records(self, record_s):
+    def remove_records(self, record_s, raise_if_pointed=True):
         """
         Arguments
         ---------
         record_s
+        raise_if_pointed
         """
         # transform to iterable if only one record
         if isinstance(record_s, Record):
@@ -357,12 +358,12 @@ class IdfManager(Cached):
             for record in record_s:
                 # check if record is pointed, if asked
                 pointing_links_l = record._.get_pointing_links()
-                if len(pointing_links_l) > 0:
-                    raise IsPointedError(
-                        "Can't remove record if other records are pointing to it. "
-                        "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
-                        % [o for (o, i) in pointing_links_l]
-                    )
+                if len(pointing_links_l) > 0 and raise_if_pointed:
+                        raise IsPointedError(
+                            "Can't remove record if other records are pointing to it. "
+                            "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
+                            % [o for (o, i) in pointing_links_l]
+                        )
 
                 # delete obsolete attributes
                 record._.neutralize()

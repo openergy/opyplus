@@ -90,7 +90,7 @@ class Idf:
         """
         return self._.add_records(record_str_s, position=position)
 
-    def remove(self, record_s):
+    def remove(self, record_s, raise_if_pointed=True):
         """
         removes record from idf.
         This record must not be pointed by other records, or removal will fail
@@ -98,12 +98,13 @@ class Idf:
         Parameters
         ----------
         record_s: record or list of records
+        raise_if_pointed: if True, will raise IsPointedError if the deleted object is pointed
 
         Raises
         ------
         IsPointedError
         """
-        self._.remove_records(record_s)
+        self._.remove_records(record_s, raise_if_pointed=raise_if_pointed)
 
     def one(self, filter_by=None):
         return self._.one(filter_by=filter_by)
