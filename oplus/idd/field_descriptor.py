@@ -1,5 +1,6 @@
 import re
 import unidecode
+import copy
 
 spaces_pattern = re.compile("\s+")
 
@@ -29,6 +30,17 @@ class FieldDescriptor:
 
         self._detailed_type = None
 
+    def copy(self, deep=False):
+        """ Return identical field descriptor """
+        # field = FieldDescriptor(self.basic_type, name=self.name)
+        # field._tags_d = self._tags_d.copy()
+        # field._detailed_type = self._detailed_type
+        # return field
+        if deep:
+            copy.copy(self)
+        else:
+            return copy.deepcopy(self)
+
     @property
     def tags(self):
         return sorted(self._tags_d)
@@ -39,11 +51,39 @@ class FieldDescriptor:
         if value is not None:
             self._tags_d[ref].append(value)
 
-    def get_tag(self, ref):
+    def remove_tag(self, ref, errors="raise"):
+        """ Remove tag
+
+        Parameters
+        ----------
+        ref: str:
+            tag ref to remove
+        errors: str, {"ignore", "raise"}, default "raise"
+            Whether or not to raise error if ref not in field tags
+
+        Notes
+        -----
+        Raise ValueError at the end for speed up - if remove_tag is called
+        many times in a row, then does not as many times the test on whether
+        or not the 'errors' argument has a valid value.
+        MIGHT NOT BE NECESSARY
+
+        Returns
+        -------
+
+        """
+        if errors == "raise":
+            self._tags_d.pop(ref)
+        elif errors == "ignore":
+            self._tags_d.pop(ref, None)
+        else:
+            raise ValueError(f"'errors' argument should be in ('ignore', 'raise')")
+
+    def get_tag(self, ref, raw=False):
         """
         Returns tag belonging to field descriptor. If 'note', will be string, else list of elements.
         """
-        if ref == "note":  # memo is for object descriptors
+        if ref == "note" and not raw:  # memo is for object descriptors
             return " ".join(self._tags_d[ref])
         return self._tags_d[ref]
 
@@ -124,4 +164,20 @@ class FieldDescriptor:
             else:
                 raise ValueError("Can't find detailed type.")
         return self._detailed_type
+
+    def __eq__(self, other):
+        """ Eq between two FieldDescriptor instances """
+        assert isinstance(other, FieldDescriptor), "other should be a FieldDescriptor instance"
+
+        if self.name != other.name:
+            return False
+        elif self.basic_type != other.basic_type:
+            return False
+        elif (
+            len(self._tags_d) != len(other._tags_d)
+            or sorted(self._tags_d.items()) != sorted(self._tags_d.items())
+        ):
+            return False
+        else:
+            return True
 

@@ -2,7 +2,26 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 6.0.1.dev4
+* p: idd now keeps tags with no values
+* m: idd now has a record_descriptor_l property
+* m: ``__eq__`` magic method implemented for FieldDescriptor, RecordDescriptor objects, and Idd
+* m: ``RecordDescriptor.get_tag`` has now a ``raw`` kwarg in case
+one would like the tag without preprocessing (i.e. concatenation of
+``\memo`` tags)
+* m: ``FieldDescriptor.get_tag`` has now a ``raw`` kwarg in case
+one would like the tag without preprocessing (i.e. concatenation of
+``\note`` tags)
+* p: debug idd parsing to allow strings s.a. `N9, \note fields as indicated` 
+to be parsed
+* m: custom idd is enabled in simulation
+* m: ``remove_tag`` method added in ``FieldDescriptor``
+* m: can specify which .idd file to use in simulation
+* p: ``idd_cls`` in IdfManager for subclassing
+* p: Idd path becomes ``path_or_key``, through which the user can pass a key s.a.
+"energy+" to default the .idd file to EnergyPlus one. This was created so users could
+up-cast the Idd object and customize the different default .idd sources. 
+
 
 ## 6.0.2.dev3
 * p: requirements are now specified in the requirements.txt file
