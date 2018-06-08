@@ -2,7 +2,7 @@
 
 **M: major, m: minor, p: patch**
 
-## 6.0.1.dev4
+## 6.0.2.dev4
 * p: idd now keeps tags with no values
 * m: idd now has a record_descriptor_l property
 * m: ``__eq__`` magic method implemented for FieldDescriptor, RecordDescriptor objects, and Idd
