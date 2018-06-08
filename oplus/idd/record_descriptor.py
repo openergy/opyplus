@@ -73,6 +73,8 @@ class RecordDescriptor:
         # if name (extensible can not be used here)
         lower_name = index_or_insensitive_name.lower()
         for i, cur_field in enumerate(self._fieldds_l):
+            if cur_field.name is None:  # can happen, for example if extensible...
+                continue
             if cur_field.name.lower() == lower_name:
                 return i
         raise AttributeError("No field of '%s' is named '%s'." % (self.table_ref, index_or_insensitive_name))
