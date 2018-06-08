@@ -26,11 +26,9 @@ to be parsed
 up-cast the Idd object and customize the different default .idd sources. 
 
 
-## 6.0.2.dev3
+## 6.0.1.dev2
 * p: requirements are now specified in the requirements.txt file
 * m: raise_if_pointed keyword argument reintroduced in `idf.remove`
-
-## 6.0.2.dev2
 * p: improved idf.under_construction decorator
 
 ## 6.0.1.dev1
