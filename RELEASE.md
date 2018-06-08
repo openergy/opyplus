@@ -22,7 +22,6 @@ to be parsed
 "energy+" to default the .idd file to EnergyPlus one. This was created so users could
 up-cast the Idd object and customize the different default .idd sources. 
 
-
 ## 6.0.1.dev2
 * p: requirements are now specified in the requirements.txt file
 * m: raise_if_pointed keyword argument reintroduced in `idf.remove`
@@ -32,7 +31,6 @@ up-cast the Idd object and customize the different default .idd sources.
 * m: table class can now be subclassed
 * m: record may now implement init_instance class method
 * m: table now has an idf property 
-
 
 ## 6.0.1.dev0
 *tested on Windows 10*
