@@ -105,7 +105,7 @@ class SimulateTest(unittest.TestCase):
                 err_f = io.StringIO()
 
                 # simulate with empty idd -> must raise
-                simulate(
+                s = simulate(
                     idf,
                     epw_path,
                     dir_path,
@@ -114,9 +114,13 @@ class SimulateTest(unittest.TestCase):
                     beat_freq=0.1,
                     idd_or_path_or_key=new_idd_path
                 )
-                self.assertEqual(
-                    err_f.getvalue().strip("\n"),
-                    "Program terminated: EnergyPlus Terminated--Error(s) Detected."
+                with self.assertRaises(AssertionError):
+                    # check one day output
+                    s.eso.df()
+                err_out = err_f.getvalue()
+                self.assertTrue(
+                    (err_out == "") or
+                    ("Program terminated: EnergyPlus Terminated--Error(s) Detected.\n" in err_out)
                 )
 
                 # simulate with good idd -> check that works
