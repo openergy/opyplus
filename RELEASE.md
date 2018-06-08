@@ -2,7 +2,7 @@
 
 **M: major, m: minor, p: patch**
 
-## 6.0.2.dev4
+## next
 * p: idd now keeps tags with no values
 * m: idd now has a record_descriptor_l property
 * m: ``__eq__`` magic method implemented for FieldDescriptor, RecordDescriptor objects, and Idd
@@ -22,19 +22,15 @@ to be parsed
 "energy+" to default the .idd file to EnergyPlus one. This was created so users could
 up-cast the Idd object and customize the different default .idd sources. 
 
-
-## 6.0.2.dev3
+## 6.0.1.dev2
 * p: requirements are now specified in the requirements.txt file
 * m: raise_if_pointed keyword argument reintroduced in `idf.remove`
-
-## 6.0.2.dev2
 * p: improved idf.under_construction decorator
 
 ## 6.0.1.dev1
 * m: table class can now be subclassed
 * m: record may now implement init_instance class method
 * m: table now has an idf property 
-
 
 ## 6.0.1.dev0
 *tested on Windows 10*
