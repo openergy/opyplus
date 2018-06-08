@@ -5,7 +5,7 @@ import io
 
 from oplus import simulate, CONF, Idf
 from oplus.tests.util import iter_eplus_versions
-from oplus.idd.idd import get_idd_path
+from oplus.idd.idd import Idd
 
 
 class SimulateTest(unittest.TestCase):
@@ -69,7 +69,7 @@ class SimulateTest(unittest.TestCase):
 
     def test_simulate_with_custom_idd(self):
         for eplus_version in iter_eplus_versions(self):
-            default_idd_path = get_idd_path()
+            default_idd_path = Idd.get_idd_path()
             dirname, basename = os.path.split(default_idd_path)
             new_idd_path = os.path.join(dirname, f"~{basename}")
             try:
