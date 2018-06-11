@@ -18,6 +18,7 @@ pointed record (has tag 'reference'): object being pointed by another object
 import os
 import re
 import logging
+import warnings
 from collections import OrderedDict
 
 from oplus.configuration import CONF
@@ -29,26 +30,56 @@ from .record_descriptor import RecordDescriptor
 logger = logging.getLogger(__name__)
 
 
-def get_idd_path():
-    return os.path.join(CONF.eplus_base_dir_path, "Energy+.idd")
-
-
 class Idd:
+    """
+
+    Parameters
+    ----------
+    path: str, Path-like, {'energy+',}
+        path of .idd file. Default to 'energy+' takes the .idd file from
+        EnergyPlus install.
+    encoding: str
+        .idd file encoding
+
+    """
     @classmethod
     def get_idd(cls, idd_or_path, encoding=None):
         if idd_or_path is None:
             return cls()
         if isinstance(idd_or_path, str):
-            return cls(path=idd_or_path, encoding=encoding)
+            return cls(path_or_key=idd_or_path, encoding=encoding)
         elif isinstance(idd_or_path, cls):
             return idd_or_path
         raise ValueError(
             f"'idd_or_path' must be a path or an Idd. Given record: '{idd_or_path}', type: '{type(idd_or_path)}'."
         )
 
-    def __init__(self, path=None, encoding=None):
-        assert (path is None) or os.path.exists(path), "No file at given path: '%s'." % path
-        self.path = get_idd_path() if path is None else path
+    @classmethod
+    def get_idd_path(cls, path_or_key="energy+"):
+        """ Find .idd file based on path_or_key argument
+
+        The path_or_key argument should be either a path, or 'energy+'. This
+        argument can be used for up-casting so the Idd object can look for
+        .idd files in other custom sources.
+
+        Parameters
+        ----------
+        path_or_key
+
+        Returns
+        -------
+
+        """
+        if path_or_key == "energy+" or path_or_key is None:
+            return os.path.join(CONF.eplus_base_dir_path, "Energy+.idd")
+        elif isinstance(path_or_key, str):
+            assert os.path.exists(path_or_key), "No file at given path: '%s'." % path_or_key
+            return path_or_key
+        else:
+            raise NotImplementedError(f"Cannot find .idd file based on path_or_key argument '{path_or_key}'")
+
+    def __init__(self, path_or_key='energy+', encoding=None):
+        self.path = self.get_idd_path(path_or_key)
         self._encoding = encoding
 
         # rd: record descriptor, linkd: link descriptor
@@ -166,7 +197,7 @@ class Idd:
                     continue
 
                 # unnamed field descriptors
-                match = re.search(r"^\s*[AN]\d+.+([;,])\s*\\note.*$", line)
+                match = re.search(r"^\s*([AN]\d+([;,])\s*)+\\note.*$", line)
                 if match is not None:
                     # identify
                     fields_l = [s.strip() for s in line.split(r"\note")[0].strip()[:-1].split(",")]
@@ -245,3 +276,20 @@ class Idd:
         list of record descriptors belonging to a given group.
         """
         return self._groups_d[group_insensitive_name.lower()]["record_descriptors"]
+
+    @property
+    def record_descriptor_l(self):
+        return list(self._rds_d.keys())
+
+    def __eq__(self, other):
+        if len(self.record_descriptor_l) != len(other.record_descriptor_l):
+            return False
+
+        for rd_ref in self.record_descriptor_l:
+            try:
+                if self.get_record_descriptor(rd_ref) != other.get_record_descriptor(rd_ref):
+                    return False
+            except KeyError:
+                return False
+
+        return True

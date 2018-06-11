@@ -23,21 +23,19 @@ class RecordDescriptor:
     def field_descriptors_l(self):
         return self._fieldds_l
 
-    def get_tag(self, ref):
+    def get_tag(self, ref, raw=False):
         """
         Returns tag belonging to record descriptor. If 'memo', will be string, else list of elements.
         """
-        if ref == "memo":  # note if for field descriptors
+        if ref == "memo" and not raw:  # note if for field descriptors
             return " ".join(self._tags_d[ref])
         return self._tags_d[ref]
 
     def add_tag(self, ref, value=None):
-        if value is None:
-            return None
-
         if ref not in self._tags_d:
             self._tags_d[ref] = []
-        self._tags_d[ref].append(value)
+        if value is not None:
+            self._tags_d[ref].append(value)
 
         # manage extensible
         if "extensible" in ref:
@@ -118,3 +116,24 @@ class RecordDescriptor:
             for (tag_name, values) in field_tags.items():
                 msg += "\n\t* %s: %s" % (tag_name, values)
         return msg
+
+    def __eq__(self, other):
+        """ Eq between two RecordDescriptor instances """
+        assert isinstance(other, RecordDescriptor), "other should be a RecordDescriptor instance"
+
+        if self.table_ref != other.table_ref:
+            return False
+        elif self.group_name != other.group_name:
+            return False
+        elif (
+                len(self._tags_d) != len(other._tags_d)
+                or sorted(self._tags_d.items()) != sorted(other._tags_d.items())
+        ):
+            return False
+        elif (
+                len(self.field_descriptors_l) != len(other.field_descriptors_l)
+                or any([f1 != f2 for f1, f2 in zip(self.field_descriptors_l, other.field_descriptors_l)])
+        ):
+            return False
+        else:
+            return True
