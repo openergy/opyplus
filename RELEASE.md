@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 6.0.1.dev4
 * p: debug in idd.record_descriptor.get_field_index
 * p: set_value debug if value is None
