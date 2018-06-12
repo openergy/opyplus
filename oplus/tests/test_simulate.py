@@ -71,13 +71,14 @@ class SimulateTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             default_idd_path = Idd.get_idd_path()
             dirname, basename = os.path.split(default_idd_path)
-            new_idd_path = os.path.join(dirname, f"~{basename}")
-            try:
-                # idd
-                # rename idd and simulate with new path
-                os.rename(default_idd_path, new_idd_path)
+
+            with tempfile.TemporaryDirectory() as dir_path:
+                # path
+                new_idd_path = os.path.join(dir_path, f"~{basename}")
+
+                # create empty file
+                open(new_idd_path, "w").close()
                 self.assertTrue(os.path.isfile(new_idd_path))
-                self.assertFalse(os.path.isfile(default_idd_path))
 
                 # prepare idf and epw paths
                 idf_path = os.path.join(
@@ -92,7 +93,7 @@ class SimulateTest(unittest.TestCase):
                 )
 
                 # prepare a quick simulation
-                idf = Idf(idf_path, idd_or_path=new_idd_path)
+                idf = Idf(idf_path)
                 sc = idf["SimulationControl"].one()
                 sc["Run Simulation for Sizing Periods"] = "No"
                 rp = idf["RunPeriod"].one()
@@ -103,21 +104,39 @@ class SimulateTest(unittest.TestCase):
                 out_f = io.StringIO()
                 err_f = io.StringIO()
 
-                # simulate
-                with tempfile.TemporaryDirectory() as dir_path:
-                    s = simulate(
-                        idf,
-                        epw_path,
-                        dir_path,
-                        stdout=out_f,
-                        stderr=err_f,
-                        beat_freq=0.1,
-                        idd_or_path_or_key=new_idd_path
-                    )
-
+                # simulate with empty idd -> must raise
+                s = simulate(
+                    idf,
+                    epw_path,
+                    dir_path,
+                    stdout=out_f,
+                    stderr=err_f,
+                    beat_freq=0.1,
+                    idd_or_path_or_key=new_idd_path
+                )
+                with self.assertRaises(AssertionError):
                     # check one day output
-                    eso_df = s.eso.df()
-                    self.assertEqual(24, len(eso_df))
+                    s.eso.df()
+                err_out = err_f.getvalue()
+                self.assertTrue(
+                    (err_out == "") or
+                    ("Program terminated: EnergyPlus Terminated--Error(s) Detected.\n" in err_out)
+                )
+
+                # simulate with good idd -> check that works
+                s = simulate(
+                    idf,
+                    epw_path,
+                    dir_path,
+                    stdout=out_f,
+                    stderr=err_f,
+                    beat_freq=0.1,
+                    idd_or_path_or_key=default_idd_path
+                )
+
+                # check one day output
+                eso_df = s.eso.df()
+                self.assertEqual(24, len(eso_df))
 
                 # check err (manage differences between eplus versions)
                 err_out = err_f.getvalue()
@@ -132,5 +151,3 @@ class SimulateTest(unittest.TestCase):
                 # check stdout
                 out_str = out_str.replace("subprocess is still running\n", "")
                 self.assertGreater(len(out_str.split("\n")), 15)  # check that more than 15 lines
-            finally:
-                os.rename(new_idd_path, default_idd_path)
