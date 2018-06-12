@@ -298,6 +298,10 @@ class RecordManager:
         fieldd = self._descriptor.get_field_descriptor(field_index)
 
         if fieldd.detailed_type in fieldd.BASIC_FIELDS:  # basic type
+            # transform None to ""
+            if raw_value_or_value is None:
+                raw_value_or_value = ""
+
             # cleanup
             raw_value = self._cleanup_and_check_raw_value(fieldd, str(raw_value_or_value))
 
