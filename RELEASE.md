@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 6.0.1.dev5
 * p: debug ``oplus.idd.Idd.get_idd`` class method to admit instances inheriting
 from oplus Idd instance instead of only admitting oplus Idd instances. 
