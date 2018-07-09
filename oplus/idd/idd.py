@@ -19,6 +19,7 @@ import os
 import re
 import logging
 import warnings
+
 from collections import OrderedDict
 
 from oplus.configuration import CONF
@@ -46,10 +47,11 @@ class Idd:
     def get_idd(cls, idd_or_path, encoding=None):
         if idd_or_path is None:
             return cls()
-        if isinstance(idd_or_path, str):
+        elif isinstance(idd_or_path, str):
             return cls(path_or_key=idd_or_path, encoding=encoding)
-        elif isinstance(idd_or_path, cls):
+        elif hasattr(idd_or_path, "__class__") and issubclass(idd_or_path.__class__, Idd):
             return idd_or_path
+
         raise ValueError(
             f"'idd_or_path' must be a path or an Idd. Given record: '{idd_or_path}', type: '{type(idd_or_path)}'."
         )
