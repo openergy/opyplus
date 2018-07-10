@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 6.0.1.dev6
 * p: ``oplus.idd.Idd.get_idd`` better error message
 
