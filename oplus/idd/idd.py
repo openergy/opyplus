@@ -36,7 +36,7 @@ class Idd:
 
     Parameters
     ----------
-    path: str, Path-like, {'energy+',}
+    path_or_key: str, Path-like, {'energy+',}
         path of .idd file. Default to 'energy+' takes the .idd file from
         EnergyPlus install.
     encoding: str
@@ -53,7 +53,8 @@ class Idd:
             return idd_or_path
 
         raise ValueError(
-            f"'idd_or_path' must be a path or an Idd. Given record: '{idd_or_path}', type: '{type(idd_or_path)}'."
+            f"'idd_or_path' must be a path or and instance inheriting from oplus Idd."
+            f" Given record: '{idd_or_path}', type: '{type(idd_or_path)}'."
         )
 
     @classmethod

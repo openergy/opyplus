@@ -5,6 +5,9 @@
 ## 6.0.1.dev6
 * p: removed plotly requirement
 
+## 6.0.1.dev6
+* p: ``oplus.idd.Idd.get_idd`` better error message
+
 ## 6.0.1.dev5
 * p: debug ``oplus.idd.Idd.get_idd`` class method to admit instances inheriting
 from oplus Idd instance instead of only admitting oplus Idd instances. 
