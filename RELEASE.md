@@ -2,7 +2,7 @@
 
 **M: major, m: minor, p: patch**
 
-## 6.0.1.dev6
+## 6.0.1.dev7
 * p: removed plotly requirement
 
 ## 6.0.1.dev6
