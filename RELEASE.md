@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 6.0.1.dev7
 * p: removed plotly requirement
 
