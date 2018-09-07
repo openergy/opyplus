@@ -2,7 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 6.0.1.dev6
+* p: removed plotly requirement
 
 ## 6.0.1.dev5
 * p: debug ``oplus.idd.Idd.get_idd`` class method to admit instances inheriting
