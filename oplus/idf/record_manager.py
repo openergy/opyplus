@@ -23,8 +23,8 @@ class RecordManager:
     _COMMENT = 1
 
     def __init__(self, ref, idf_manager, head_comment=None, tail_comment=None):
-        self._table_ref = ref
         self._table = idf_manager.get_table(ref)
+        self._table_ref = self._table.ref
         self._head_comment = head_comment
         self._tail_comment = tail_comment
         self._fields_l = []  # [[raw_value, comment], ...]
