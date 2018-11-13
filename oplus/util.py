@@ -7,6 +7,7 @@ import io
 import sys
 import threading
 import contextlib
+import calendar
 
 import pandas as pd
 
@@ -129,10 +130,16 @@ class EPlusDt:
         return "<eplus_dt: month=%s, day=%s, hour=%s, minute=%s>" % self._value
 
     def datetime(self, year):
+        # manage leap year problem
+        day = self._value[self.DAY]
+        if not calendar.isleap(year) and (
+                    (self._value[self.MONTH], day, self._value[self.HOUR], self._value[self.MINUTE]) == (2, 29, 24, 60)
+        ):
+            day = 28  # skip 29/02')
         return self.to_datetime(
             year,
             self._value[self.MONTH],
-            self._value[self.DAY],
+            day,
             self._value[self.HOUR],
             self._value[self.MINUTE]
         )

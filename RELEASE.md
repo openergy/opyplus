@@ -2,6 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
+## 6.1.1
+* p: manage EplusDt no leap year
+
 ## 6.1.0
 * p: debug ref field in record_manager
 
