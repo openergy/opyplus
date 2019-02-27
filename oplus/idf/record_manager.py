@@ -32,7 +32,7 @@ class RecordManager:
         self._idf_manager = idf_manager
         self._descriptor = self._idf_manager.idd.get_record_descriptor(ref)
 
-        self._record = self.record_cls.init_instance(self)
+        self._record = self.record_cls(self)
 
     def _check_obsolescence(self):
         if self._idf_manager is None:
@@ -45,12 +45,12 @@ class RecordManager:
         except Exception as e:
             raise ValueError(
                 f"Error while parsing field '{fieldd.name}', value '{raw_value}'. "
-                f"Table: {self.table.ref}. Error message:\n{str(e)}."
+                f"Table: {self.get_table().ref}. Error message:\n{str(e)}."
             ) from None
 
     # ---------------------------------------------- EXPOSE -----------------------------------------------------------
     @property
-    def table(self):
+    def get_table(self):
         self._check_obsolescence()
         return self._table
 
@@ -359,14 +359,14 @@ class RecordManager:
                         break
                     for record_descriptor, record_index in self._idf_manager.idd.pointed_links(link_name):
                         if (
-                                (value._.table.ref == record_descriptor.table_ref) and
+                                (value._.get_table().ref == record_descriptor.table_ref) and
                                 (value._.get_value(record_index) is not None)
                         ):
                             # ok, we fond an accepted combination
                             pointed_index = record_index
                             break
                 assert pointed_index is not None, \
-                    f"Wrong value ref: '{value._.table.ref}' for field '{field_index}' " \
+                    f"Wrong value ref: '{value._.get_table().ref}' for field '{field_index}' " \
                     f"of record descriptor ref '{self._table_ref}'. Can't set record."
 
                 # get raw value
@@ -392,8 +392,8 @@ class RecordManager:
         assert len(records_l) == 1, "Wrong number of records created: %i" % len(records_l)
         new_record = records_l[0]
 
-        assert self._table_ref == new_record._.table.ref, \
-            f"New record ({self._table_ref}) does not have same reference as new record ({new_record._.table.ref}). " \
+        assert self._table_ref == new_record._.get_table().ref, \
+            f"New record ({self._table_ref}) does not have same reference as new record ({new_record._.get_table().ref}). " \
             f"Can't replace."
 
         # replace fields using raw_values, one by one
@@ -523,4 +523,4 @@ class RecordManager:
             txt, dict
         """
         self._check_obsolescence()
-        return self._descriptor.info(how=how)
+        return self._descriptor.get_info(how=how)

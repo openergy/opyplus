@@ -45,7 +45,7 @@ for z in zones:
 #@ A queryset is the result of a select query.
 
 # query may be performed on an idf
-qs = idf.select(lambda x: x.table.ref == "Zone" and x["name"] == "main zone")
+qs = idf.select(lambda x: x.get_table.ref == "Zone" and x["name"] == "main zone")
 
 # or a table
 qs = idf["Zone"].select(lambda x: x["name"] == "main zone")
@@ -66,7 +66,7 @@ print(qs[0])
 #@ #### get record
 
 # directly from idf
-building = idf.one(lambda x: (x.table.ref == "Building") and (x["name"] == "Bldg"))
+building = idf.one(lambda x: (x.get_table.ref == "Building") and (x["name"] == "Bldg"))
 
 # or from table
 building = idf["Building"].one(lambda x: x["name"] == "Bldg")
@@ -143,7 +143,7 @@ added = idf["Schedule:Compact"].add(truncated_schedules)
 idf["Schedule:Compact"].remove(added)
 
 #@ #### display info
-print(building.info())
+print(building.get_info())
 print("")
 print(building)
 
@@ -220,14 +220,14 @@ print(sch)
 
 
 #@ #### explore links
-pointing = sch.pointing_records
+pointing = sch.get_pointing_records()
 print("pointing on sch:")
-for _pointing in sch.pointing_records:
+for _pointing in sch.get_pointing_records():
     print(_pointing)
 
 setpoint = pointing[0]
 print("pointed by setpoint:")
-for _pointed in setpoint.pointed_records:
+for _pointed in setpoint.get_pointed_records():
     print(_pointed)
 
 
@@ -248,7 +248,7 @@ print(building["nAmE"])
 
 #@ #### record field values
 # some record field values retain case (are case sensitive) others not
-info = building.info(how="dict")
+info = building.get_info(how="dict")
 print("Name: ", info["Name"])
 print("Terrain: ", info["Terrain"])
 
@@ -302,7 +302,7 @@ df = s.eso.df(start=2014)
 print("datetime index: ",  df[["Environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
 # get info
-print(s.eso.info())
+print(s.eso.get_info())
 
 # choose time step
 df = s.eso.df(time_step="Hourly")

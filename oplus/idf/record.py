@@ -2,10 +2,6 @@ class Record:
     """
     Record is allowed to access private keys/methods of Idf.
     """
-    @classmethod
-    def init_instance(cls, record_manager):
-        return cls(record_manager)
-
     def __init__(self, record_manager):
         self._ = record_manager
 
@@ -51,25 +47,21 @@ class Record:
 
     def __repr__(self):
         name = self._.get_name()
-        return f"<{self.table.ref}>" if name is None else f"<{self.table.ref}: {name}>"
+        return f"<{self.get_table().ref}>" if name is None else f"<{self.get_table().ref}: {name}>"
 
-    @property
-    def idf(self):
-        return self._.idf_manager.idf
+    def get_idf(self):
+        return self._.idf_manager.get_idf()
 
-    @property
-    def table(self):
+    def get_table(self):
         """
         Record descriptor ref
         """
-        return self._.table
+        return self._.get_table()
 
-    @property
-    def pointing_records(self):
-        return self._.pointing_records
+    def get_pointing_records(self):
+        return self._.get_pointing_records()
 
-    @property
-    def pointed_records(self):
+    def get_pointed_records(self):
         return self._.get_pointed_records()
 
     def unlink_pointing_records(self):
@@ -78,7 +70,7 @@ class Record:
     def to_str(self, style="idf"):
         return self._.to_str(style=style)
 
-    def info(self, how="txt"):
+    def get_info(self, how="txt"):
         """
         Returns a string with all available fields of record (information provided by the idd).
 
@@ -87,11 +79,12 @@ class Record:
         how: str
             txt, dict
         """
-        return self._.info(how=how)
+        return self._.get_info(how=how)
 
     def copy(self):
         return self._.copy()
 
+    # todo: how do we manage this with new syntax ?
     def add_field(self, raw_value_or_value, comment=""):
         """
         Add a new field to record (at the end).
@@ -129,23 +122,20 @@ class Record:
         """
         return self._.pop(index)
 
-    def field_comment(self, field_index_or_name, comment=None):
-        if comment is None:
-            return self._.get_field_comment(field_index_or_name)
+    def get_field_comment(self, field_index_or_name):
+        return self._.get_field_comment(field_index_or_name)
+
+    def set_field_comment(self, field_index_or_name, comment):
         self._.set_field_comment(field_index_or_name, comment)
 
-    @property
-    def head_comment(self):
+    def get_head_comment(self):
         return self._.get_head_comment()
 
-    @head_comment.setter
-    def head_comment(self, value):
+    def set_head_comment(self, value):
         self._.set_head_comment(value)
 
-    @property
-    def tail_comment(self):
+    def get_tail_comment(self):
         return self._.get_tail_comment()
 
-    @tail_comment.setter
-    def tail_comment(self, value):
+    def set_tail_comment(self, value):
         self._.set_tail_comment(value)

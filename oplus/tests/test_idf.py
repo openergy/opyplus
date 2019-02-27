@@ -131,8 +131,8 @@ class DynamicIdfTest(unittest.TestCase):
                     "zn001:flr001",
                     "zn001:roof001"
                 },
-                set([bsd["name"] for bsd in zone.pointing_records.select(
-                    lambda x: x.table.ref == "BuildingSurface:Detailed")
+                set([bsd["name"] for bsd in zone.get_pointing_records().select(
+                    lambda x: x.get_table().ref == "BuildingSurface:Detailed")
                      ])
             )
 
@@ -150,7 +150,7 @@ class DynamicIdfTest(unittest.TestCase):
             # get all pointed
             self.assertEqual(
                 {zone, construction},
-                set(bsd.pointed_records)
+                set(bsd.get_pointed_records())
             )
 
     def test_copy_record(self):

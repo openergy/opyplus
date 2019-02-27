@@ -207,10 +207,12 @@ class Epw:
         return df
 
     def set_df(self, value):
+        # todo: this function is not clear, is it really neaded ? (if yes, does nothing, must fix)
         if not isinstance(value, pd.DataFrame):
             raise ValueError("df must be a DataFrame")
         assert_index_equal(value.index, self._df.index)
         assert_index_equal(value.columns, self._df.columns)
+
 
 
 def parse_epw(file_like, encoding=None, logger_name=None):

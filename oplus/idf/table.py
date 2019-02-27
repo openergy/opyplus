@@ -15,6 +15,7 @@ class Table:
     def __iter__(self):
         return iter(self.select())
 
+    # todo: should we remove ?
     def __getitem__(self, item):
         return self.select()[item]
 
@@ -27,15 +28,16 @@ class Table:
     def __str__(self):
         return f"<Table: {self.ref} ({len(self)} records)>"
 
-    def info(self, how="txt"):
-        return self._descriptor.info(how=how)
+    def get_info(self, how="txt"):
+        return self._descriptor.get_info(how=how)
 
     @property
     def idf(self):
-        return self._idf_manager.idf
+        return self._idf_manager.get_idf()
 
     @property
     def ref(self):
+        # todo: manage lowercase refs
         return self._ref
 
     def add(self, record_str_s):
@@ -55,8 +57,10 @@ class Table:
 
         # check all objects belong to table
         for r in record_s:
-            assert r.table.ref == self.ref, \
-                f"trying to remove record from other table ({record_s.table_ref}), can't perform removal"
+            if r.get_table().ref != self.ref:
+                raise RuntimeError(
+                    f"trying to remove record from other table ({record_s.table_ref}), can't perform removal."
+                )
 
         # ask idf manager to do the job
         self._idf_manager.remove_records(record_s)

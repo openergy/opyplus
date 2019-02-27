@@ -51,9 +51,12 @@ class Idf:
             style=style
         )
 
-    def __getitem__(self, item):
-        return self._.get_table(item)
+    # --------------------------------------------- public api ---------------------------------------------------------
+# todo: code __getattr__
+    # def __getitem__(self, item):
+    #     return self._.get_table(item)
 
+# todo: iter returns records, shouldn't it return tables ?
     def __iter__(self):
         return iter(self._)
 
@@ -112,7 +115,7 @@ class Idf:
     def select(self, filter_by=None):
         return self._.select(filter_by=filter_by)
 
-    def info(self, sort_by_group=False, detailed=False):
+    def get_info(self, sort_by_group=False, detailed=False):
         """
         Arguments
         ---------
@@ -124,17 +127,17 @@ class Idf:
         """
         return self._.info(sort_by_group=sort_by_group, detailed=detailed)
 
-    @property
-    def comment(self):
+    def get_comment(self):
         return self._.get_comment()
 
-    @comment.setter
-    def comment(self, value):
+    def set_comment(self, value):
         self._.set_comment(value)
 
+    # todo: is clear_cache still used ?
     def clear_cache(self):
         self._.clear_cache()
 
+    # todo: is under_construction still used ?
     @property
     @contextmanager
     def under_construction(self):

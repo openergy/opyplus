@@ -68,6 +68,7 @@ class Queryset:
         # return record
         return qs[0]
 
+    # todo: should we remove ?
     def __getitem__(self, item):
         return self._records[item]
 

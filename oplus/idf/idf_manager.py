@@ -13,6 +13,7 @@ from .queryset import Queryset
 from .table import Table
 
 
+# todo: should we merge with idf ?
 class IdfManager(Cached):
     record_manager_cls = RecordManager  # for subclassing
     table_cls = Table  # for subclassing
@@ -251,7 +252,7 @@ class IdfManager(Cached):
             raise BrokenIdfError(
                 "New record has same reference at index '%s' as other record of same link name. "
                 "Other record ref: '%s', index: '%s'. The value at that field must be changed." %
-                (new_record_index, links_l[0][0]._.table.ref, links_l[0][1])
+                (new_record_index, links_l[0][0]._.get_table().ref, links_l[0][1])
             )
 
     def check_duplicate_references(self):
@@ -259,7 +260,7 @@ class IdfManager(Cached):
         ref_d = dict()
         for record in self._records:
             # check reference uniqueness
-            record_descriptor = self._idd.get_record_descriptor(record._.table.ref)
+            record_descriptor = self._idd.get_record_descriptor(record._.get_table().ref)
             for i in range(record._.fields_nb):
                 fieldd = record_descriptor.get_field_descriptor(i)
                 if fieldd.detailed_type == "reference":
@@ -272,7 +273,7 @@ class IdfManager(Cached):
                             raise BrokenIdfError(
                                 "Reference duplicate for link name: {}\n".format(link_name) +
                                 "Reference: {}\n".format(reference) +
-                                "Detected while checking record ref: {}\n".format(record._.table.ref) +
+                                "Detected while checking record ref: {}\n".format(record._.get_table().ref) +
                                 "Field: {}".format(i)
                             )
                         ref_d[link_name].add(reference)
@@ -327,7 +328,7 @@ class IdfManager(Cached):
         position: int
         """
         # check reference uniqueness
-        record_descriptor = self._idd.get_record_descriptor(naive_record._.table.ref)
+        record_descriptor = self._idd.get_record_descriptor(naive_record._.get_table().ref)
         for i in range(naive_record._.fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference" and self._constructing_mode_counter == 0:
@@ -384,7 +385,7 @@ class IdfManager(Cached):
         """
         purpose: this function is cached
         """
-        return Queryset(self._records).select(lambda x: x.table.ref == table_ref)
+        return Queryset(self._records).select(lambda x: x.get_table().ref == table_ref)
 
     # ------------------------------------------ MANAGE COMMENTS -------------------------------------------------------
     def get_comment(self):
@@ -418,7 +419,7 @@ class IdfManager(Cached):
                         _msg += "\n%s\t* %s: %s" % (_line_start, _tag, _rd.get_tag(_tag))
             return _msg
 
-        rds_refs_set = set([record.table.ref for record in self._records])
+        rds_refs_set = set([record.get_table().ref for record in self._records])
         name = "Idf: '%s'" % self._path
         msg = "%s\n%s\n%s" % ("-"*len(name), name, "-"*len(name))
         if sort_by_group:
@@ -461,7 +462,7 @@ class IdfManager(Cached):
 
         # prepare records content [(table_ref, record_str), ...]
         formatted_records = [
-            (obj.table.ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)) for obj in self._records
+            (obj.get_table().ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)) for obj in self._records
         ]
 
         # sort if asked
