@@ -18,7 +18,6 @@ pointed record (has tag 'reference'): object being pointed by another object
 import os
 import re
 import logging
-import warnings
 
 from collections import OrderedDict
 
@@ -87,19 +86,22 @@ class Idd:
 
         # rd: record descriptor, linkd: link descriptor
         # istr: insensitive string
-        self._rds_d = OrderedDict()  # record descriptors {table_descriptor_lower_ref: rd, ...}
+        self._rds_d = OrderedDict()  # record descriptors {table_ref: rd, ...}
         self._pointed_rd_linkds_d = {}  # linkd: link descriptor {link_lower_name: [(rd, field_index), ...], ...}
         self._pointing_rd_linkds_d = {}  # {link_lower_name: [(rd, field_index), ...], ...}
         self._groups_d = OrderedDict()  # {group_lower_name: {name: group_name, record_descriptors: [rd, rd, ...]}
 
         self._parse()
+        self._post_init()
         self._link()
+        for k in sorted(self._rds_d):
+            print(k)
 
-    def get_table_ref(self, insensitive_ref):
-        rd = self._rds_d.get(insensitive_ref.lower())
-        if rd is None:
-            raise KeyError(f"unknown table: {insensitive_ref}")
-        return rd.table_ref
+    # def get_table_ref(self, insensitive_ref):
+    #     rd = self._rds_d.get(insensitive_ref.lower())
+    #     if rd is None:
+    #         raise KeyError(f"unknown table: {insensitive_ref}")
+    #     return rd.table_ref
 
     def pointed_links(self, link_insensitive_name):
         """
@@ -216,13 +218,13 @@ class Idd:
                 match = re.search(r"^\s*([\w:\-]+),\s*$", line)
                 if match is not None:
                     # identify
-                    ref = match.group(1).strip()
+                    table_name = match.group(1).strip()
                     assert group_name is not None, "No group name."
 
                     # store
-                    rd = RecordDescriptor(ref, group_name=group_name)
-                    assert ref not in self._rds_d, "Record descriptor already registered."
-                    self._rds_d[ref.lower()] = rd
+                    rd = RecordDescriptor(table_name, group_name=group_name)
+                    assert rd.table_ref not in self._rds_d, "Record descriptor already registered."
+                    self._rds_d[rd.table_ref] = rd
                     self._groups_d[group_name.lower()]["record_descriptors"].append(rd)
 
                     # re-initialize
@@ -230,18 +232,30 @@ class Idd:
                     continue
 
                 # non parsed line - special records
+                # todo: could we manage this more generically ?
                 if ("Lead Input;" in line) or ("Simulation Data;" in line):
                     # store
-                    ref = line.strip()[:-1]
-                    self._rds_d[ref.lower()] = RecordDescriptor(ref)  # start
-                    end = "End " + ref
-                    self._rds_d[end.lower()] = RecordDescriptor(end)  # end
+                    table_name = line.strip()[:-1]
+                    # start
+                    rd = RecordDescriptor(table_name)
+                    self._rds_d[rd.table_ref] = rd
+                    # end
+                    end_name = "End " + table_name
+                    rd = RecordDescriptor(end_name)
+                    self._rds_d[rd.table_ref] = rd
 
                     # re-initialize
                     rd, fieldd = None, None
                     continue
 
                 raise RuntimeError("Line %i not parsed: '%s'." % (i+1, raw_line))
+
+    def _post_init(self):
+        """
+        enrich info once everything has been completed (for example extensible info)
+        """
+        for rd in self._rds_d.values():
+            rd.post_init()
 
     def _link(self):
         """ Links record descriptors together. """
@@ -260,17 +274,20 @@ class Idd:
                             self._pointing_rd_linkds_d[ref_lower_name] = []
                         self._pointing_rd_linkds_d[ref_lower_name].append((rd, i))
 
-    def get_record_descriptor(self, rd_insensitive_ref):
+    def record_descriptor_exists(self, rd_ref):
+        return rd_ref in self._rds_d
+
+    def get_record_descriptor(self, rd_ref):
         """
         Arguments
         ---------
-        rd_insensitive_ref: record descriptor reference.
+        rd_ref: record descriptor reference.
 
         Returns
         -------
         record descriptor
         """
-        return self._rds_d[rd_insensitive_ref.lower()]
+        return self._rds_d[rd_ref]
 
     def get_record_descriptors_by_group(self, group_insensitive_name):
         """
@@ -281,14 +298,14 @@ class Idd:
         return self._groups_d[group_insensitive_name.lower()]["record_descriptors"]
 
     @property
-    def record_descriptor_l(self):
+    def record_descriptors_l(self):
         return list(self._rds_d.keys())
 
     def __eq__(self, other):
-        if len(self.record_descriptor_l) != len(other.record_descriptor_l):
+        if len(self.record_descriptors_l) != len(other.record_descriptors_l):
             return False
 
-        for rd_ref in self.record_descriptor_l:
+        for rd_ref in self.record_descriptors_l:
             try:
                 if self.get_record_descriptor(rd_ref) != other.get_record_descriptor(rd_ref):
                     return False

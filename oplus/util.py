@@ -8,6 +8,7 @@ import sys
 import threading
 import contextlib
 import calendar
+import re
 
 import pandas as pd
 
@@ -294,3 +295,53 @@ def get_string_buffer(path_or_content, expected_extension, encoding):
         raise ValueError("path_or_content type could not be identified")
 
     return buffer, path
+
+
+def name_to_ref(name):
+    """
+    Parameters
+    ----------
+    name: str
+
+    Returns
+    -------
+    str
+    """
+    # todo: code properly !!
+    raw_ref = ""
+    for i, char in enumerate(name):
+        if char.isalpha():
+            if char.isupper() and i > 0:
+                raw_ref += "_"
+            raw_ref += char.lower()
+            continue
+        if char.isdigit() and i > 0:
+            raw_ref += char
+            continue
+        raw_ref += "_"
+
+    # sanitize
+    ref = ""
+    _last, _current, _next = None, None, None
+    for i, c in enumerate(name):
+        # sanitize c
+
+        _last = _current
+        _current = _next
+        _next = c
+
+
+
+
+
+
+
+
+
+
+    return re.sub("_+", "_", raw_ref)
+
+    # ref = re.sub(r"(^[^a-z]+)|([^a-z\d_]+)", "_", name.lower())
+    # ref = re.sub(r"[_]{2,}", "_", ref)
+    # return ref
+

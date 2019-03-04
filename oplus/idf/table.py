@@ -33,7 +33,7 @@ class Table:
 
     @property
     def idf(self):
-        return self._idf.get_idf()
+        return self._idf
 
     @property
     def ref(self):

@@ -6,7 +6,7 @@ from .table import Table
 from .queryset import Queryset
 from .cache import CachedMixin, cached, clear_cache
 from .record import Record
-from ..util import get_string_buffer
+from ..util import get_string_buffer, name_to_ref
 from .style import IdfStyle, style_library
 from .exceptions import BrokenIdfError, IsPointedError
 
@@ -51,7 +51,7 @@ class Idf(CachedMixin):
 
         self._encoding = CONF.encoding if encoding is None else encoding
         self._constructing_mode_counter = 0
-        self._tables = {}  # {lower_ref: table, ...}
+        self._tables = {}  # {ref: table, ...}
 
         self._dev_idd = self._dev_idd_cls.get_idd(idd_or_path, encoding=encoding)
 
@@ -162,8 +162,14 @@ class Idf(CachedMixin):
                     head_comment = comment
                     field_comment = None
 
-                record = self._dev_record_cls(content_l[0].strip(), self, head_comment=head_comment)
+                # get table
+                table_ref = name_to_ref(content_l[0].strip())
+                table = getattr(self, table_ref)
+
+                # create and store record
+                record = self._dev_record_cls(table, head_comment=head_comment)
                 records.append(record)
+
                 # prepare in case fields on the same line
                 content_l = content_l[1:]
                 make_new_record = False
@@ -201,9 +207,9 @@ class Idf(CachedMixin):
         link_names_l = fieldd.get_tag("object-list")
         for link_name in link_names_l:
             for rd, field_index in self._dev_idd.pointed_links(link_name):
-                tbl = self.get_table(rd.table_ref)
-                for record in self.get_table(rd.table_ref):
-                    rv = record.get_raw_value(field_index)
+                # tbl = self.get_table(rd.table_ref)
+                for record in getattr(self, rd.table_ref):
+                    # rv = record.get_raw_value(field_index)
                     if record.get_raw_value(field_index) == pointing_raw_value:
                         return record, field_index
 
@@ -230,7 +236,7 @@ class Idf(CachedMixin):
         links_l = []
         for link_name in fieldd.get_tag("reference"):
             for record_descriptor, pointing_index in self._dev_idd.pointing_links(link_name):
-                for record in self[record_descriptor.table_ref]:
+                for record in getattr(self, record_descriptor.table_ref):
                     if pointing_index >= record._dev_fields_nb:
                         continue
                     if record.get_raw_value(pointing_index) == pointed_raw_value:
@@ -320,26 +326,19 @@ class Idf(CachedMixin):
     def __str__(self):
         return repr(self)
 
-    def get_table(self, item):
-        # todo: manage syntax
-        return self[item]
+    def __dir__(self):
+        return list(self._tables.keys()) + [k for k in self.__dict__ if k[0] != "_"]
 
-    def __getitem__(self, item):
-    # def __getattr__(self, item):
-        """
-        we don't use cache system because each table is unique, and they are stored in a dict => would be useless
-        """
-        # todo: should be __getattr__
-        # todo: manage table naming convention lower_case, ....
-
-        lower_ref = item.lower()
-        if lower_ref not in self._tables:
-            # get table ref
-            table_ref = self._dev_idd.get_table_ref(item)
+    def __getattr__(self, item):
+        # check table exists, create if not
+        if item not in self._tables:
+            # check validity
+            if not self._dev_idd.record_descriptor_exists(item):
+                raise RuntimeError(f"unknown table ref: '{item}'")
 
             # create table
-            self._tables[lower_ref] = self._dev_table_cls(table_ref, self)
-        return self._tables[lower_ref]
+            self._tables[item] = self._dev_table_cls(item, self)
+        return self._tables[item]
 
     def to_str(self, style=None, add_copyright=True, sort=True, with_chapters=True):
         if style is None:

@@ -10,7 +10,7 @@ def clear_cache(method):
         if isinstance(self, Idf):
             idf = self
         elif isinstance(self, Record):
-            idf = self._idf
+            idf = self.get_idf()
         else:
             raise ValueError("clear_cache decorator applied to a non cached item")
         idf._dev_deactivate_cache()

@@ -2,6 +2,8 @@ import re
 import unidecode
 import copy
 
+from ..util import name_to_ref
+
 spaces_pattern = re.compile("\s+")
 
 
@@ -26,6 +28,7 @@ class FieldDescriptor:
             raise ValueError("Unknown field type: '%s'." % field_basic_type)
         self.basic_type = field_basic_type  # A -> alphanumeric, N -> numeric
         self.name = name
+        self.ref = None if name is None else name_to_ref(name)
         self._tags_d = {}
 
         self._detailed_type = None

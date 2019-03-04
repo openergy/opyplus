@@ -166,7 +166,7 @@ class RecordManager:
         self._check_obsolescence()
 
         # check extensible
-        extensible_cycle_len, extensible_start_index = self._descriptor.extensible
+        extensible_cycle_len, extensible_start_index, extensible_patterns = self._descriptor.extensible_info
         assert extensible_cycle_len == 1, "Can only use pop on fields defined as 'extensible:1'."
 
         # check index

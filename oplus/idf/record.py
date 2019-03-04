@@ -20,19 +20,16 @@ class Record(CachedMixin):
     _RAW_VALUE = 0
     _COMMENT = 1
 
-    def __init__(self, ref, idf, head_comment=None, tail_comment=None):
-        # todo: manage ref/lower_ref, ...
-        self._table = idf[ref]
-        self._table_ref = self._table.ref
+    def __init__(self, table, head_comment=None, tail_comment=None):
+        self._table = table
         self._head_comment = head_comment
         self._tail_comment = tail_comment
         self._fields_l = []  # [[raw_value, comment], ...]
-        self._idf = idf
 
-        self._descriptor = self._idf._dev_idd.get_record_descriptor(ref)
+        self._descriptor = self.get_idf()._dev_idd.get_record_descriptor(table.ref)
         
     def _check_obsolescence(self):
-        if self._idf is None:
+        if self._table is None:
             raise ObsoleteRecordError(
                 "current record is obsolete (has been removed from it's idf), can't use it)")
 
@@ -84,7 +81,7 @@ class Record(CachedMixin):
         """
         self._check_obsolescence()
 
-        self._idf = None
+        self._table = None
         self._descriptor = None
 
     # ------------------------------------------------ GET -------------------------------------------------------------
@@ -113,7 +110,7 @@ class Record(CachedMixin):
             value, pointed_index = fieldd.basic_parse(raw_value), None
 
         elif fieldd.detailed_type == "object-list":
-            value, pointed_index = self._idf._dev_get_pointed_link(self._table_ref, index, raw_value)
+            value, pointed_index = self.get_idf()._dev_get_pointed_link(self.get_table_ref(), index, raw_value)
 
         else:
             raise NotImplementedError("Unknown field type : '%s'." % fieldd.detailed_type)
@@ -130,7 +127,7 @@ class Record(CachedMixin):
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type != "reference":
                 continue
-            all_pointing_links.extend(self._idf._dev_get_pointing_links(self._table_ref, i, self.get_raw_value(i)))
+            all_pointing_links.extend(self.get_idf()._dev_get_pointing_links(self.get_table_ref(), i, self.get_raw_value(i)))
 
         return all_pointing_links
 
@@ -182,7 +179,7 @@ class Record(CachedMixin):
             else:
                 if isinstance(raw_value_or_value, str):
                     try:
-                        value = self._idf.add(raw_value_or_value)
+                        value = self.get_idf().add(raw_value_or_value)
                     except BrokenIdfError as e:
                         raise e
                 elif isinstance(raw_value_or_value, Record):
@@ -191,9 +188,9 @@ class Record(CachedMixin):
                     raise ValueError("Wrong value descriptor: '%s' (instead of IdfObject)." % type(raw_value_or_value))
 
                 # check if correct idf
-                assert value.get_idf() is self._idf, \
+                assert value.get_idf() is self.get_idf(), \
                     "Given record does not belong to correct idf: " \
-                    f"'{value.get_idf()._dev_path}' instead of '{self._idf._dev_path}'."
+                    f"'{value.get_idf()._dev_path}' instead of '{self.get_idf()._dev_path}'."
 
                 # check that new record ref can be set, and find pointed index
                 pointed_index = None
@@ -201,7 +198,7 @@ class Record(CachedMixin):
                     # link: (record_ref, index)
                     if pointed_index is not None:
                         break
-                    for record_descriptor, record_index in self._idf._dev_idd.pointed_links(link_name):
+                    for record_descriptor, record_index in self.get_idf()._dev_idd.pointed_links(link_name):
                         if (
                                 (value.get_table().ref == record_descriptor.table_ref) and
                                 (value._get_value(record_index) is not None)
@@ -211,7 +208,7 @@ class Record(CachedMixin):
                             break
                 assert pointed_index is not None, \
                     f"Wrong value ref: '{value.get_table().ref}' for field '{field_index}' " \
-                    f"of record descriptor ref '{self._table_ref}'. Can't set record."
+                    f"of record descriptor ref '{self._table.ref}'. Can't set record."
 
                 # get raw value
                 raw_value = value.get_raw_value(pointed_index)
@@ -278,7 +275,7 @@ class Record(CachedMixin):
         return f"<{self.get_table().ref}>" if name is None else f"<{self.get_table().ref}: {name}>"
 
     def get_idf(self):
-        return self._idf
+        return self._table.idf
 
     def get_table(self):
         """
@@ -286,6 +283,9 @@ class Record(CachedMixin):
         """
         self._check_obsolescence()
         return self._table
+
+    def get_table_ref(self):
+        return self.get_table().ref
 
     @cached
     def get_pointing_records(self):
@@ -332,9 +332,8 @@ class Record(CachedMixin):
     def copy(self):
         self._check_obsolescence()
         # create new record
-        new_record = self._idf._dev_record_cls(
-            self._table_ref,
-            self._idf,
+        new_record = self.get_idf()._dev_record_cls(
+            self._table,
             head_comment=self._head_comment,
             tail_comment=self._tail_comment
         )
@@ -348,7 +347,7 @@ class Record(CachedMixin):
             new_record.add_field(raw_value, comment=self.get_field_comment(i))
 
         # add record to idf
-        return self._idf.add_naive_record(new_record)
+        return self.get_idf().add_naive_record(new_record)
 
     # todo: how do we manage this with new syntax ?
     @clear_cache
@@ -387,13 +386,13 @@ class Record(CachedMixin):
         self._check_obsolescence()
 
         # create record (but it will not be linked to idf)
-        records_l, comments = self._idf._dev_parse(io.StringIO(new_record_str))  # comments not used
+        records_l, comments = self.get_idf()._dev_parse(io.StringIO(new_record_str))  # comments not used
         assert len(records_l) == 1, "Wrong number of records created: %i" % len(records_l)
         new_record = records_l[0]
 
-        assert self._table_ref == new_record.get_table().ref, \
-            f"New record ({self._table_ref}) does not have same reference as new record ({new_record.get_table().ref}). " \
-                f"Can't replace."
+        assert self._table.ref == new_record.get_table().ref, \
+            f"New record ({self._table.ref}) does not have same reference as " \
+                f"new record ({new_record.get_table().ref}). Can't replace."
 
         # replace fields using raw_values, one by one
         old_nb, new_nb = self._dev_fields_nb, new_record._dev_fields_nb
@@ -431,12 +430,12 @@ class Record(CachedMixin):
         self._check_obsolescence()
 
         # check extensible
-        extensible_cycle_len, extensible_start_index = self._descriptor.extensible
-        assert extensible_cycle_len == 1, "Can only use pop on fields defined as 'extensible:1'."
+        cyle_len, cycle_start, _ = self._descriptor.extensible_info
+        assert cyle_len == 1, "Can only use pop on fields defined as 'extensible:1'."
 
         # check index
         pop_index = self._get_field_index(field_index_or_name)
-        assert pop_index >= extensible_start_index, \
+        assert pop_index >= cycle_start, \
             "Can only use pop on extensible fields (pop index must be > than extensible start index)."
 
         # store value
@@ -514,7 +513,7 @@ class Record(CachedMixin):
             else:
                 idf_style = style_library[CONF.default_write_style]
             # record descriptor ref
-            content = "%s" % self._descriptor.table_ref + ("," if self._dev_fields_nb != 0 else ";")
+            content = "%s" % self._descriptor.table_name + ("," if self._dev_fields_nb != 0 else ";")
             spaces_nb = self._COMMENT_COLUMN_START - len(content)
             if spaces_nb < 0:
                 spaces_nb = self._TAB_LEN
