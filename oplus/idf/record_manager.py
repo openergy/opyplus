@@ -215,7 +215,7 @@ class RecordManager:
             value, pointed_index = fieldd.basic_parse(raw_value), None
 
         elif fieldd.detailed_type == "object-list":
-            value, pointed_index = self._idf_manager.get_pointed_link(self._table_ref, index, raw_value)
+            value, pointed_index = self._idf_manager._dev_get_pointed_link(self._table_ref, index, raw_value)
 
         else:
             raise NotImplementedError("Unknown field type : '%s'." % fieldd.detailed_type)
@@ -247,7 +247,7 @@ class RecordManager:
             fieldd = self._descriptor.get_field_descriptor(i)
             if fieldd.detailed_type != "reference":
                 continue
-            all_pointing_links.extend(self.idf_manager.get_pointing_links(self._table_ref, i, self.get_raw_value(i)))
+            all_pointing_links.extend(self.idf_manager._dev_get_pointing_links(self._table_ref, i, self.get_raw_value(i)))
 
         return all_pointing_links
 
@@ -388,7 +388,7 @@ class RecordManager:
         self._check_obsolescence()
 
         # create record (but it will not be linked to idf)
-        records_l, comments = self._idf_manager.parse(io.StringIO(new_record_str))  # comments not used
+        records_l, comments = self._idf_manager._dev_parse(io.StringIO(new_record_str))  # comments not used
         assert len(records_l) == 1, "Wrong number of records created: %i" % len(records_l)
         new_record = records_l[0]
 

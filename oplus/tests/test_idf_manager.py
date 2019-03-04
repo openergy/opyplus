@@ -69,7 +69,7 @@ class StaticIdfTest(unittest.TestCase):
     
             # check all pointing
             _d = {}
-            for pointing_record, pointing_index in zone._.get_pointing_links():
+            for pointing_record, pointing_index in zone._._dev_get_pointing_links():
                 # check points
                 self.assertEqual(pointing_record._.get_value(pointing_index), zone)
                 # verify all are identified
@@ -81,8 +81,8 @@ class StaticIdfTest(unittest.TestCase):
             self.assertEqual(d, _d)
     
             # check pointing on pointed_index
-            self.assertEqual(len(zone._.get_pointing_links(0)), 9)  # 9 pointing
-            self.assertEqual(len(zone._.get_pointing_links(3)), 0)  # no pointing
+            self.assertEqual(len(zone._._dev_get_pointing_links(0)), 9)  # 9 pointing
+            self.assertEqual(len(zone._._dev_get_pointing_links(3)), 0)  # no pointing
 
 
 class DynamicIdfTest(unittest.TestCase):
@@ -160,7 +160,7 @@ class DynamicIdfTest(unittest.TestCase):
             zone.unlink_pointing_records()
 
             # check that pointing's pointed fields have been removed
-            for pointing_record, pointing_index in zone._.get_pointing_links():
+            for pointing_record, pointing_index in zone._._dev_get_pointing_links():
                 self.assertEqual(pointing_record._.get_value(pointing_index), None)
 
             # remove record should be possible
@@ -192,7 +192,7 @@ class DynamicIdfTest(unittest.TestCase):
             # set
             new_zone_name = "new zone name"
             zone = idf_manager.get_table("Zone").one()
-            pointing_links_l = zone._.get_pointing_links()
+            pointing_links_l = zone._._dev_get_pointing_links()
             zone._.set_value("name", new_zone_name)
 
             # check
@@ -220,7 +220,7 @@ class DynamicIdfTest(unittest.TestCase):
             # get pointing
             sch = idf_manager.get_table("Schedule:Compact").one(
                 lambda x: x["name"] == "heating setpoint schedule")
-            pointing_l = [o for (o, i) in sch._.get_pointing_links()]
+            pointing_l = [o for (o, i) in sch._._dev_get_pointing_links()]
 
             # replace with bigger
             new_str = """
@@ -235,7 +235,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # check
             self.assertEqual(sch["name"], "heating setpoint schedule")
-            self.assertEqual([o for (o, i) in sch._.get_pointing_links()], pointing_l)
+            self.assertEqual([o for (o, i) in sch._._dev_get_pointing_links()], pointing_l)
 
             # replace with smaller
             new_str = """

@@ -359,7 +359,7 @@ class IdfManager(Cached):
         with self.under_construction:
             for record in record_s:
                 # check if record is pointed, if asked
-                pointing_links_l = record._.get_pointing_links()
+                pointing_links_l = record._._dev_get_pointing_links()
                 if len(pointing_links_l) > 0 and raise_if_pointed:
                         raise IsPointedError(
                             "Can't remove record if other records are pointing to it. "

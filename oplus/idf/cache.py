@@ -13,9 +13,9 @@ def clear_cache(method):
             idf_manager = self.idf_manager
         else:
             raise ValueError("clear_cache decorator applied to a non cached item")
-        idf_manager.deactivate_cache()
+        idf_manager._dev_deactivate_cache()
         res = method(self, *args, **kwargs)
-        idf_manager.activate_cache()
+        idf_manager._dev_activate_cache()
         return res
     return wrapper
 
@@ -27,7 +27,7 @@ def cached(method):
         from .record_manager import RecordManager
 
         if isinstance(self, IdfManager):
-            cache = self.cache
+            cache = self._dev_cache
         elif isinstance(self, RecordManager):
             cache = self.idf_manager.cache
         else:
@@ -52,23 +52,23 @@ def cached(method):
     return wrapper
 
 
-class Cached:
-    cache = None  # dict(key: dict(value=v, hits=0))  (hits for testing)
+class CachedMixin:
+    _dev_cache = None  # dict(key: dict(value=v, hits=0))  (hits for testing)
 
-    def activate_cache(self):
-        if self.cache is None:
-            self.cache = {}
+    def _dev_activate_cache(self):
+        if self._dev_cache is None:
+            self._dev_cache = {}
 
-    def deactivate_cache(self):
-        self.cache = None
+    def _dev_deactivate_cache(self):
+        self._dev_cache = None
 
-    def clear_cache(self):
-        if self.cache is not None:
-            self.cache = {}
+    def _dev_clear_cache(self):
+        if self._dev_cache is not None:
+            self._dev_cache = {}
 
     @property
-    def is_cached(self):
-        return self.cache is not None
+    def _dev_is_cached(self):
+        return self._dev_cache is not None
 
 
 class CacheKey:
