@@ -28,11 +28,11 @@ class TestValues(unittest.TestCase):
                 2.291
             )
             self.assertEqual(
-                float(eio.get_value("Material CTF Summary", 5, 0, "R13LAYER")),
+                float(eio._get_value("Material CTF Summary", 5, 0, "R13LAYER")),
                 2.291
             )
             self.assertEqual(
-                float(eio.get_value(
+                float(eio._get_value(
                     "Material CTF Summary",
                     "ThermalResistance {m2-K/w}",
                     "Material Name",

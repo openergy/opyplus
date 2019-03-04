@@ -4,18 +4,18 @@ import itertools
 def clear_cache(method):
     def wrapper(self, *args, **kwargs):
         # circular dependencies
-        from .idf_manager import IdfManager
-        from .record_manager import RecordManager
+        from .idf import Idf
+        from .record import Record
 
-        if isinstance(self, IdfManager):
-            idf_manager = self
-        elif isinstance(self, RecordManager):
-            idf_manager = self.idf_manager
+        if isinstance(self, Idf):
+            idf = self
+        elif isinstance(self, Record):
+            idf = self._idf
         else:
             raise ValueError("clear_cache decorator applied to a non cached item")
-        idf_manager._dev_deactivate_cache()
+        idf._dev_deactivate_cache()
         res = method(self, *args, **kwargs)
-        idf_manager._dev_activate_cache()
+        idf._dev_activate_cache()
         return res
     return wrapper
 
@@ -23,13 +23,13 @@ def clear_cache(method):
 def cached(method):
     def wrapper(self, *args, **kwargs):
         # circular dependencies
-        from .idf_manager import IdfManager
-        from .record_manager import RecordManager
+        from .idf import Idf
+        from .record import Record
 
-        if isinstance(self, IdfManager):
+        if isinstance(self, Idf):
             cache = self._dev_cache
-        elif isinstance(self, RecordManager):
-            cache = self.idf_manager.cache
+        elif isinstance(self, Record):
+            cache = self.get_idf()._dev_cache
         else:
             raise ValueError("cached decorator applied to a non cached item")
         if cache is None:

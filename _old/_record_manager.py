@@ -144,7 +144,7 @@ class RecordManager:
         self._check_obsolescence()
         # remove from pointing
         for pointing_record, pointing_index in self.get_pointing_links():
-            pointing_record._.clear_pointing_fields(only_on_pointed_record=self.record)
+            pointing_record._._dev_clear_pointing_fields(only_on_pointed_record=self.record)
 
     @clear_cache
     def neutralize(self):
@@ -194,7 +194,7 @@ class RecordManager:
                 field_index_or_insensitive_name if field_index_or_insensitive_name >= 0 else
                 self.fields_nb + field_index_or_insensitive_name
             )
-        return self._descriptor.get_field_index(field_index_or_insensitive_name)
+        return self._descriptor._get_field_index(field_index_or_insensitive_name)
 
     def get_raw_value(self, field_index_or_name):
         self._check_obsolescence()
@@ -319,7 +319,7 @@ class RecordManager:
             # remove all pointing
             pointing_links_l = self.get_pointing_links(field_index)
             for pointing_record, pointing_index in pointing_links_l:
-                pointing_record._.set_value(pointing_index, None)
+                pointing_record._._set_value(pointing_index, None)
 
             # cleanup
             raw_value = self._cleanup_and_check_raw_value(fieldd, str(raw_value_or_value))
@@ -329,7 +329,7 @@ class RecordManager:
 
             # re-set all pointing
             for pointing_record, pointing_index in pointing_links_l:
-                pointing_record._.set_value(pointing_index, self._record)
+                pointing_record._._set_value(pointing_index, self._record)
 
         elif fieldd.detailed_type == "object-list":  # detailed type
             # convert to record if necessary
@@ -360,7 +360,7 @@ class RecordManager:
                     for record_descriptor, record_index in self._idf_manager.idd.pointed_links(link_name):
                         if (
                                 (value._.get_table().ref == record_descriptor.table_ref) and
-                                (value._.get_value(record_index) is not None)
+                                (value._._get_value(record_index) is not None)
                         ):
                             # ok, we fond an accepted combination
                             pointed_index = record_index
@@ -397,7 +397,7 @@ class RecordManager:
             f"Can't replace."
 
         # replace fields using raw_values, one by one
-        old_nb, new_nb = self.fields_nb, new_record._.fields_nb
+        old_nb, new_nb = self.fields_nb, new_record._._dev_fields_nb
 
         for i in range(max(old_nb, new_nb)):
             fieldd = self._descriptor.get_field_descriptor(i)

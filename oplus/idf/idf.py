@@ -1,10 +1,3 @@
-"""
-Idf
----
-We respect private/public naming conventions for methods and variables, EXCEPT for Idf or Record managers. The
-_manager variable is semi-private: it can be accessed by other managers (including other modules of oplus), but not by
-Idf or Record. The _manager attributes therefore remain private to oplus users.
-"""
 import io
 from oplus import CONF  # todo: change conf style ?
 from contextlib import contextmanager
@@ -13,7 +6,6 @@ from .table import Table
 from .queryset import Queryset
 from .cache import CachedMixin, cached, clear_cache
 from .record import Record
-from .record_manager import RecordManager
 from ..util import get_string_buffer
 from .style import IdfStyle, style_library
 from .exceptions import BrokenIdfError, IsPointedError
@@ -23,7 +15,7 @@ class Idf(CachedMixin):
     """
     Idf is allowed to access private keys/methods of Record.
     """
-    _dev_record_manager_cls = RecordManager  # for subclassing
+    _dev_record_cls = Record  # for subclassing
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
@@ -56,14 +48,16 @@ class Idf(CachedMixin):
             computer)
         """
         self._dev_activate_cache()
-        self._idd = self._dev_idd_cls.get_idd(idd_or_path, encoding=encoding)
+
         self._encoding = CONF.encoding if encoding is None else encoding
         self._constructing_mode_counter = 0
         self._tables = {}  # {lower_ref: table, ...}
 
+        self._dev_idd = self._dev_idd_cls.get_idd(idd_or_path, encoding=encoding)
+
         # get string buffer and store path (for info)
         buffer, path = get_string_buffer(path_or_content, "idf", self._encoding)
-        self._path = path_or_content
+        self._dev_path = path_or_content
 
         # raw parse and parse
         with buffer as f:
@@ -89,7 +83,7 @@ class Idf(CachedMixin):
             style = style_library[CONF.default_read_style]
 
         records, head_comments = [], ""
-        record_manager = None
+        record = None
         make_new_record = True
 
         tail_comments = ""
@@ -121,7 +115,7 @@ class Idf(CachedMixin):
 
             # NO CONTENT
             if not content:
-                if record_manager is None:  # head idf comment
+                if record is None:  # head idf comment
                     if style is None:
                         head_comments += comment.strip() + "\n"
                     elif comment[:len(style.chapter_key)] == style.chapter_key:
@@ -139,7 +133,7 @@ class Idf(CachedMixin):
                         if style.tail_type == "before":
                             tail_comments += comment + "\n"
                         elif style.tail_type == "after":
-                            record_manager.add_tail_comment(comment)
+                            record.add_tail_comment(comment)
 
                 continue
 
@@ -168,21 +162,21 @@ class Idf(CachedMixin):
                     head_comment = comment
                     field_comment = None
 
-                record_manager = self._dev_record_manager_cls(content_l[0].strip(), self, head_comment=head_comment)
-                records.append(record_manager.record)
+                record = self._dev_record_cls(content_l[0].strip(), self, head_comment=head_comment)
+                records.append(record)
                 # prepare in case fields on the same line
                 content_l = content_l[1:]
                 make_new_record = False
 
             # fields
             for value_s in content_l:
-                record_manager.add_field(value_s, comment=field_comment)
+                record.add_field(value_s, comment=field_comment)
 
             # signal that new record must be created
             if record_end:
                 if style:
                     if style.tail_type == "before":
-                        record_manager.add_tail_comment(tail_comments)
+                        record.add_tail_comment(tail_comments)
                         tail_comments = ""
                 make_new_record = True
 
@@ -192,7 +186,7 @@ class Idf(CachedMixin):
     @cached
     def _dev_get_pointed_link(self, pointing_ref, pointing_index, pointing_raw_value):
         # get field descriptor
-        fieldd = self._idd.get_record_descriptor(pointing_ref).get_field_descriptor(pointing_index)
+        fieldd = self._dev_idd.get_record_descriptor(pointing_ref).get_field_descriptor(pointing_index)
 
         # check if object-list
         assert fieldd.detailed_type == "object-list", \
@@ -206,11 +200,11 @@ class Idf(CachedMixin):
         # iter through link possibilities and return if found
         link_names_l = fieldd.get_tag("object-list")
         for link_name in link_names_l:
-            for rd, field_index in self._idd.pointed_links(link_name):
+            for rd, field_index in self._dev_idd.pointed_links(link_name):
                 tbl = self.get_table(rd.table_ref)
                 for record in self.get_table(rd.table_ref):
-                    rv = record._.get_raw_value(field_index)
-                    if record._.get_raw_value(field_index) == pointing_raw_value:
+                    rv = record.get_raw_value(field_index)
+                    if record.get_raw_value(field_index) == pointing_raw_value:
                         return record, field_index
 
         raise RuntimeError(
@@ -221,7 +215,7 @@ class Idf(CachedMixin):
     @cached
     def _dev_get_pointing_links(self, pointed_ref, pointed_index, pointed_raw_value):
         # get field descriptor
-        fieldd = self._idd.get_record_descriptor(pointed_ref).get_field_descriptor(pointed_index)
+        fieldd = self._dev_idd.get_record_descriptor(pointed_ref).get_field_descriptor(pointed_index)
 
         # check if reference
         assert fieldd.detailed_type == "reference", \
@@ -235,11 +229,11 @@ class Idf(CachedMixin):
         # fetch links
         links_l = []
         for link_name in fieldd.get_tag("reference"):
-            for record_descriptor, pointing_index in self._idd.pointing_links(link_name):
-                for record in self.get_table(record_descriptor.table_ref):
-                    if pointing_index >= record._.fields_nb:
+            for record_descriptor, pointing_index in self._dev_idd.pointing_links(link_name):
+                for record in self[record_descriptor.table_ref]:
+                    if pointing_index >= record._dev_fields_nb:
                         continue
-                    if record._.get_raw_value(pointing_index) == pointed_raw_value:
+                    if record.get_raw_value(pointing_index) == pointed_raw_value:
                         links_l.append([record, pointing_index])
         return links_l
 
@@ -253,7 +247,7 @@ class Idf(CachedMixin):
             raise BrokenIdfError(
                 "New record has same reference at index '%s' as other record of same link name. "
                 "Other record ref: '%s', index: '%s'. The value at that field must be changed." %
-                (new_record_index, links_l[0][0]._.get_table().ref, links_l[0][1])
+                (new_record_index, links_l[0][0].get_table().ref, links_l[0][1])
             )
 
     def _check_duplicate_references(self):
@@ -261,11 +255,11 @@ class Idf(CachedMixin):
         ref_d = dict()
         for record in self._records:
             # check reference uniqueness
-            record_descriptor = self._idd.get_record_descriptor(record._.get_table().ref)
-            for i in range(record._.fields_nb):
+            record_descriptor = self._dev_idd.get_record_descriptor(record.get_table().ref)
+            for i in range(record._dev_fields_nb):
                 fieldd = record_descriptor.get_field_descriptor(i)
                 if fieldd.detailed_type == "reference":
-                    reference = record._.get_raw_value(i)
+                    reference = record.get_raw_value(i)
                     for link_name in fieldd.get_tag("reference"):
                         # for each link name add the reference to the set to check for uniqueness
                         if link_name not in ref_d:
@@ -274,7 +268,7 @@ class Idf(CachedMixin):
                             raise BrokenIdfError(
                                 "Reference duplicate for link name: {}\n".format(link_name) +
                                 "Reference: {}\n".format(reference) +
-                                "Detected while checking record ref: {}\n".format(record._.get_table().ref) +
+                                "Detected while checking record ref: {}\n".format(record.get_table().ref) +
                                 "Field: {}".format(i)
                             )
                         ref_d[link_name].add(reference)
@@ -295,11 +289,11 @@ class Idf(CachedMixin):
         position: int
         """
         # check reference uniqueness
-        record_descriptor = self._idd.get_record_descriptor(naive_record._.get_table().ref)
-        for i in range(naive_record._.fields_nb):
+        record_descriptor = self._dev_idd.get_record_descriptor(naive_record.get_table().ref)
+        for i in range(naive_record._dev_fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference" and self._constructing_mode_counter == 0:
-                self._check_new_reference(record_descriptor.table_ref, i, naive_record._.get_raw_value(i))
+                self._check_new_reference(record_descriptor.table_ref, i, naive_record.get_raw_value(i))
 
         # add record
         if position is None:
@@ -326,16 +320,22 @@ class Idf(CachedMixin):
     def __str__(self):
         return repr(self)
 
-    def __getattr__(self, item):
+    def get_table(self, item):
+        # todo: manage syntax
+        return self[item]
+
+    def __getitem__(self, item):
+    # def __getattr__(self, item):
         """
         we don't use cache system because each table is unique, and they are stored in a dict => would be useless
         """
+        # todo: should be __getattr__
         # todo: manage table naming convention lower_case, ....
 
         lower_ref = item.lower()
         if lower_ref not in self._tables:
             # get table ref
-            table_ref = self._idd.get_table_ref(item)
+            table_ref = self._dev_idd.get_table_ref(item)
 
             # create table
             self._tables[lower_ref] = self._dev_table_cls(table_ref, self)
@@ -367,7 +367,7 @@ class Idf(CachedMixin):
 
         # prepare records content [(table_ref, record_str), ...]
         formatted_records = [
-            (obj.get_table().ref, "\n%s" % obj._.to_str(style="idf", idf_style=style)) for obj in self._records
+            (obj.get_table().ref, "\n%s" % obj.to_str(style="idf", idf_style=style)) for obj in self._records
         ]
 
         # sort if asked
@@ -456,7 +456,7 @@ class Idf(CachedMixin):
         with self.under_construction:
             for record in record_s:
                 # check if record is pointed, if asked
-                pointing_links_l = record._._dev_get_pointing_links()
+                pointing_links_l = record._get_pointing_links()
                 if len(pointing_links_l) > 0 and raise_if_pointed:
                     raise IsPointedError(
                         "Can't remove record if other records are pointing to it. "
@@ -465,7 +465,7 @@ class Idf(CachedMixin):
                     )
 
                 # delete obsolete attributes
-                record._.neutralize()
+                record._neutralize()
 
                 # remove from idf
                 index = self._records.index(record)
@@ -507,19 +507,19 @@ class Idf(CachedMixin):
             return _msg
 
         rds_refs_set = set([record.get_table().ref for record in self._records])
-        name = "Idf: '%s'" % self._path
+        name = "Idf: '%s'" % self._dev_path
         msg = "%s\n%s\n%s" % ("-" * len(name), name, "-" * len(name))
         if sort_by_group:
-            for group_name in self._idd.group_names:
+            for group_name in self._dev_idd.group_names:
                 ods_l = []
-                for od in self._idd.get_record_descriptors_by_group(group_name):
+                for od in self._dev_idd.get_record_descriptors_by_group(group_name):
                     if od.table_ref in rds_refs_set:
                         ods_l.append(od)
                 if len(ods_l) > 0:
                     msg += "\nGroup - %s" % group_name
                     msg += _get_rds_info(ods_l, _line_start="\t")
         else:
-            msg += _get_rds_info([self._idd.get_record_descriptor(od_ref) for od_ref in rds_refs_set])
+            msg += _get_rds_info([self._dev_idd.get_record_descriptor(od_ref) for od_ref in rds_refs_set])
 
         return msg
 

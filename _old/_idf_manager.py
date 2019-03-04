@@ -7,7 +7,7 @@ from oplus.util import get_copyright_comment, get_string_buffer
 from .cache import Cached, cached, clear_cache
 from .style import IdfStyle, style_library
 from .record import Record
-from .record_manager import RecordManager
+from ._record_manager import RecordManager
 from .exceptions import BrokenIdfError, IsPointedError
 from .queryset import Queryset
 from .table import Table
@@ -236,7 +236,7 @@ class IdfManager(Cached):
         for link_name in fieldd.get_tag("reference"):
             for record_descriptor, pointing_index in self.idd.pointing_links(link_name):
                 for record in self.get_table(record_descriptor.table_ref):
-                    if pointing_index >= record._.fields_nb:
+                    if pointing_index >= record._._dev_fields_nb:
                         continue
                     if record._.get_raw_value(pointing_index) == pointed_raw_value:
                         links_l.append([record, pointing_index])
@@ -261,7 +261,7 @@ class IdfManager(Cached):
         for record in self._records:
             # check reference uniqueness
             record_descriptor = self._idd.get_record_descriptor(record._.get_table().ref)
-            for i in range(record._.fields_nb):
+            for i in range(record._._dev_fields_nb):
                 fieldd = record_descriptor.get_field_descriptor(i)
                 if fieldd.detailed_type == "reference":
                     reference = record._.get_raw_value(i)
@@ -329,7 +329,7 @@ class IdfManager(Cached):
         """
         # check reference uniqueness
         record_descriptor = self._idd.get_record_descriptor(naive_record._.get_table().ref)
-        for i in range(naive_record._.fields_nb):
+        for i in range(naive_record._._dev_fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference" and self._constructing_mode_counter == 0:
                 self.check_new_reference(record_descriptor.table_ref, i, naive_record._.get_raw_value(i))
@@ -368,7 +368,7 @@ class IdfManager(Cached):
                         )
 
                 # delete obsolete attributes
-                record._.neutralize()
+                record._._neutralize()
 
                 # remove from idf
                 index = self._records.index(record)

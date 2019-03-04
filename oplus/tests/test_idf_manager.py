@@ -36,7 +36,7 @@ class StaticIdfTest(unittest.TestCase):
     def test_idf_call(self):
         for eplus_version in iter_eplus_versions(self):
             qs = self.idf_managers_d[eplus_version].get_table("Construction").select()
-            self.assertEqual({"r13wall", "floor", "roof31"}, set([c._.get_value("name") for c in qs]))
+            self.assertEqual({"r13wall", "floor", "roof31"}, set([c._._get_value("name") for c in qs]))
 
     def test_qs_one(self):
         for eplus_version in iter_eplus_versions(self):
@@ -44,7 +44,7 @@ class StaticIdfTest(unittest.TestCase):
             obj = idf.get_table("BuildingSurface:Detailed").one(
                 lambda x: x["naMe"] == "zn001:roof001"
             )
-            name = obj._.get_value("name")
+            name = obj._._get_value("name")
 
             self.assertEqual(
                 "zn001:roof001",
@@ -71,7 +71,7 @@ class StaticIdfTest(unittest.TestCase):
             _d = {}
             for pointing_record, pointing_index in zone._._dev_get_pointing_links():
                 # check points
-                self.assertEqual(pointing_record._.get_value(pointing_index), zone)
+                self.assertEqual(pointing_record._._get_value(pointing_index), zone)
                 # verify all are identified
                 if pointing_record._.get_table().ref not in _d:
                     _d[pointing_record._.get_table().ref] = [pointing_index, 1]
@@ -161,7 +161,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # check that pointing's pointed fields have been removed
             for pointing_record, pointing_index in zone._._dev_get_pointing_links():
-                self.assertEqual(pointing_record._.get_value(pointing_index), None)
+                self.assertEqual(pointing_record._._get_value(pointing_index), None)
 
             # remove record should be possible
             idf_manager.remove_records(zone)
@@ -174,13 +174,13 @@ class DynamicIdfTest(unittest.TestCase):
             new_name = "fan availability schedule - 2"
             supply_fan = idf_manager.get_table("Fan:ConstantVolume").one(
                 lambda x: x["name"] == "supply fan")
-            supply_fan._.set_value("availability schedule name", schedule_test_record_str % new_name)
+            supply_fan._._set_value("availability schedule name", schedule_test_record_str % new_name)
             print(idf_manager.to_str())
 
             # get
             obj = idf_manager.get_table("Fan:ConstantVolume").one(
                 lambda x: x["name"] == "supply fan")
-            name = obj._.get_value("AvaiLABIlity schedule name")._.get_value("NAME")
+            name = obj._._get_value("AvaiLABIlity schedule name")._._get_value("NAME")
 
             # check
             self.assertEqual(new_name, name)
@@ -193,10 +193,10 @@ class DynamicIdfTest(unittest.TestCase):
             new_zone_name = "new zone name"
             zone = idf_manager.get_table("Zone").one()
             pointing_links_l = zone._._dev_get_pointing_links()
-            zone._.set_value("name", new_zone_name)
+            zone._._set_value("name", new_zone_name)
 
             # check
-            self.assertEqual(zone._.get_value("name"), new_zone_name)
+            self.assertEqual(zone._._get_value("name"), new_zone_name)
 
             # check pointing
             for pointing_record, pointing_index in pointing_links_l:
@@ -207,11 +207,11 @@ class DynamicIdfTest(unittest.TestCase):
             idf_manager = self.get_idf_manager()
             zone = idf_manager.get_table("Zone").one()
             new = zone._.copy()
-            for i in range(zone._.fields_nb):
+            for i in range(zone._._dev_fields_nb):
                 if i == 0:
-                    self.assertNotEqual(zone._.get_value(i), new._.get_value(i))
+                    self.assertNotEqual(zone._._get_value(i), new._._get_value(i))
                 else:
-                    self.assertEqual(zone._.get_value(i), new._.get_value(i))
+                    self.assertEqual(zone._._get_value(i), new._._get_value(i))
 
     def test_replace_values(self):
         for _ in iter_eplus_versions(self):

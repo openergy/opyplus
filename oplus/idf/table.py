@@ -6,11 +6,11 @@ class Table:
     We use this class for api purpose only, but all logic is in idf and records.
     No need to cache table because it uses idf_manager which is cached.
     """
-    def __init__(self, ref, idf_manager):
+    def __init__(self, ref, idf):
         self._ref = ref
         self._lower_ref = ref.lower()
-        self._idf_manager = idf_manager
-        self._descriptor = self._idf_manager.idd.get_record_descriptor(ref)
+        self._idf = idf
+        self._descriptor = self._idf._dev_idd.get_record_descriptor(ref)
 
     def __iter__(self):
         return iter(self.select())
@@ -33,7 +33,7 @@ class Table:
 
     @property
     def idf(self):
-        return self._idf_manager.get_idf()
+        return self._idf.get_idf()
 
     @property
     def ref(self):
@@ -48,7 +48,7 @@ class Table:
             assert isinstance(record_str, str), f"must provide record string to add record, got {type(record_str)}"
             completed_l.append(f"{self.ref},\n{record_str}")
 
-        return self._idf_manager.add_records(completed_l)
+        return self._idf.add_records(completed_l)
 
     def remove(self, record_s):
         # make iterable if needed
@@ -63,11 +63,11 @@ class Table:
                 )
 
         # ask idf manager to do the job
-        self._idf_manager.remove_records(record_s)
+        self._idf.remove_records(record_s)
 
     def one(self, filter_by=None):
         return self.select(filter_by=filter_by).one()
 
     def select(self, filter_by=None):
         # select_all_table is cached
-        return self._idf_manager.select_all_table(self._ref).select(filter_by=filter_by)
+        return self._idf.select_all_table(self._ref).select(filter_by=filter_by)
