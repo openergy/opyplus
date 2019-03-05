@@ -6,9 +6,10 @@ from .table import Table
 from .queryset import Queryset
 from .cache import CachedMixin, cached, clear_cache
 from .record import Record
-from ..util import get_string_buffer, name_to_ref
+from ..util import get_string_buffer
 from .style import IdfStyle, style_library
 from .exceptions import BrokenIdfError, IsPointedError
+from ..idd.record_descriptor import table_name_to_ref
 
 
 class Idf(CachedMixin):
@@ -163,7 +164,7 @@ class Idf(CachedMixin):
                     field_comment = None
 
                 # get table
-                table_ref = name_to_ref(content_l[0].strip())
+                table_ref = table_name_to_ref(content_l[0].strip())
                 table = getattr(self, table_ref)
 
                 # create and store record
@@ -331,14 +332,17 @@ class Idf(CachedMixin):
 
     def __getattr__(self, item):
         # check table exists, create if not
-        if item not in self._tables:
-            # check validity
-            if not self._dev_idd.record_descriptor_exists(item):
-                raise RuntimeError(f"unknown table ref: '{item}'")
+        lower_item = item.lower()
+        if lower_item not in self._tables:
+            # find record descriptor
+            try:
+                rd = self._dev_idd.get_record_descriptor(item)
+            except KeyError:
+                raise AttributeError(f"no table named: '{item}'")
 
             # create table
-            self._tables[item] = self._dev_table_cls(item, self)
-        return self._tables[item]
+            self._tables[rd.table_ref.lower()] = self._dev_table_cls(rd.table_ref, self)
+        return self._tables[lower_item]
 
     def to_str(self, style=None, add_copyright=True, sort=True, with_chapters=True):
         if style is None:

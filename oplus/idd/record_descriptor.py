@@ -1,9 +1,11 @@
 import collections
 import logging
 
-from ..util import name_to_ref
-
 logger = logging.getLogger(__name__)
+
+
+def table_name_to_ref(name):
+    return name.replace(":", "_")
 
 
 class RecordDescriptor:
@@ -12,7 +14,7 @@ class RecordDescriptor:
     """
     def __init__(self, table_name, group_name=None):
         self.table_name = table_name
-        self.table_ref = name_to_ref(table_name)
+        self.table_ref = table_name_to_ref(table_name)
         self.group_name = group_name
         self._fieldds_l = []  # we use list (and not dict) because some field descriptors do not have a name
         self._tags_d = {}
@@ -160,6 +162,10 @@ class RecordDescriptor:
     def get_field_index(self, index_or_ref):
         """
         if index, must be >=0
+
+        Raises
+        ------
+        AttributeError
         """
         # if index
         if isinstance(index_or_ref, int):
@@ -185,7 +191,7 @@ class RecordDescriptor:
         """
         return self._extensible_info
 
-    def info(self, how="txt"):
+    def get_info(self, how="txt"):
         if how not in ("txt", "dict"):
             raise ValueError(f"unknown how: '{how}'")
 

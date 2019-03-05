@@ -12,6 +12,7 @@ class Record(CachedMixin):
     """
     Record is allowed to access private keys/methods of Idf.
     """
+    _frozen = False  # for __setattr__ management
     # todo: change this ?
     _COMMENT_COLUMN_START = 35
     _TAB_LEN = 4
@@ -27,6 +28,8 @@ class Record(CachedMixin):
         self._fields_l = []  # [[raw_value, comment], ...]
 
         self._descriptor = self.get_idf()._dev_idd.get_record_descriptor(table.ref)
+        self._frozen = True
+
         
     def _check_obsolescence(self):
         if self._table is None:
@@ -85,24 +88,37 @@ class Record(CachedMixin):
         self._descriptor = None
 
     # ------------------------------------------------ GET -------------------------------------------------------------
-    def _get_field_index(self, field_index_or_insensitive_name):
+    def _get_field_index(self, field_index_or_ref):
         """
         Returns field index (>=0).
+
+        Raises
+        ------
+        AttributeError
         """
         self._check_obsolescence()
 
-        if isinstance(field_index_or_insensitive_name, int):
-            field_index_or_insensitive_name = (
-                field_index_or_insensitive_name if field_index_or_insensitive_name >= 0 else
-                self._dev_fields_nb + field_index_or_insensitive_name
+        if isinstance(field_index_or_ref, int):
+            field_index_or_ref = (
+                field_index_or_ref if field_index_or_ref >= 0 else
+                self._dev_fields_nb + field_index_or_ref
             )
-        return self._descriptor.get_field_index(field_index_or_insensitive_name)
+        return self._descriptor.get_field_index(field_index_or_ref)
 
-    def _get_value(self, field_index_or_insensitive_name):
+    def _get_value(self, field_index_or_ref):
+        """
+        Parameters
+        ----------
+        field_index_or_ref
+
+        Raises
+        ------
+        AttributeError
+        """
         # parsed value and/or record
         self._check_obsolescence()
 
-        index = self._get_field_index(field_index_or_insensitive_name)
+        index = self._get_field_index(field_index_or_ref)
         raw_value = self._fields_l[index][self._RAW_VALUE]
         fieldd = self._descriptor.get_field_descriptor(index)
 
@@ -228,12 +244,16 @@ class Record(CachedMixin):
         ---------
         item: field index or name [or slice of field indexes and/or names]
         """
-        # todo: manage new syntax
         if isinstance(item, slice):
             start = 0 if item.start is None else self._get_field_index(item.start)
             stop = len(self) if item.stop is None else min(self._get_field_index(item.stop), len(self))
             step = item.step or 1
             return [self._get_value(i) for i in range(start, stop, step)]
+        elif isinstance(item, int):
+            return self._get_value(item)
+        raise TypeError("item must be an integer or a slice")
+
+    def __getattr__(self, item):
         return self._get_value(item)
 
     def get_raw_value(self, field_index_or_name):
@@ -243,20 +263,32 @@ class Record(CachedMixin):
 
         return self._fields_l[field_index][self._RAW_VALUE]
 
-    # def get(self, item, default=None):
-    #     try:
-    #         return self[item]
-    #     except (AttributeError, IndexError):
-    #         return default
-
-    def __setitem__(self, key, value):
+    def __setitem__(self, name, value):
         """
         Arguments
         ---------
-        key: field index or name
-        value: field raw, parsed or record value (see get_value documentation)
+        name: field index
+        value: raw, parsed or record value (see get_value documentation)
         """
-        self._set_value(key, value)
+        self._set_value(name, value)
+
+    def __setattr__(self, name, value):
+        """
+        Parameters
+        ----------
+        name: field ref
+        value: raw, parsed or record value (see get_value documentation)
+        """
+        # manage __init__
+        if not self._frozen:
+            return super().__setattr__(name, value)
+
+        # object attribute
+        if name in self.__dict__:
+            return super().__setattr__(name, value)
+
+        # set eplus value
+        self._set_value(name, value)
 
     def __len__(self):
         return self._dev_fields_nb
@@ -426,17 +458,22 @@ class Record(CachedMixin):
         Returns
         -------
         Value of popped field.
+
+        Raises
+        ------
+        RuntimeError
         """
         self._check_obsolescence()
 
         # check extensible
-        cyle_len, cycle_start, _ = self._descriptor.extensible_info
-        assert cyle_len == 1, "Can only use pop on fields defined as 'extensible:1'."
+        cycle_start, cyle_len, _ = self._descriptor.extensible_info
+        if cyle_len != 1:
+            raise RuntimeError("Can only use pop on extensible:1 fields.")
 
         # check index
         pop_index = self._get_field_index(field_index_or_name)
-        assert pop_index >= cycle_start, \
-            "Can only use pop on extensible fields (pop index must be > than extensible start index)."
+        if pop_index < cycle_start:
+            raise RuntimeError("Pop index must be >= cycle start index.")
 
         # store value
         pop_value = self._get_value(pop_index)

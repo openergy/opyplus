@@ -2,9 +2,15 @@ import re
 import unidecode
 import copy
 
-from ..util import name_to_ref
 
-spaces_pattern = re.compile("\s+")
+spaces_pattern = re.compile(r"\s+")
+not_python_var_pattern = re.compile(r"(^[^\w]+)|([^\w\d]+)")
+multiple_underscores_pattern = re.compile(r"[_]{2,}")
+
+
+def var_name_to_ref(name):
+    ref = re.sub(not_python_var_pattern, "_", name.lower())
+    return re.sub(multiple_underscores_pattern, "_", ref)
 
 
 def to_num(raw_value):
@@ -28,7 +34,7 @@ class FieldDescriptor:
             raise ValueError("Unknown field type: '%s'." % field_basic_type)
         self.basic_type = field_basic_type  # A -> alphanumeric, N -> numeric
         self.name = name
-        self.ref = None if name is None else name_to_ref(name)
+        self.ref = None if name is None else var_name_to_ref(name)
         self._tags_d = {}
 
         self._detailed_type = None

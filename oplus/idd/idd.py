@@ -86,7 +86,7 @@ class Idd:
 
         # rd: record descriptor, linkd: link descriptor
         # istr: insensitive string
-        self._rds_d = OrderedDict()  # record descriptors {table_ref: rd, ...}
+        self._rds_d = OrderedDict()  # record descriptors {table_lower_ref: rd, ...}
         self._pointed_rd_linkds_d = {}  # linkd: link descriptor {link_lower_name: [(rd, field_index), ...], ...}
         self._pointing_rd_linkds_d = {}  # {link_lower_name: [(rd, field_index), ...], ...}
         self._groups_d = OrderedDict()  # {group_lower_name: {name: group_name, record_descriptors: [rd, rd, ...]}
@@ -94,14 +94,6 @@ class Idd:
         self._parse()
         self._post_init()
         self._link()
-        for k in sorted(self._rds_d):
-            print(k)
-
-    # def get_table_ref(self, insensitive_ref):
-    #     rd = self._rds_d.get(insensitive_ref.lower())
-    #     if rd is None:
-    #         raise KeyError(f"unknown table: {insensitive_ref}")
-    #     return rd.table_ref
 
     def pointed_links(self, link_insensitive_name):
         """
@@ -224,7 +216,7 @@ class Idd:
                     # store
                     rd = RecordDescriptor(table_name, group_name=group_name)
                     assert rd.table_ref not in self._rds_d, "Record descriptor already registered."
-                    self._rds_d[rd.table_ref] = rd
+                    self._rds_d[rd.table_ref.lower()] = rd
                     self._groups_d[group_name.lower()]["record_descriptors"].append(rd)
 
                     # re-initialize
@@ -238,11 +230,11 @@ class Idd:
                     table_name = line.strip()[:-1]
                     # start
                     rd = RecordDescriptor(table_name)
-                    self._rds_d[rd.table_ref] = rd
+                    self._rds_d[rd.table_ref.lower()] = rd
                     # end
                     end_name = "End " + table_name
                     rd = RecordDescriptor(end_name)
-                    self._rds_d[rd.table_ref] = rd
+                    self._rds_d[rd.table_ref.lower()] = rd
 
                     # re-initialize
                     rd, fieldd = None, None
@@ -274,9 +266,6 @@ class Idd:
                             self._pointing_rd_linkds_d[ref_lower_name] = []
                         self._pointing_rd_linkds_d[ref_lower_name].append((rd, i))
 
-    def record_descriptor_exists(self, rd_ref):
-        return rd_ref in self._rds_d
-
     def get_record_descriptor(self, rd_ref):
         """
         Arguments
@@ -286,8 +275,12 @@ class Idd:
         Returns
         -------
         record descriptor
+
+        Raises
+        ------
+        KeyError
         """
-        return self._rds_d[rd_ref]
+        return self._rds_d[rd_ref.lower()]
 
     def get_record_descriptors_by_group(self, group_insensitive_name):
         """
