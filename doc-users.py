@@ -78,7 +78,7 @@ building = idf["Building"].select(lambda x: x["name"] == "Bldg").one()
 #@ #### add record
 
 # add from idf
-new_sch = idf.add(
+new_sch = idf.batch_add_from_string(
     """Schedule:Compact,
     Heating Setpoint Schedule - new[1],  !- Name
     Any Number,              !- Schedule Type Limits Name
@@ -91,7 +91,7 @@ new_sch = idf.add(
 print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new[1]") is new_sch)
 
 # or add from table
-new_sch = idf["Schedule:Compact"].add(
+new_sch = idf["Schedule:Compact"].batch_add_from_string(
     """Heating Setpoint Schedule - new[2],  !- Name
     Any Number,              !- Schedule Type Limits Name
     Through: 12/31,          !- Field 1
@@ -130,7 +130,7 @@ schedules = [
 ]
 
 # idf syntax
-added = idf.add(schedules)
+added = idf.batch_add_from_string(schedules)
 print("added:")
 for a in added:
     print(a["name"])
@@ -139,7 +139,7 @@ idf.remove(added)
 
 # or table syntax
 truncated_schedules = ["\n".join(s.split("\n")[1:]) for s in schedules]
-added = idf["Schedule:Compact"].add(truncated_schedules)
+added = idf["Schedule:Compact"].batch_add_from_string(truncated_schedules)
 idf["Schedule:Compact"].remove(added)
 
 #@ #### display info

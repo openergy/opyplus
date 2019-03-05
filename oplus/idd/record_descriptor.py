@@ -115,7 +115,6 @@ class RecordDescriptor:
         # store cycle info
         self._extensible_info = (cycle_start, cycle_len, tuple(cycle_patterns))
 
-
     @property
     def tags(self):
         return sorted(self._tags_d)

@@ -291,16 +291,16 @@ class Idd:
         return self._groups_d[group_insensitive_name.lower()]["record_descriptors"]
 
     @property
-    def record_descriptors_l(self):
-        return list(self._rds_d.keys())
+    def record_descriptors(self):
+        return self._rds_d.copy()
 
     def __eq__(self, other):
-        if len(self.record_descriptors_l) != len(other.record_descriptors_l):
+        if len(self.record_descriptors) != len(other.record_descriptors):
             return False
 
-        for rd_ref in self.record_descriptors_l:
+        for rd in self.record_descriptors.values():
             try:
-                if self.get_record_descriptor(rd_ref) != other.get_record_descriptor(rd_ref):
+                if rd != other.get_record_descriptor(rd.table_ref.lower()):
                     return False
             except KeyError:
                 return False

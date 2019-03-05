@@ -73,11 +73,11 @@ class StaticIdfTest(unittest.TestCase):
                 # check points
                 self.assertEqual(pointing_record._._get_value(pointing_index), zone)
                 # verify all are identified
-                if pointing_record._.get_table().ref not in _d:
-                    _d[pointing_record._.get_table().ref] = [pointing_index, 1]
+                if pointing_record._.get_table_ref() not in _d:
+                    _d[pointing_record._.get_table_ref()] = [pointing_index, 1]
                 else:
-                    self.assertEqual(pointing_index, _d[pointing_record._.get_table().ref][0])
-                    _d[pointing_record._.get_table().ref][1] += 1
+                    self.assertEqual(pointing_index, _d[pointing_record._.get_table_ref()][0])
+                    _d[pointing_record._.get_table_ref()][1] += 1
             self.assertEqual(d, _d)
     
             # check pointing on pointed_index
@@ -121,7 +121,7 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in iter_eplus_versions(self):
             idf_manager = self.get_idf_manager()
             with self.assertRaises(BrokenIdfError):
-                with idf_manager.under_construction:
+                with idf_manager.is_under_construction:
                     idf_manager.add_records("""
                     Material,
                         C5 - 4 IN HW CONCRETE,   !- Name

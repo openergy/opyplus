@@ -57,7 +57,7 @@ class StaticIdfTest(unittest.TestCase):
     def test_idf_add_object(self):
         for eplus_version in iter_eplus_versions(self):
             sch_name = "NEW TEST SCHEDULE"
-            sch = self.idfs_d[eplus_version].add(schedule_test_record_str % sch_name)
+            sch = self.idfs_d[eplus_version].add_from_string(schedule_test_record_str % sch_name)
             self.assertTrue(isinstance(sch, Record))
 
     def test_multi_level_filter(self):
@@ -88,18 +88,18 @@ class DynamicIdfTest(unittest.TestCase):
         for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch_name = "new test schedule"
-            idf.add(schedule_test_record_str % sch_name)
+            idf.add_from_string(schedule_test_record_str % sch_name)
             self.assertEqual(idf.Schedule_Compact.one(lambda x: x.name == sch_name).name, sch_name)
 
     def test_idf_remove_record(self):
         for _ in iter_eplus_versions(self):
             idf = self.get_idf()
             sch_name = "NEW TEST SCHEDULE"
-            sch = idf.add(schedule_test_record_str % sch_name)
+            sch = idf.add_from_string(schedule_test_record_str % sch_name)
             idf.remove(sch)
 
             # check removed
-            self.assertEqual(len(idf.Schedule_Compact.select(lambda x: x.name ==  sch_name)), 0)
+            self.assertEqual(len(idf.Schedule_Compact.select(lambda x: x.name == sch_name)), 0)
 
             # check obsolete
             self.assertRaises(ObsoleteRecordError, lambda: print(sch))
@@ -131,9 +131,7 @@ class DynamicIdfTest(unittest.TestCase):
                     "zn001:flr001",
                     "zn001:roof001"
                 },
-                set([bsd.name for bsd in zone.get_pointing_records().select(
-                    lambda x: x.get_table().ref == "BuildingSurface_Detailed")
-                     ])
+                set([bsd.name for bsd in zone.get_pointing_records().BuildingSurface_Detailed])
             )
 
     def test_pointed_records(self):
@@ -148,9 +146,10 @@ class DynamicIdfTest(unittest.TestCase):
             self.assertEqual(bsd[3], zone)
 
             # get all pointed
+            pointing = bsd.get_pointed_records()
             self.assertEqual(
-                {zone, construction},
-                set(bsd.get_pointed_records())
+                (zone, construction),
+                (pointing.zone.one(), pointing.construction.one())
             )
 
     def test_copy_record(self):
@@ -203,7 +202,7 @@ class DynamicIdfTest(unittest.TestCase):
             name = supply_fan.availability_schedule_name.name
 
             with self.assertRaises(BrokenIdfError):
-                with idf.under_construction:
+                with idf.is_under_construction():
                     supply_fan.availability_schedule_name = schedule_test_record_str % name
 
     def test_extensible(self):

@@ -1,4 +1,5 @@
 import io
+import itertools
 from oplus import CONF  # todo: change conf style ?
 from contextlib import contextmanager
 from oplus.idd.idd import Idd
@@ -13,15 +14,12 @@ from ..idd.record_descriptor import table_name_to_ref
 
 
 class Idf(CachedMixin):
-    """
-    Idf is allowed to access private keys/methods of Record.
-    """
     _dev_record_cls = Record  # for subclassing
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
     @classmethod
-    def get_idf(cls, idf_or_path, encoding=None):
+    def get_or_create_idf(cls, idf_or_path, encoding=None):
         """
         Arguments
         ---------
@@ -47,14 +45,18 @@ class Idf(CachedMixin):
         path_or_content: idf path, content str, content bts or file_like. If path, must end by .idf.
         idd_or_path: Idd record or idd path. If None, default will be chosen (most recent EPlus version installed on
             computer)
+        encoding
+        style
         """
         self._dev_activate_cache()
 
         self._encoding = CONF.encoding if encoding is None else encoding
         self._constructing_mode_counter = 0
-        self._tables = {}  # {ref: table, ...}
-
         self._dev_idd = self._dev_idd_cls.get_idd(idd_or_path, encoding=encoding)
+        self._tables = dict([  # {lower_ref: table, ...}
+            (lower_ref, Table(rd, self))
+            for lower_ref, rd in self._dev_idd.record_descriptors.items()
+        ])
 
         # get string buffer and store path (for info)
         buffer, path = get_string_buffer(path_or_content, "idf", self._encoding)
@@ -64,10 +66,10 @@ class Idf(CachedMixin):
         with buffer as f:
             self._records, self._head_comments = self._dev_parse(f, style)
 
-    # --------------------------------------------- CONSTRUCT ----------------------------------------------------------
+    # parse
     def _dev_parse(self, file_like, style=None):
         """
-        Records are created from string. They are not attached to idf manager yet.
+        Records are created from string. They are not attached to idf yet.
         in idf: header comment, chapter comments, records
         in record: head comment, field comments, tail comment
         """
@@ -134,7 +136,13 @@ class Idf(CachedMixin):
                         if style.tail_type == "before":
                             tail_comments += comment + "\n"
                         elif style.tail_type == "after":
-                            record.add_tail_comment(comment)
+                            new_comment = comment.strip()
+                            if new_comment != "":
+                                old_comment = record.get_tail_comment()
+                                new_comment = (
+                                    f"{old_comment}{new_comment}\n" if old_comment != "" else f"{new_comment}\n"
+                                )
+                                record.set_tail_comment(new_comment)
 
                 continue
 
@@ -183,13 +191,13 @@ class Idf(CachedMixin):
             if record_end:
                 if style:
                     if style.tail_type == "before":
-                        record.add_tail_comment(tail_comments)
+                        record.set_tail_comment(tail_comments)
                         tail_comments = ""
                 make_new_record = True
 
         return records, head_comments
 
-    # ----------------------------------------------- LINKS ------------------------------------------------------------
+    # links
     @cached
     def _dev_get_pointed_link(self, pointing_ref, pointing_index, pointing_raw_value):
         # get field descriptor
@@ -244,6 +252,7 @@ class Idf(CachedMixin):
                         links_l.append([record, pointing_index])
         return links_l
 
+    # checks
     def _check_new_reference(self, new_record_ref, new_record_index, reference):
         if reference == "":
             return None
@@ -254,7 +263,7 @@ class Idf(CachedMixin):
             raise BrokenIdfError(
                 "New record has same reference at index '%s' as other record of same link name. "
                 "Other record ref: '%s', index: '%s'. The value at that field must be changed." %
-                (new_record_index, links_l[0][0].get_table().ref, links_l[0][1])
+                (new_record_index, links_l[0][0].get_table_ref(), links_l[0][1])
             )
 
     def _check_duplicate_references(self):
@@ -262,7 +271,7 @@ class Idf(CachedMixin):
         ref_d = dict()
         for record in self._records:
             # check reference uniqueness
-            record_descriptor = self._dev_idd.get_record_descriptor(record.get_table().ref)
+            record_descriptor = self._dev_idd.get_record_descriptor(record.get_table_ref())
             for i in range(record._dev_fields_nb):
                 fieldd = record_descriptor.get_field_descriptor(i)
                 if fieldd.detailed_type == "reference":
@@ -275,17 +284,14 @@ class Idf(CachedMixin):
                             raise BrokenIdfError(
                                 "Reference duplicate for link name: {}\n".format(link_name) +
                                 "Reference: {}\n".format(reference) +
-                                "Detected while checking record ref: {}\n".format(record.get_table().ref) +
+                                "Detected while checking record ref: {}\n".format(record.get_table_ref()) +
                                 "Field: {}".format(i)
                             )
                         ref_d[link_name].add(reference)
 
-    # ------------------------------------------ MANAGE RECORDS --------------------------------------------------------
-    def has_record(self, record):
-        return record in self._records
-
+    # records
     @clear_cache
-    def add_naive_record(self, naive_record, position=None):
+    def _dev_add_naive_record(self, naive_record, position=None):
         """
         checks references uniqueness
 
@@ -296,7 +302,7 @@ class Idf(CachedMixin):
         position: int
         """
         # check reference uniqueness
-        record_descriptor = self._dev_idd.get_record_descriptor(naive_record.get_table().ref)
+        record_descriptor = self._dev_idd.get_record_descriptor(naive_record.get_table_ref())
         for i in range(naive_record._dev_fields_nb):
             fieldd = record_descriptor.get_field_descriptor(i)
             if fieldd.detailed_type == "reference" and self._constructing_mode_counter == 0:
@@ -311,38 +317,235 @@ class Idf(CachedMixin):
         # return new record
         return naive_record
 
+    @cached
+    def _dev_select_from_table(self, table_ref):
+        """
+        purpose: this function is cached
+        """
+        table = getattr(self, table_ref)
+        return Queryset(table, [r for r in self._records if r.get_table() is table])
+
     # --------------------------------------------- public api ---------------------------------------------------------
-# todo: iter returns records, shouldn't it return tables ?
+    # python magic
+    def __dir__(self):
+        return [t.get_ref() for t in self._tables.values()] + [k for k in self.__dict__ if k[0] != "_"]
+
+    def __getattr__(self, item):
+        try:
+            return self._tables[item.lower()]
+        except KeyError:
+            raise AttributeError(f"No table with reference '{item}'.")
+
     def __iter__(self):
-        return iter(Queryset(self._records))
+        return (k for (k, _) in itertools.groupby(self._records, key=lambda x: x.get_table()))
 
     def __len__(self):
         return len(self._records)
 
     def __repr__(self):
-        building_records = self["Building"].select()
+        building_records = self.building.select()
         building = None if len(building_records) == 0 else building_records[0]
-        return "<Idf>" if building is None else f"<Idf: {building['name']}>"
+        return "<Idf>" if building is None else f"<Idf: {building.name}>"
 
     def __str__(self):
         return repr(self)
 
-    def __dir__(self):
-        return list(self._tables.keys()) + [k for k in self.__dict__ if k[0] != "_"]
+    # get/set comments
+    def get_comment(self):
+        return self._head_comments
 
-    def __getattr__(self, item):
-        # check table exists, create if not
-        lower_item = item.lower()
-        if lower_item not in self._tables:
-            # find record descriptor
-            try:
-                rd = self._dev_idd.get_record_descriptor(item)
-            except KeyError:
-                raise AttributeError(f"no table named: '{item}'")
+    @clear_cache
+    def set_comment(self, value):
+        self._head_comments = str(value).strip()
 
-            # create table
-            self._tables[rd.table_ref.lower()] = self._dev_table_cls(rd.table_ref, self)
-        return self._tables[lower_item]
+    # add records
+    @clear_cache
+    def add(self, table_ref, **record_data):
+        """
+        Parameters
+        ----------
+        table_ref
+        record_data
+
+        Returns
+        -------
+        created record
+        """
+        return self.batch_add({table_ref: [record_data]})[0]
+
+    @clear_cache
+    def batch_add(self, records_data):
+        """
+        Parameters
+        ----------
+        records_data: dict
+            {table_ref: [list of records data], ...}
+
+        Returns
+        -------
+        list of created records
+        """
+        # create records, using under construction
+        created_records = []
+        with self.is_under_construction():
+            for table_ref, _records_data in records_data.items():
+                for record_data in _records_data:
+                    r = Record(getattr(self, table_ref))
+                    for k, v in record_data.items():
+                        setattr(r, k, v)
+                    created_records.append(r)
+        return created_records
+
+    # add records
+    @clear_cache
+    def add_from_string(self, record_str, position=None):
+        """
+        Parameters
+        ----------
+        record_str: string describing the new record to add
+        position: if None, will be added at the end, else will be added at asked position
+            (using 'insert' python builtin function for lists)
+
+        Returns
+        -------
+        added record
+        """
+        return self.batch_add_from_string([record_str], position=position)[0]
+
+    @clear_cache
+    def batch_add_from_string(self, records_str, position=None):
+        """
+        Adds new record to the idf, at required position.
+
+        Arguments
+        ---------
+        records_str: list of strings describing the new records that will be added to idf
+        position: if None, will be added at the end, else will be added at asked position
+            (using 'insert' python builtin function for lists)
+
+        Returns
+        -------
+        added records
+        """
+        # create records, using under construction
+        created_records = []
+        with self.is_under_construction():
+            for new_str in records_str:
+                records, comments_l = self._dev_parse(
+                    io.StringIO(new_str))  # comments not used (only for global idf parse)
+                assert len(records) == 1, "Wrong number of records created: %i" % len(records)
+                new_record = records[0]
+                created_records.append(self._dev_add_naive_record(new_record, position=position))
+
+        return created_records
+
+    # remove records
+    @clear_cache
+    def remove(self, record, raise_if_pointed=True):
+        """
+        Parameters
+        ----------
+        record: record
+        raise_if_pointed if True, will raise IsPointedError if the deleted object is pointed by other records
+
+        Raises
+        ------
+        IsPointedError
+        """
+        self.batch_remove([record], raise_if_pointed=raise_if_pointed)
+
+    @clear_cache
+    def batch_remove(self, records, raise_if_pointed=True):
+        """
+        removes records from idf
+
+        Parameters
+        ----------
+        records: list of records
+        raise_if_pointed: if True, will raise IsPointedError if the deleted object is pointed by other records
+
+        Raises
+        ------
+        IsPointedError
+        """
+        # remove all
+        with self.is_under_construction():
+            for record in records:
+                # check if record is pointed, if asked
+                pointing_links_l = record._get_pointing_links()
+                if len(pointing_links_l) > 0 and raise_if_pointed:
+                    raise IsPointedError(
+                        "Can't remove record if other records are pointing to it. "
+                        "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
+                        % [o for (o, i) in pointing_links_l]
+                    )
+
+                # delete obsolete attributes
+                record._neutralize()
+
+                # remove from idf
+                index = self._records.index(record)
+                del self._records[index]
+
+    # optimization
+    @contextmanager
+    def is_under_construction(self):
+        """
+        Allows the user to deactivate new reference checks while adding records. The whole idf is checked afterwards.
+        This allows to construct idfs more efficiently.
+        """
+        self._constructing_mode_counter += 1
+        yield
+        self._constructing_mode_counter -= 1
+        if self._constructing_mode_counter == 0:
+            self._check_duplicate_references()
+
+    # introspection
+    def has_record(self, record):
+        return record in self._records
+
+    def get_info(self, sort_by_group=False, detailed=False):
+        """
+        Arguments
+        ---------
+        sort_by_group: will sort record descriptors by group
+        detailed: will give all record descriptors' associated tags
+        Returns
+        -------
+        a text describing the information on record contained in idd file
+        """
+
+        # rds: records descriptors
+        def _get_rds_info(_ods, _line_start=""):
+            _msg = ""
+            for _rd in sorted(_ods, key=lambda x: x.table_ref):
+                _msg += "\n%s%s" % (_line_start, _rd.table_ref)
+                if detailed:
+                    for _tag in _rd.tags:
+                        _msg += "\n%s\t* %s: %s" % (_line_start, _tag, _rd.get_tag(_tag))
+            return _msg
+
+        rds_refs_set = set([record.get_table_ref() for record in self._records])
+        name = "Idf: '%s'" % self._dev_path
+        msg = "%s\n%s\n%s" % ("-" * len(name), name, "-" * len(name))
+        if sort_by_group:
+            for group_name in self._dev_idd.group_names:
+                ods_l = []
+                for od in self._dev_idd.get_record_descriptors_by_group(group_name):
+                    if od.table_ref in rds_refs_set:
+                        ods_l.append(od)
+                if len(ods_l) > 0:
+                    msg += "\nGroup - %s" % group_name
+                    msg += _get_rds_info(ods_l, _line_start="\t")
+        else:
+            msg += _get_rds_info([self._dev_idd.get_record_descriptor(od_ref) for od_ref in rds_refs_set])
+
+        return msg
+
+    # export
+    def copy(self, add_copyright=True):
+        content = self.to_str(add_copyright=add_copyright)
+        return self.__class__(content, self.idd, encoding=self._encoding)
 
     def to_str(self, style=None, add_copyright=True, sort=True, with_chapters=True):
         if style is None:
@@ -370,7 +573,7 @@ class Idf(CachedMixin):
 
         # prepare records content [(table_ref, record_str), ...]
         formatted_records = [
-            (obj.get_table().ref, "\n%s" % obj.to_str(style="idf", idf_style=style)) for obj in self._records
+            (obj.get_table_ref(), "\n%s" % obj.to_str(style="idf", idf_style=style)) for obj in self._records
         ]
 
         # sort if asked
@@ -403,145 +606,3 @@ class Idf(CachedMixin):
         finally:
             if is_path:
                 f.close()
-
-    def copy(self, add_copyright=True):
-        content = self.to_str(add_copyright=add_copyright)
-        return self.__class__(content, self.idd, encoding=self._encoding)
-
-    @clear_cache
-    def add(self, record_str_s, position=None):
-        """
-        Adds new record to the idf, at required position.
-
-        Arguments
-        ---------
-        record_str_s: string describing the new record(s) that will be added to idf
-        position: if None, will be added at the end, else will be added at asked position
-            (using 'insert' python builtin function for lists)
-        position
-        """
-        # transform to iterable
-        if isinstance(record_str_s, str):
-            record_str_s = [record_str_s]
-
-        # create records, using under construction
-        created_records = []
-        with self.under_construction:
-            for new_str in record_str_s:
-                records, comments_l = self._dev_parse(
-                    io.StringIO(new_str))  # comments not used (only for global idf parse)
-                assert len(records) == 1, "Wrong number of records created: %i" % len(records)
-                new_record = records[0]
-                created_records.append(self.add_naive_record(new_record, position=position))
-
-        return created_records[0] if (len(created_records) == 1) else created_records
-
-    @clear_cache
-    def remove(self, record_s, raise_if_pointed=True):
-        """
-        removes record from idf.
-        This record must not be pointed by other records, or removal will fail
-
-        Parameters
-        ----------
-        record_s: record or list of records
-        raise_if_pointed: if True, will raise IsPointedError if the deleted object is pointed
-
-        Raises
-        ------
-        IsPointedError
-        """
-        # transform to iterable if only one record
-        if isinstance(record_s, Record):
-            record_s = [record_s]
-
-        # remove all
-        with self.under_construction:
-            for record in record_s:
-                # check if record is pointed, if asked
-                pointing_links_l = record._get_pointing_links()
-                if len(pointing_links_l) > 0 and raise_if_pointed:
-                    raise IsPointedError(
-                        "Can't remove record if other records are pointing to it. "
-                        "Pointing records: '%s'\nYou may use record.unlink_pointing_records() to remove all pointing."
-                        % [o for (o, i) in pointing_links_l]
-                    )
-
-                # delete obsolete attributes
-                record._neutralize()
-
-                # remove from idf
-                index = self._records.index(record)
-                del self._records[index]
-
-    def one(self, filter_by=None):
-        return self.select().one(filter_by=filter_by)
-
-    def select(self, filter_by=None):
-        return Queryset(self._records).select(filter_by=filter_by)
-
-    @cached
-    def select_all_table(self, table_ref):
-        """
-        purpose: this function is cached
-        """
-        # todo: should we change name ??
-        return Queryset(self._records).select(lambda x: x.get_table().ref == table_ref)
-
-    def get_info(self, sort_by_group=False, detailed=False):
-        """
-        Arguments
-        ---------
-        sort_by_group: will sort record descriptors by group
-        detailed: will give all record descriptors' associated tags
-        Returns
-        -------
-        a text describing the information on record contained in idd file
-        """
-
-        # rds: records descriptors
-        def _get_rds_info(_ods, _line_start=""):
-            _msg = ""
-            for _rd in sorted(_ods, key=lambda x: x.table_ref):
-                _msg += "\n%s%s" % (_line_start, _rd.table_ref)
-                if detailed:
-                    for _tag in _rd.tags:
-                        _msg += "\n%s\t* %s: %s" % (_line_start, _tag, _rd.get_tag(_tag))
-            return _msg
-
-        rds_refs_set = set([record.get_table().ref for record in self._records])
-        name = "Idf: '%s'" % self._dev_path
-        msg = "%s\n%s\n%s" % ("-" * len(name), name, "-" * len(name))
-        if sort_by_group:
-            for group_name in self._dev_idd.group_names:
-                ods_l = []
-                for od in self._dev_idd.get_record_descriptors_by_group(group_name):
-                    if od.table_ref in rds_refs_set:
-                        ods_l.append(od)
-                if len(ods_l) > 0:
-                    msg += "\nGroup - %s" % group_name
-                    msg += _get_rds_info(ods_l, _line_start="\t")
-        else:
-            msg += _get_rds_info([self._dev_idd.get_record_descriptor(od_ref) for od_ref in rds_refs_set])
-
-        return msg
-
-    def get_comment(self):
-        return self._head_comments
-
-    @clear_cache
-    def set_comment(self, value):
-        self._head_comments = str(value).strip()
-
-    @property
-    @contextmanager
-    def under_construction(self):
-        """
-        Allows the user to deactivate new reference checks while adding records. The whole idf is checked afterwards.
-        This allows to construct idfs more efficiently.
-        """
-        self._constructing_mode_counter += 1
-        yield
-        self._constructing_mode_counter -= 1
-        if self._constructing_mode_counter == 0:
-            self._check_duplicate_references()
