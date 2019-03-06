@@ -43,14 +43,37 @@ class Queryset:
         if records is None:
             records = []
 
-        # ensure unique
-        self._records = list(unique_ever_seen(records))  # !! MUST NEVER BE MODIFIED !!
+        # ensure unique, sort, make un-mutable
+        self._records = tuple(sorted(unique_ever_seen(records)))
 
-        # ensure correct table ref
+        # ensure correct table
         if len({r.get_table() for r in self._records}.difference({self._table})) > 0:
             raise RuntimeError(
                 f"queryset contains records that belong to other table than {self.get_table_ref()}"
             )
+        
+    # python magic
+    def __getitem__(self, item):
+        return self._records[item]
+
+    def __iter__(self):
+        return iter(self._records)
+
+    def __str__(self):
+        return "<Queryset of %s: %s records>" % (self.get_table_ref(), str(len(self._records)))
+
+    def __len__(self):
+        return len(self._records)
+
+    @clear_cache
+    def __add__(self, other):
+        """
+        Add new query set to query set (only new records will be added since uniqueness is ensured in __init__).
+        """
+        return Queryset(list(self) + list(other))
+
+    def __eq__(self, other):
+        return set(self) == set(other)
 
     def get_table(self):
         return self._table
@@ -63,7 +86,7 @@ class Queryset:
         select a sub queryset
         """
         # !! we copy list so it can't change in the future !!
-        iterator = list(self._records) if filter_by is None else list(filter(filter_by, self._records))
+        iterator = self._records if filter_by is None else filter(filter_by, self._records)
         return Queryset(self._table, iterator)
 
     def one(self, filter_by=None):
@@ -81,24 +104,3 @@ class Queryset:
 
         # return record
         return qs[0]
-
-    def __getitem__(self, item):
-        return self._records[item]
-
-    def __iter__(self):
-        return iter(self._records)
-
-    def __str__(self):
-        return "<Queryset of %s: %s items>" % (self.get_table_ref(), str(len(self._records)))
-
-    def __len__(self):
-        return len(self._records)
-
-    @clear_cache
-    def __add__(self, other):
-        """
-        Add new query set to query set (only new records will be added since uniqueness is ensured in __init__).
-        """
-        if self._table is not other.get_table():
-            raise RuntimeError("can't add two querysets that don't belong to same table")
-        return Queryset(list(self) + list(other))

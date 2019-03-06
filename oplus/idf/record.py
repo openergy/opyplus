@@ -8,7 +8,6 @@ from .style import style_library, IdfStyle
 from .multi_table_queryset import MultiTableQueryset
 
 
-
 class Record(CachedMixin):
     _frozen = False  # for __setattr__ management
 
@@ -21,57 +20,33 @@ class Record(CachedMixin):
     _RAW_VALUE = 0
     _COMMENT = 1
 
-    def __init__(self, table, head_comment=None, tail_comment=None):
+    def __init__(self, table, data=None, comments=None, head_comment=None, tail_comment=None):
+        """
+        Parameters
+        ----------
+        table
+        data: dict, default {}
+            key: index_or_ref, value: raw value or value
+        comments: dict, default {}
+            key: index_or_ref, value: raw value or value
+        head_comment: str, default ""
+        tail_comment: str, default ""
+        """
         self._table = table
-        self._head_comment = head_comment
-        self._tail_comment = tail_comment
+        self._head_comment = "" if head_comment is None else str(head_comment)
+        self._tail_comment = "" if tail_comment is None else str(tail_comment)
+
+
         self._fields_l = []  # [[raw_value, comment], ...]
 
         self._descriptor = self.get_idf()._dev_idd.get_record_descriptor(table.get_ref())
         self._frozen = True
-        
+
+    # manage obsolescence
     def _check_obsolescence(self):
         if self._table is None:
             raise ObsoleteRecordError(
                 "current record is obsolete (has been removed from it's idf), can't use it)")
-
-    def _cleanup_and_check_raw_value(self, fieldd, raw_value):
-        try:
-            return fieldd.cleanup_and_check_raw_value(raw_value)
-        except Exception as e:
-            raise ValueError(
-                f"Error while parsing field '{fieldd.name}', value '{raw_value}'. "
-                f"Table: {self.get_table_ref()}. Error message:\n{str(e)}."
-            ) from None
-
-    @property
-    def _dev_fields_nb(self):
-        self._check_obsolescence()
-        return len(self._fields_l)
-
-    def _get_name(self):
-        self._check_obsolescence()
-        field0_name = self._descriptor.get_field_name(0)
-        if (field0_name is None) or ("name" not in field0_name.lower()):
-            return None
-        return self._get_value(0)
-
-    @clear_cache
-    def _dev_clear_pointing_fields(self, only_on_pointed_record=None):
-        """
-        Removes all fields that point
-
-        Parameters
-        ----------
-        only_on_pointed_record: record, default None
-            if not None, only fields pointing on only_on_pointed_record will be cleared
-        """
-        self._check_obsolescence()
-        for i in range(len(self._fields_l)):
-            fieldd = self._descriptor.get_field_descriptor(i)
-            if fieldd.detailed_type == "object-list":
-                if (only_on_pointed_record is None) or (self._get_value(i) is only_on_pointed_record):
-                    self._set_value(i, None)
 
     @clear_cache
     def _neutralize(self):
@@ -82,6 +57,23 @@ class Record(CachedMixin):
 
         self._table = None
         self._descriptor = None
+
+    # get info
+    @property
+    def _dev_fields_nb(self):
+        # todo: document
+        self._check_obsolescence()
+        return max(
+            len(self._descriptor.field_descriptors_l),
+            max(self._data.keys())
+        )
+
+    # def _get_name(self):
+    #     self._check_obsolescence()
+    #     field0_name = self._descriptor.get_field_name(0)
+    #     if (field0_name is None) or ("name" not in field0_name.lower()):
+    #         return None
+    #     return self._get_value(0)
 
     def _get_field_index(self, field_index_or_ref):
         """
@@ -127,26 +119,58 @@ class Record(CachedMixin):
             raise NotImplementedError("Unknown field type : '%s'." % fieldd.detailed_type)
         return value
 
-    @cached
-    def _get_pointing_links(self, field_index_or_name=None):
-        index_l = (
-            range(len(self._fields_l)) if field_index_or_name is None else [self._get_field_index(field_index_or_name)]
-        )
+    def _dev_iter_raw_values(self):
+        return (field[0] for field in self._fields_l)
 
-        all_pointing_links = []
-        for i in index_l:
-            fieldd = self._descriptor.get_field_descriptor(i)
-            if fieldd.detailed_type != "reference":
-                continue
-            all_pointing_links.extend(self.get_idf()._dev_get_pointing_links(self.get_table_ref(), i, self.get_raw_value(i)))
-
-        return all_pointing_links
+    # set fields
+    def _cleanup_and_check_raw_value(self, fieldd, raw_value):
+        try:
+            return fieldd.cleanup_and_check_raw_value(raw_value)
+        except Exception as e:
+            raise ValueError(
+                f"Error while parsing field '{fieldd.name}', value '{raw_value}'. "
+                f"Table: {self.get_table_ref()}. Error message:\n{str(e)}."
+            ) from None
 
     @clear_cache
-    def _set_value(self, field_index_or_name, raw_value_or_value, raise_if_pointed=False):
+    def _set_value(self, field_index_or_ref, raw_value_or_value, manage_pointed="yes"):
+        """
+        Parameters
+        ----------
+        field_index_or_ref
+        raw_value_or_value
+        manage_pointed: str, default "yes"
+            "yes": unlink/re-link pointing
+            "no": don't check (!! for initial loading only)
+            "raise": raise if pointed
+        """
+        # prepare
+        field_index = self._get_field_index(field_index_or_ref)
+        field_descriptor = self._descriptor.get_field_descriptor(field_index)
+
+        # if reference field is set, must update pointing (depending on manage_pointed option)
+        pointing_links_to_update = []
+
+        # transform to raw_value
+        if field_descriptor.detailed_type in field_descriptor.BASIC_FIELDS:
+            # basic type: we already got raw value
+            raw_value = raw_value_or_value
+        elif field_descriptor.detailed_type == "reference":
+            pointing_links_to_update = self._get_pointing_links(field_index)
+            if (manage_pointed == "raise") and len(pointing_links_to_update) > 0:
+                raise IsPointedError(
+                    "Set field is already pointed by another record. "
+                    "First remove this record, or disable 'raise_if_pointed' argument."
+                )
+
+            # remove all pointing
+            pointing_links_l = self._get_pointing_links(field_index)
+
+    @clear_cache
+    def _set_value(self, field_index_or_ref, raw_value_or_value, raise_if_pointed=False):
         self._check_obsolescence()
 
-        field_index = self._get_field_index(field_index_or_name)
+        field_index = self._get_field_index(field_index_or_ref)
         fieldd = self._descriptor.get_field_descriptor(field_index)
 
         if fieldd.detailed_type in fieldd.BASIC_FIELDS:  # basic type
@@ -201,7 +225,7 @@ class Record(CachedMixin):
                 # check if correct idf
                 assert value.get_idf() is self.get_idf(), \
                     "Given record does not belong to correct idf: " \
-                    f"'{value.get_idf()._dev_path}' instead of '{self.get_idf()._dev_path}'."
+                        f"'{value.get_idf()._dev_path}' instead of '{self.get_idf()._dev_path}'."
 
                 # check that new record ref can be set, and find pointed index
                 pointed_index = None
@@ -219,7 +243,7 @@ class Record(CachedMixin):
                             break
                 assert pointed_index is not None, \
                     f"Wrong value ref: '{value.get_table_ref()}' for field '{field_index}' " \
-                    f"of record descriptor ref '{self.get_table_ref()}'. Can't set record."
+                        f"of record descriptor ref '{self.get_table_ref()}'. Can't set record."
 
                 # get raw value
                 raw_value = value.get_raw_value(pointed_index)
@@ -231,6 +255,39 @@ class Record(CachedMixin):
                 self._fields_l[field_index][self._RAW_VALUE] = raw_value
         else:
             raise ValueError("Unknown detailed type: '%s'." % fieldd.detailed_type)
+
+    # pointing
+    @clear_cache
+    def _dev_clear_pointing_fields(self, only_on_pointed_record=None):
+        """
+        Removes all fields that point
+
+        Parameters
+        ----------
+        only_on_pointed_record: record, default None
+            if not None, only fields pointing on only_on_pointed_record will be cleared
+        """
+        self._check_obsolescence()
+        for i in range(len(self._fields_l)):
+            fieldd = self._descriptor.get_field_descriptor(i)
+            if fieldd.detailed_type == "object-list":
+                if (only_on_pointed_record is None) or (self._get_value(i) is only_on_pointed_record):
+                    self._set_value(i, None)
+
+    @cached
+    def _get_pointing_links(self, field_index_or_name=None):
+        index_l = (
+            range(len(self._fields_l)) if field_index_or_name is None else [self._get_field_index(field_index_or_name)]
+        )
+
+        all_pointing_links = []
+        for i in index_l:
+            fieldd = self._descriptor.get_field_descriptor(i)
+            if fieldd.detailed_type != "reference":
+                continue
+            all_pointing_links.extend(self.get_idf()._dev_get_pointing_links(self.get_table_ref(), i, self.get_raw_value(i)))
+
+        return all_pointing_links
 
     # ------------------------------------------------ api -------------------------------------------------------------
     # python magic
@@ -252,14 +309,14 @@ class Record(CachedMixin):
     def __getattr__(self, item):
         return self._get_value(item)
 
-    def __setitem__(self, name, value):
+    def __setitem__(self, index, value):
         """
         Arguments
         ---------
-        name: field index
+        index: field index
         value: raw, parsed or record value (see get_value documentation)
         """
-        self._set_value(name, value)
+        self._set_value(index, value)
 
     def __setattr__(self, name, value):
         """
@@ -287,6 +344,9 @@ class Record(CachedMixin):
         Iter through fields of record.
         """
         return (self[i] for i in range(len(self)))
+
+    def __lt__(self, other):
+        return tuple(self._dev_iter_raw_values()) <= tuple(other._dev_iter_raw_values())
 
     def __str__(self):
         return self.to_str(style="console")
