@@ -133,7 +133,7 @@ class Record(CachedMixin):
             ) from None
 
     @clear_cache
-    def _set_value(self, field_index_or_ref, raw_value_or_value, manage_pointed="yes"):
+    def _set_raw_value(self, field_index_or_ref, raw_value_or_value, manage_pointed="yes"):
         """
         Parameters
         ----------
@@ -153,18 +153,25 @@ class Record(CachedMixin):
 
         # transform to raw_value
         if field_descriptor.detailed_type in field_descriptor.BASIC_FIELDS:
-            # basic type: we already got raw value
+            # basic type: we already have raw value
             raw_value = raw_value_or_value
         elif field_descriptor.detailed_type == "reference":
+            # find pointing links
             pointing_links_to_update = self._get_pointing_links(field_index)
+
+            # raise if asked and relevant
             if (manage_pointed == "raise") and len(pointing_links_to_update) > 0:
                 raise IsPointedError(
                     "Set field is already pointed by another record. "
-                    "First remove this record, or disable 'raise_if_pointed' argument."
+                    "First remove this record, or choose yes or no as manage_pointed option."
                 )
 
-            # remove all pointing
-            pointing_links_l = self._get_pointing_links(field_index)
+            # reference: we already have raw value
+            raw_value = raw_value_or_value
+#        elif field_descriptor.detailed_type == "object-list":
+
+
+
 
     @clear_cache
     def _set_value(self, field_index_or_ref, raw_value_or_value, raise_if_pointed=False):
