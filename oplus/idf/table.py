@@ -3,7 +3,7 @@ from .record import Record
 
 class Table:
     def __init__(self, table_descriptor, idf):
-        self._descriptor = table_descriptor
+        self._dev_descriptor = table_descriptor
         self._idf = idf
         self._records = dict()
 
@@ -34,6 +34,10 @@ class Table:
             added_records.append(record)
         
         return added_records
+
+    # --------------------------------------------- public api ---------------------------------------------------------
+    def get_ref(self):
+        return self._dev_descriptor.table_ref
 
         
 

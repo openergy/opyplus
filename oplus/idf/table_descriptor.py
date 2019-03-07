@@ -136,21 +136,19 @@ class TableDescriptor:
         if value is not None:
             self._tags[tag_ref].append(value)
 
-    def apend_field_descriptor(self, field_descriptor):
+    def append_field_descriptor(self, field_descriptor):
         """
         Adds a new field descriptor.
         """
         # append
         self._field_descriptors.append(field_descriptor)
 
-    def get_field_descriptor(self, index_or_ref):
+    def get_field_descriptor(self, index):
         """
         Returns
         -------
         asked field descriptor.
         """
-        index = self.get_field_index(index_or_ref)
-
         if index >= len(self._field_descriptors) and (self._extensible_info[0] is not None):  # extensible record, find modulo
             cycle_start, cycle_len, _ = self._extensible_info
             index = cycle_start + ((index - cycle_start) % cycle_len)

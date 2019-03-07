@@ -96,7 +96,7 @@ class Idf(CachedMixin):
         """
         Parameters
         ----------
-        records: all records that have modified
+        modified_records: all records that have modified
         """
         # todo
         pass

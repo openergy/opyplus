@@ -6,7 +6,7 @@ from .exceptions import ObsoleteRecordError, IsPointedError, BrokenIdfError
 from .cache import CachedMixin, clear_cache, cached
 from .style import style_library, IdfStyle
 from .multi_table_queryset import MultiTableQueryset
-
+from .record_link import RecordLink
 
 class Record:
     _frozen = False  # for __setattr__ management
@@ -32,6 +32,37 @@ class Record:
         # todo: perform data checks
 
         self._frozen = True
+
+    def _dev_set_value_inert(self, field_index_or_ref, value):
+        # prepare index
+        index = self._table._dev_descriptor.get_field_index(field_index_or_ref)
+        
+        # get field descriptor
+        field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
+        
+        # prepare value
+        value = field_descriptor.deserialize(value)
+
+        # manage if link
+        if isinstance(value, RecordLink):
+            # de-activate current link if any
+            current_link = self._data.get(index)
+            if current_link is not None:
+                current_link.deactivate()
+                
+        # if None check ok and remove
+        if value is None:
+            # todo: check if ok
+            
+            # remove
+            del self._data[index]
+        # else remove
+        else:
+            self._data[index] = value
+        
+        
+        
+
 
     def _dev_activate_links(self):
         pass

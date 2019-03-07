@@ -192,7 +192,7 @@ class Idd:
 
                     # store
                     fieldd = FieldDescriptor(fieldd_type, name=name)
-                    rd.apend_field_descriptor(fieldd)
+                    rd.append_field_descriptor(fieldd)
                     continue
 
                 # unnamed field descriptors
@@ -205,7 +205,7 @@ class Idd:
 
                         # store
                         fieldd = FieldDescriptor(fieldd_type)
-                        rd.apend_field_descriptor(fieldd)
+                        rd.append_field_descriptor(fieldd)
                     continue
 
                 # rd: record descriptor

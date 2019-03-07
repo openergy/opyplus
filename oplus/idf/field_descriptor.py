@@ -1,6 +1,6 @@
 import re
 import unidecode
-import copy
+from .record_link import RecordLink
 
 
 spaces_pattern = re.compile(r"\s+")
@@ -39,16 +39,66 @@ class FieldDescriptor:
 
         self._detailed_type = None
 
-    def copy(self, deep=False):
-        """ Return identical field descriptor """
-        # field = FieldDescriptor(self.basic_type, name=self.name)
-        # field._tags_d = self._tags_d.copy()
-        # field._detailed_type = self._detailed_type
-        # return field
-        if deep:
-            copy.copy(self)
-        else:
-            return copy.deepcopy(self)
+    def deserialize(self, value):
+        # todo: make validation errors
+        # manage none
+        if value is None:
+            return None
+        
+        # prepare if string
+        if isinstance(value, str):
+            # change multiple spaces to mono spaces
+            value = re.sub(spaces_pattern, lambda x: " ", value.strip())
+            
+            # see if still not empty
+            if value == "":
+                return None
+
+            # make ASCII compatible
+            value = unidecode.unidecode(value)
+
+            # make lower case if not retaincase
+            if not self.has_tag("retaincase"):
+                value = value.lower()
+
+            # check not too big
+            if len(value) <= 100:
+                # todo: manage errors properly
+                raise RuntimeError("Field has more than 100 characters which is the limit.")
+            
+        # manage numeric types
+        if self.detailed_type in ("integer", "real"):
+            # auto-calculate and auto-size
+            if value in ("autocalculate", "autosize"):
+                return value
+            
+            if self.detailed_type == "integer":
+                return int(value)
+            
+            return float(value)
+        
+        # manage simple string types
+        if self.detailed_type in ("alpha", "choice", "node", "external-list", "reference"):
+            # ensure it was str
+            if not isinstance(value, str):
+                # todo: manage errors properly
+                raise RuntimeError("should be str")
+            return value
+
+        # manage links (object-list)
+        if self.detailed_type == "object-list":
+            reference = self.get_tag("object-list")
+            return RecordLink(reference, value)
+    
+        raise RuntimeError("should not be here")
+
+
+
+
+
+
+
+
 
     @property
     def tags(self):
@@ -125,7 +175,7 @@ class FieldDescriptor:
         to determine detailed type.
         Returns
         -------
-        "integer", "real", "alpha", "choice", "reference", "object-list", "external_list", "node"
+        "integer", "real", "alpha", "choice", "reference", "object-list", "external-list", "node"
         """
         if self._detailed_type is None:
             if "reference" in self._tags:
