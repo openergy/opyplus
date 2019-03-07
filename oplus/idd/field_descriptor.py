@@ -35,7 +35,7 @@ class FieldDescriptor:
         self.basic_type = field_basic_type  # A -> alphanumeric, N -> numeric
         self.name = name
         self.ref = None if name is None else var_name_to_ref(name)
-        self._tags_d = {}
+        self._tags = {}
 
         self._detailed_type = None
 
@@ -52,52 +52,24 @@ class FieldDescriptor:
 
     @property
     def tags(self):
-        return sorted(self._tags_d)
+        return sorted(self._tags)
 
-    def add_tag(self, ref, value=None):
-        if ref not in self._tags_d:
-            self._tags_d[ref] = []
+    def append_tag(self, ref, value=None):
+        if ref not in self._tags:
+            self._tags[ref] = []
         if value is not None:
-            self._tags_d[ref].append(value)
-
-    def remove_tag(self, ref, errors="raise"):
-        """ Remove tag
-
-        Parameters
-        ----------
-        ref: str:
-            tag ref to remove
-        errors: str, {"ignore", "raise"}, default "raise"
-            Whether or not to raise error if ref not in field tags
-
-        Notes
-        -----
-        Raise ValueError at the end for speed up - if remove_tag is called
-        many times in a row, then does not as many times the test on whether
-        or not the 'errors' argument has a valid value.
-        MIGHT NOT BE NECESSARY
-
-        Returns
-        -------
-
-        """
-        if errors == "raise":
-            self._tags_d.pop(ref)
-        elif errors == "ignore":
-            self._tags_d.pop(ref, None)
-        else:
-            raise ValueError(f"'errors' argument should be in ('ignore', 'raise')")
+            self._tags[ref].append(value)
 
     def get_tag(self, ref, raw=False):
         """
         Returns tag belonging to field descriptor. If 'note', will be string, else list of elements.
         """
         if ref == "note" and not raw:  # memo is for object descriptors
-            return " ".join(self._tags_d[ref])
-        return self._tags_d[ref]
+            return " ".join(self._tags[ref])
+        return self._tags[ref]
 
     def has_tag(self, ref):
-        return ref in self._tags_d
+        return ref in self._tags
 
     def cleanup_and_check_raw_value(self, unsafe_raw_value):
         # manage None
@@ -156,15 +128,15 @@ class FieldDescriptor:
         "integer", "real", "alpha", "choice", "reference", "object-list", "external_list", "node"
         """
         if self._detailed_type is None:
-            if "reference" in self._tags_d:
+            if "reference" in self._tags:
                 self._detailed_type = "reference"
-            elif "type" in self._tags_d:
-                self._detailed_type = self._tags_d["type"][0].lower()  # idd is not very rigorous on case
-            elif "key" in self._tags_d:
+            elif "type" in self._tags:
+                self._detailed_type = self._tags["type"][0].lower()  # idd is not very rigorous on case
+            elif "key" in self._tags:
                 self._detailed_type = "choice"
-            elif "object-list" in self._tags_d:
+            elif "object-list" in self._tags:
                 self._detailed_type = "object-list"
-            elif "external-list" in self._tags_d:
+            elif "external-list" in self._tags:
                 self._detailed_type = "external-list"
             elif self.basic_type == "A":
                 self._detailed_type = "alpha"
@@ -183,8 +155,8 @@ class FieldDescriptor:
         elif self.basic_type != other.basic_type:
             return False
         elif (
-            len(self._tags_d) != len(other._tags_d)
-            or sorted(self._tags_d.items()) != sorted(self._tags_d.items())
+                len(self._tags) != len(other._tags)
+                or sorted(self._tags.items()) != sorted(self._tags.items())
         ):
             return False
         else:

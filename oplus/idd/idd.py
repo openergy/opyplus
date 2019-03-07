@@ -24,7 +24,7 @@ from collections import OrderedDict
 from oplus.configuration import CONF
 
 from .field_descriptor import FieldDescriptor
-from .record_descriptor import RecordDescriptor
+from .table_descriptor import TableDescriptor
 
 
 logger = logging.getLogger(__name__)
@@ -86,14 +86,16 @@ class Idd:
 
         # rd: record descriptor, linkd: link descriptor
         # istr: insensitive string
-        self._rds_d = OrderedDict()  # record descriptors {table_lower_ref: rd, ...}
+        self._table_descriptors = OrderedDict()
+        # todo: how do we manage links
         self._pointed_rd_linkds_d = {}  # linkd: link descriptor {link_lower_name: [(rd, field_index), ...], ...}
         self._pointing_rd_linkds_d = {}  # {link_lower_name: [(rd, field_index), ...], ...}
-        self._groups_d = OrderedDict()  # {group_lower_name: {name: group_name, record_descriptors: [rd, rd, ...]}
+        #self._groups_d = OrderedDict()  # {group_lower_name: {name: group_name, record_descriptors: [rd, rd, ...]}
 
         self._parse()
         self._post_init()
         self._link()
+        # todo: check table_descriptor uniqueness
 
     def pointed_links(self, link_insensitive_name):
         """
@@ -131,12 +133,12 @@ class Idd:
             return []
         return self._pointing_rd_linkds_d[link_lower_name]
 
-    @property
-    def group_names(self):
-        """
-        All group names.
-        """
-        return [g["name"] for g in self._groups_d]
+    # @property
+    # def group_names(self):
+    #     """
+    #     All group names.
+    #     """
+    #     return [g["name"] for g in self._groups_d]
 
     def _parse(self):
         """ Parses idd file."""
@@ -153,7 +155,7 @@ class Idd:
                 match = re.search(r"^\\group (.+)$", line)
                 if match is not None:
                     group_name = match.group(1).strip()
-                    self._groups_d[group_name.lower()] = dict(name=group_name, record_descriptors=[])
+                    # self._groups_d[group_name.lower()] = dict(name=group_name, record_descriptors=[])
 
                     # re-initialize
                     rd, fieldd = None, None
@@ -176,7 +178,7 @@ class Idd:
                     if fieldd is None:  # we are not in a field -> record descriptor comment
                         rd.add_tag(tag_ref, tag_value)
                     else:  # we are in a field
-                        fieldd.add_tag(tag_ref, tag_value)
+                        fieldd.append_tag(tag_ref, tag_value)
                     continue
 
                 # named field descriptor
@@ -190,7 +192,7 @@ class Idd:
 
                     # store
                     fieldd = FieldDescriptor(fieldd_type, name=name)
-                    rd.add_field_descriptor(fieldd)
+                    rd.apend_field_descriptor(fieldd)
                     continue
 
                 # unnamed field descriptors
@@ -203,7 +205,7 @@ class Idd:
 
                         # store
                         fieldd = FieldDescriptor(fieldd_type)
-                        rd.add_field_descriptor(fieldd)
+                        rd.apend_field_descriptor(fieldd)
                     continue
 
                 # rd: record descriptor
@@ -214,10 +216,10 @@ class Idd:
                     assert group_name is not None, "No group name."
 
                     # store
-                    rd = RecordDescriptor(table_name, group_name=group_name)
-                    assert rd.table_ref not in self._rds_d, "Record descriptor already registered."
-                    self._rds_d[rd.table_ref.lower()] = rd
-                    self._groups_d[group_name.lower()]["record_descriptors"].append(rd)
+                    rd = TableDescriptor(table_name, group_name=group_name)
+                    assert rd.table_ref not in self._table_descriptors, "Record descriptor already registered."
+                    self._table_descriptors[rd.table_ref.lower()] = rd
+                    # self._groups_d[group_name.lower()]["record_descriptors"].append(rd)
 
                     # re-initialize
                     fieldd = None
@@ -226,15 +228,15 @@ class Idd:
                 # non parsed line - special records
                 # todo: could we manage this more generically ?
                 if ("Lead Input;" in line) or ("Simulation Data;" in line):
-                    # store
-                    table_name = line.strip()[:-1]
-                    # start
-                    rd = RecordDescriptor(table_name)
-                    self._rds_d[rd.table_ref.lower()] = rd
-                    # end
-                    end_name = "End " + table_name
-                    rd = RecordDescriptor(end_name)
-                    self._rds_d[rd.table_ref.lower()] = rd
+                    # # store
+                    # table_name = line.strip()[:-1]
+                    # # start
+                    # rd = TableDescriptor(table_name)
+                    # self._table_descriptors[rd.table_ref.lower()] = rd
+                    # # end
+                    # end_name = "End " + table_name
+                    # rd = TableDescriptor(end_name)
+                    # self._table_descriptors[rd.table_ref.lower()] = rd
 
                     # re-initialize
                     rd, fieldd = None, None
@@ -246,13 +248,13 @@ class Idd:
         """
         enrich info once everything has been completed (for example extensible info)
         """
-        for rd in self._rds_d.values():
+        for rd in self._table_descriptors.values():
             rd.post_init()
 
     def _link(self):
         """ Links record descriptors together. """
-        for rd in self._rds_d.values():
-            for i, fieldd in enumerate(rd.field_descriptors_l):
+        for rd in self._table_descriptors.values():
+            for i, fieldd in enumerate(rd.field_descriptors):
                 if fieldd.has_tag("reference"):
                     for ref_name in fieldd.get_tag("reference"):
                         ref_lower_name = ref_name.lower()
@@ -280,29 +282,17 @@ class Idd:
         ------
         KeyError
         """
-        return self._rds_d[rd_ref.lower()]
+        return self._table_descriptors[rd_ref.lower()]
 
-    def get_record_descriptors_by_group(self, group_insensitive_name):
-        """
-        Returns
-        -------
-        list of record descriptors belonging to a given group.
-        """
-        return self._groups_d[group_insensitive_name.lower()]["record_descriptors"]
+    # def get_record_descriptors_by_group(self, group_insensitive_name):
+    #     """
+    #     Returns
+    #     -------
+    #     list of record descriptors belonging to a given group.
+    #     """
+    #     return self._groups_d[group_insensitive_name.lower()]["record_descriptors"]
 
     @property
-    def record_descriptors(self):
-        return self._rds_d.copy()
+    def table_descriptors(self):
+        return self._table_descriptors
 
-    def __eq__(self, other):
-        if len(self.record_descriptors) != len(other.record_descriptors):
-            return False
-
-        for rd in self.record_descriptors.values():
-            try:
-                if rd != other.get_record_descriptor(rd.table_ref.lower()):
-                    return False
-            except KeyError:
-                return False
-
-        return True
