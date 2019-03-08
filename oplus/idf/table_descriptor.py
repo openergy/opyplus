@@ -112,6 +112,16 @@ class TableDescriptor:
         # store cycle info
         self._extensible_info = (cycle_start, cycle_len, tuple(cycle_patterns))
 
+    def get_hooks_indexes(self):
+        d = {}
+        for i, field_descriptor in enumerate(self.field_descriptors):
+            if "reference" in field_descriptor.tags:
+                for group_ref in field_descriptor.get_tag("reference"):
+                    if group_ref not in d:
+                        d[group_ref] = set()
+                    d[group_ref].add(i)
+        return d               
+
     @property
     def tags(self):
         return sorted(self._tags)

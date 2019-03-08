@@ -1,5 +1,6 @@
 import io
 import itertools
+import collections
 from oplus import CONF  # todo: change conf style ?
 from contextlib import contextmanager
 from oplus.idf.idd import Idd
@@ -8,7 +9,7 @@ from .queryset import Queryset
 from .cache import CachedMixin, cached, clear_cache
 from .record import Record
 from .links_manager import LinksManager
-from .hooks_manager import HooksManager
+from .relations_manager import RelationsManager
 from ..util import get_string_buffer
 from .style import IdfStyle, style_library
 from .exceptions import BrokenIdfError, IsPointedError
@@ -58,6 +59,7 @@ class Idf(CachedMixin):
         self._constructing_mode_counter = 0
         self._dev_idd = self._dev_idd_cls.get_idd(idd_or_path, encoding=encoding)
         # todo: should all tables be loaded ?
+        # todo: order
         self._tables = dict([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
             for table_descriptor in self._dev_idd.table_descriptors.values()
@@ -66,8 +68,7 @@ class Idf(CachedMixin):
         self._dev_path = None
 
         # prepare hooks and links managers
-        self._hooks_manager = HooksManager()
-        self._links_manager = LinksManager()
+        self._relations_manager = RelationsManager()
         
         # parse if relevant
         if path_or_content is not None:
@@ -93,17 +94,27 @@ class Idf(CachedMixin):
         for table_ref, json_data_records in json_data.items():
             # find table
             table = getattr(self, table_ref)
+            
+            # create record (inert)
+            records = table._dev_add_inert(json_data_records)
 
             # add records (inert)
-            added_records.extend(table._dev_add_inert(json_data_records))
+            added_records.extend(records)
 
         # activate hooks
         for r in added_records:
             r._dev_activate_hooks()
+        print(self._relations_manager._hooks)
 
         # activate links
         for r in added_records:
             r._dev_activate_links()
+
+    def _dev_add_hook(self, references, value, target_record):
+        self._relations_manager.add_hooks(references, value, target_record)
+        
+    def _dev_add_link(self, hook_ref, value, source_record):
+        self._relations_manager.add_link(hook_ref, value, source_record)
             
     def _dev_check_references_uniqueness(self, modified_records):
         """
@@ -124,6 +135,10 @@ class Idf(CachedMixin):
             return self._tables[item.lower()]
         except KeyError:
             raise AttributeError(f"No table with reference '{item}'.")
+
+    def to_json_data(self):
+        # todo: code
+        return collections.OrderedDict()
         
     def to_str(self, style=None, add_copyright=True, sort=True, with_chapters=True):
         # todo: sort is now mandatory

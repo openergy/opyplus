@@ -91,10 +91,13 @@ class Idd:
         self._pointed_rd_linkds_d = {}  # linkd: link descriptor {link_lower_name: [(rd, field_index), ...], ...}
         self._pointing_rd_linkds_d = {}  # {link_lower_name: [(rd, field_index), ...], ...}
         #self._groups_d = OrderedDict()  # {group_lower_name: {name: group_name, record_descriptors: [rd, rd, ...]}
+        self._hook_map = {}  # {group_ref: {(table_ref, index), ... }
+
 
         self._parse()
         self._post_init()
         self._link()
+
         # todo: check table_descriptor uniqueness
 
     def pointed_links(self, link_insensitive_name):
@@ -248,8 +251,21 @@ class Idd:
         """
         enrich info once everything has been completed (for example extensible info)
         """
-        for rd in self._table_descriptors.values():
-            rd.post_init()
+        for table_ref, table_descriptor in self._table_descriptors.items():
+            # post_init
+            table_descriptor.post_init()
+
+            # store hooks
+            hooks_indexes = table_descriptor.get_hooks_indexes()  # { reference: {indexes} }
+            for group_ref, indexes in hooks_indexes.items():
+                if group_ref not in self._hook_map:
+                    self._hook_map[group_ref] = set()
+                self._hook_map[group_ref].update({(table_ref, i) for i in indexes})
+
+            # store links
+
+
+
 
     def _link(self):
         """ Links record descriptors together. """

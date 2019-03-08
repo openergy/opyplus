@@ -24,13 +24,19 @@ class Record:
         head_comment: str, default ""
         tail_comment: str, default ""
         """
+        # todo: manage what happens if comment on field > fields_nb (extensible), but no data.
         self._table = table
-        self._data = {} if data is None else data
+        self._data = {}
         self._comments = {} if comments is None else comments
         self._head_comment = "" if head_comment is None else str(head_comment)
         self._tail_comment = "" if tail_comment is None else str(tail_comment)
+
+        if data is not None:
+            for k, v in data.items():
+                self._dev_set_value_inert(k, v)
         
-        # todo: check data and comments
+        # todo: manage comments properly
+
 
     def _dev_set_value_inert(self, field_index_or_ref, value):
         """
@@ -60,7 +66,7 @@ class Record:
                 current_hook.deactivate()
                 
         # if None check ok and remove
-        if value is None:
+        if value is None and index in self._data:
             # todo: check if ok
             
             # remove
@@ -71,12 +77,22 @@ class Record:
             self._data[index] = value
             
     def _dev_activate_hooks(self):
-        pass
-        # todo: iter all data, if is Link, activate it
+        map(
+            lambda value: value.activate(self),
+            filter(
+                lambda value: isinstance(value, Hook),
+                self._data.values()
+            )
+        )
 
     def _dev_activate_links(self):
-        pass
-        # todo: iter all data, if is Link, activate it
+        map(
+            lambda value: value.activate(self),
+            filter(
+                lambda value: isinstance(value, Link),
+                self._data.values()
+            )
+        )
     
     def _get_fields_nb(self):
         return max(max(self._data), len(self._table._dev_descriptor.field_descriptors))
@@ -105,6 +121,9 @@ class Record:
 
         pass
         # todo: don't forget to notify pk update
+    
+    def get_idf(self):
+        return self._table.get_idf()
     
     def to_json_data(self):
         values = collections.OrderedDict(

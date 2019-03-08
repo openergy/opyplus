@@ -63,7 +63,7 @@ class FieldDescriptor:
                 value = value.lower()
 
             # check not too big
-            if len(value) <= 100:
+            if len(value) >= 100:
                 # todo: manage errors properly
                 raise RuntimeError("Field has more than 100 characters which is the limit.")
             
@@ -79,7 +79,7 @@ class FieldDescriptor:
             return float(value)
         
         # manage simple string types
-        if self.detailed_type in ("alpha", "choice", "node", "external-list", "reference"):
+        if self.detailed_type in ("alpha", "choice", "node", "external-list"):
             # ensure it was str
             if not isinstance(value, str):
                 # todo: manage errors properly
@@ -108,7 +108,7 @@ class FieldDescriptor:
 
     @property
     def tags(self):
-        return sorted(self._tags)
+        return self._tags
 
     def append_tag(self, ref, value=None):
         if ref not in self._tags:

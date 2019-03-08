@@ -36,3 +36,6 @@ class Table:
     # --------------------------------------------- public api ---------------------------------------------------------
     def get_ref(self):
         return self._dev_descriptor.table_ref
+
+    def get_idf(self):
+        return self._idf

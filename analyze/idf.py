@@ -8,4 +8,5 @@ if __name__ == "__main__":
         "ExampleFiles",
         "1ZoneEvapCooler.idf")
     )
-    print(idf.to_str())
+    # print(idf.to_str())
+
