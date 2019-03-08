@@ -16,6 +16,7 @@ from ..idf.table_descriptor import table_name_to_ref
 from .idf_parse import parse_idf
 
 
+# todo: it seams that we removed head comments
 class Idf(CachedMixin):
     _dev_record_cls = Record  # for subclassing
     _dev_table_cls = Table  # for subclassing
@@ -78,8 +79,8 @@ class Idf(CachedMixin):
             with buffer as f:
                 json_data = parse_idf(f, style=style)
                 
-        # populate
-        self._dev_populate_from_json_data(json_data)
+            # populate
+            self._dev_populate_from_json_data(json_data)
 
     @classmethod
     def from_json_data(cls, json_data):
@@ -104,7 +105,6 @@ class Idf(CachedMixin):
         for r in added_records:
             r._dev_activate_links()
             
-            
     def _dev_check_references_uniqueness(self, modified_records):
         """
         Parameters
@@ -124,6 +124,63 @@ class Idf(CachedMixin):
             return self._tables[item.lower()]
         except KeyError:
             raise AttributeError(f"No table with reference '{item}'.")
+        
+    def to_str(self, style=None, add_copyright=True, sort=True, with_chapters=True):
+        # todo: sort is now mandatory
+        if style is None:
+            style = style_library[CONF.default_write_style]
+        if isinstance(style, IdfStyle):
+            style = style
+        elif isinstance(style, str):
+            if style in style_library.keys():
+                style = style_library[style]
+            else:
+                style = style_library[CONF.default_write_style]
+        else:
+            style = style_library[CONF.default_write_style]
+            
+        content = ""
+
+        # idf comments
+        # #idf_comment = self._head_comments
+        # if add_copyright:
+        #     msg = self.copyright_comment()
+        #     if msg not in idf_comment:
+        #         idf_comment = msg + "\n" + idf_comment
+
+        # for comment in idf_comment.split("\n")[:-1]:
+        #     content += style.get_head_comment(comment)
+
+        # prepare records content [(table_ref, record_str), ...]
+        # formatted_records = [
+        #     (obj.get_table_ref(), "\n%s" % obj.to_str(style="idf", idf_style=style)) for obj in self._records
+        # ]
+        
+        formatted_records = []
+        for table_ref, table in sorted(self._tables.items()):
+            # todo: manage options
+            # todo: sort
+            formatted_records.extend([r.to_str() for r in table._records.values()])  # iter table instead of using private _records
+            
+        return "\n\n".join(formatted_records)
+
+        # # sort if asked
+        # if sort:
+        #     formatted_records = sorted(formatted_records)
+
+        # todo: do we manage chapters ??
+        # iter
+        # current_ref = None
+        # for (record_ref, record_str) in formatted_records:
+        #     # write chapter title if needed
+        #     if with_chapters and (record_ref != current_ref):
+        #         current_ref = record_ref
+        #         content += "\n" + style.get_chapter_title(current_ref)
+        # 
+        #     # write record
+        #     content += record_str
+
+        # return content
 
 
 

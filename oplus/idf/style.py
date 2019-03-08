@@ -1,4 +1,9 @@
 class IdfStyle:
+    # style
+    comment_column_start = 35
+    tab_len = 4
+    rows_nb = 120
+    
     head_key = None
     chapter_key = None
     record_key = None

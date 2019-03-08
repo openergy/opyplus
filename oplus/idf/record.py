@@ -1,5 +1,6 @@
 import uuid
 import io
+import collections
 
 from ..configuration import CONF
 from .exceptions import ObsoleteRecordError, IsPointedError, BrokenIdfError
@@ -76,6 +77,9 @@ class Record:
     def _dev_activate_links(self):
         pass
         # todo: iter all data, if is Link, activate it
+    
+    def _get_fields_nb(self):
+        return max(max(self._data), len(self._table._dev_descriptor.field_descriptors))
 
     def get_pk(self):
         """
@@ -100,4 +104,93 @@ class Record:
             pass
 
         pass
-        # todo: don't forget to notify pk update   
+        # todo: don't forget to notify pk update
+    
+    def to_json_data(self):
+        values = collections.OrderedDict(
+            sorted([(k, v.serialize() if isinstance(v, (Link, Hook)) else v) for k, v in self._data.items()])
+        )
+        comments = collections.OrderedDict(sorted(self._comments.items()))
+        return collections.OrderedDict(
+            data=values,
+            comments=comments,
+            head_comment=self._head_comment,
+            tail_comment=self._tail_comment
+        )
+    
+    def to_str(self, style="idf", idf_style=None):
+        # todo: manage obsolescence ?
+        #  self._check_obsolescence()
+        json_data = self.to_json_data()
+        
+        if style not in ("idf", "console"):
+            raise AttributeError("Unknown style: '%s'." % style)
+
+        # prepare styling
+        if idf_style is None:
+            idf_style = style_library[CONF.default_write_style]
+        if isinstance(idf_style, IdfStyle):
+            idf_style = idf_style
+        elif isinstance(idf_style, str):
+            if idf_style in style_library.keys():
+                idf_style = style_library[style]
+            else:
+                idf_style = style_library[CONF.default_write_style]
+        else:
+            idf_style = style_library[CONF.default_write_style]
+            
+        # record descriptor ref
+        content = f"{self._table._dev_descriptor.table_name},"
+        spaces_nb = idf_style.comment_column_start - len(content)
+        if spaces_nb < 0:
+            spaces_nb = idf_style.tab_len
+
+        s = ""
+
+        # tail comment if the type is before the record
+        if idf_style.tail_type == "before":
+            if json_data["tail_comment"] != "":
+                s += "\n"
+                for line in json_data["tail_comment"].strip().split("\n"):
+                    s += idf_style.get_tail_record_comment(line)
+
+        # head comment
+        if json_data["head_comment"] != "":
+            comment = " " * spaces_nb + idf_style.get_record_comment(
+                json_data["head_comment"],
+                line_jump=False
+            )
+        else:
+            comment = ""
+        s += content + comment + "\n"
+
+        # fields
+        fields_nb = self._get_fields_nb()
+        for i in range(fields_nb):
+            # value
+            tab = " " * idf_style.tab_len
+            raw_value = json_data["data"].get(i, "")
+            content = f"{tab}{raw_value}{';' if i == fields_nb-1 else ','}"
+            spaces_nb = idf_style.comment_column_start - len(content)
+            if spaces_nb < 0:
+                spaces_nb = idf_style.tab_len
+               
+            # comment 
+            raw_comment = json_data["comments"].get(i, "")
+            if raw_comment != "":
+                comment = " " * spaces_nb + idf_style.get_record_comment(
+                    raw_comment,
+                    line_jump=False
+                )
+            else:
+                comment = ""
+            s += content + comment + "\n"
+
+        # tail comment if the type is after the record
+        if idf_style.tail_type == "after":
+            if json_data["tail_comment"] != "":
+                s += "\n"
+                for line in json_data["tail_comment"].strip().split("\n"):
+                    s += idf_style.get_tail_record_comment(line)
+
+        return s

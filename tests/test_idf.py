@@ -1,10 +1,11 @@
 import unittest
 import os
 
+from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
+
 from oplus import Idf, BrokenIdfError, IsPointedError
 from oplus.idf.record import Record
 from oplus.configuration import CONF
-from oplus.tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 from oplus import ObsoleteRecordError
 
 
@@ -33,10 +34,14 @@ class StaticIdfTest(unittest.TestCase):
                 "ExampleFiles",
                 "1ZoneEvapCooler.idf")
             )
+        pass
 
     @classmethod
     def tearDownClass(cls):
         del cls.idfs_d
+
+    def simple_test(self):
+        self.assertTrue(True)
 
     def test_get_table(self):
         for eplus_version in iter_eplus_versions(self):
