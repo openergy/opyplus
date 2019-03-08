@@ -6,11 +6,11 @@ from .exceptions import ObsoleteRecordError, IsPointedError, BrokenIdfError
 from .cache import CachedMixin, clear_cache, cached
 from .style import style_library, IdfStyle
 from .multi_table_queryset import MultiTableQueryset
-from .record_link import RecordLink
+from .link import Link
+from .hook import Hook
+
 
 class Record:
-    _frozen = False  # for __setattr__ management
-
     def __init__(self, table, data=None, comments=None, head_comment=None, tail_comment=None):
         """
         Parameters
@@ -29,11 +29,13 @@ class Record:
         self._head_comment = "" if head_comment is None else str(head_comment)
         self._tail_comment = "" if tail_comment is None else str(tail_comment)
         
-        # todo: perform data checks
-
-        self._frozen = True
+        # todo: check data and comments
 
     def _dev_set_value_inert(self, field_index_or_ref, value):
+        """
+        inert: links and hooks will not be activated
+        """
+        
         # prepare index
         index = self._table._dev_descriptor.get_field_index(field_index_or_ref)
         
@@ -44,11 +46,17 @@ class Record:
         value = field_descriptor.deserialize(value)
 
         # manage if link
-        if isinstance(value, RecordLink):
+        if isinstance(value, Link):
             # de-activate current link if any
             current_link = self._data.get(index)
             if current_link is not None:
                 current_link.deactivate()
+                
+        # manage if hook
+        if isinstance(value, Hook):
+            current_hook = self._data.get(index)
+            if current_hook is not None:
+                current_hook.deactivate()
                 
         # if None check ok and remove
         if value is None:
@@ -56,13 +64,14 @@ class Record:
             
             # remove
             del self._data[index]
+        
         # else remove
         else:
             self._data[index] = value
-        
-        
-        
-
+            
+    def _dev_activate_hooks(self):
+        pass
+        # todo: iter all data, if is Link, activate it
 
     def _dev_activate_links(self):
         pass
@@ -83,6 +92,12 @@ class Record:
         pass
         # todo: don't forget to notify pk update
     
-    def __setattr__(self, key, value):
+    def __setattr__(self, name, value):
+        try:
+            super().__setattr__(name, value)
+            return
+        except AttributeError:
+            pass
+
         pass
         # todo: don't forget to notify pk update   

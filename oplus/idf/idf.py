@@ -2,16 +2,18 @@ import io
 import itertools
 from oplus import CONF  # todo: change conf style ?
 from contextlib import contextmanager
-from oplus.idd.idd import Idd
+from oplus.idf.idd import Idd
 from .table import Table
 from .queryset import Queryset
 from .cache import CachedMixin, cached, clear_cache
 from .record import Record
-from .record_link_set import RecordLinkSet
+from .links_manager import LinksManager
+from .hooks_manager import HooksManager
 from ..util import get_string_buffer
 from .style import IdfStyle, style_library
 from .exceptions import BrokenIdfError, IsPointedError
-from ..idd.table_descriptor import table_name_to_ref
+from ..idf.table_descriptor import table_name_to_ref
+from .idf_parse import parse_idf
 
 
 class Idf(CachedMixin):
@@ -54,21 +56,30 @@ class Idf(CachedMixin):
         self._encoding = CONF.encoding if encoding is None else encoding
         self._constructing_mode_counter = 0
         self._dev_idd = self._dev_idd_cls.get_idd(idd_or_path, encoding=encoding)
+        # todo: should all tables be loaded ?
         self._tables = dict([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
-            for table_descriptor in self._dev_idd.table_descriptors
+            for table_descriptor in self._dev_idd.table_descriptors.values()
         ])
+        
+        self._dev_path = None
 
-        # prepare record links
-        self._record_links = RecordLinkSet()
+        # prepare hooks and links managers
+        self._hooks_manager = HooksManager()
+        self._links_manager = LinksManager()
+        
+        # parse if relevant
+        if path_or_content is not None:
+            # get string buffer and store path (for info)
+            buffer, path = get_string_buffer(path_or_content, "idf", self._encoding)
+            self._dev_path = path_or_content
 
-        # # get string buffer and store path (for info)
-        # buffer, path = get_string_buffer(path_or_content, "idf", self._encoding)
-        # self._dev_path = path_or_content
-        #
-        # # raw parse and parse
-        # with buffer as f:
-        #     self._records, self._head_comments = self._dev_parse(f, style)
+            # raw parse and parse
+            with buffer as f:
+                json_data = parse_idf(f, style=style)
+                
+        # populate
+        self._dev_populate_from_json_data(json_data)
 
     @classmethod
     def from_json_data(cls, json_data):
@@ -84,13 +95,15 @@ class Idf(CachedMixin):
 
             # add records (inert)
             added_records.extend(table._dev_add_inert(json_data_records))
-            
-        # check uniqueness
-        self._dev_check_references_uniqueness(self, added_records)
+
+        # activate hooks
+        for r in added_records:
+            r._dev_activate_hooks()
 
         # activate links
         for r in added_records:
             r._dev_activate_links()
+            
             
     def _dev_check_references_uniqueness(self, modified_records):
         """

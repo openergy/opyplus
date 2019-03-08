@@ -3,9 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
-def table_name_to_ref(name):
-    return name.replace(":", "_")
+from .util import table_name_to_ref
 
 
 class TableDescriptor:

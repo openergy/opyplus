@@ -1,6 +1,7 @@
 import re
 import unidecode
-from .record_link import RecordLink
+from .link import Link
+from .hook import Hook
 
 
 spaces_pattern = re.compile(r"\s+")
@@ -85,10 +86,15 @@ class FieldDescriptor:
                 raise RuntimeError("should be str")
             return value
 
-        # manage links (object-list)
+        # manage hooks (eplus reference)
+        if self.detailed_type == "reference":
+            references = self.get_tag("reference")
+            return Hook(references, value)
+
+        # manage links (eplus object-list)
         if self.detailed_type == "object-list":
             reference = self.get_tag("object-list")
-            return RecordLink(reference, value)
+            return Link(reference, value)
     
         raise RuntimeError("should not be here")
 

@@ -12,7 +12,7 @@ import collections
 from oplus.configuration import CONF
 from oplus.util import run_subprocess, LoggerStreamWriter
 from oplus import Idf
-from oplus.idd.idd import Idd
+from oplus.idf.idd import Idd
 from oplus.epw import Epw
 from oplus.standard_output import StandardOutputFile
 from oplus.mtd import Mtd
