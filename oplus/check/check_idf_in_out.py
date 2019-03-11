@@ -2,10 +2,10 @@ import os
 import tempfile
 
 from oplus.configuration import CONF
-from oplus import Idf
+from oplus import Epm
 
 
-idf = Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+idf = Epm(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 zone = idf["Zone"].one(lambda x: x["name"] == "Main Zone")
 building = idf["Building"].one(lambda x: x["name"] == "Bldg")
 
@@ -21,7 +21,7 @@ if True:
     zone.set_head_comment("Hello\n\n\nhello!!")
     zone.set_tail_comment("Here is my tail comment\nwritten on several lines...")
     zone.set_field_comment(0, zone.get_field_comment(0) + " **modified with\nline\nbreaks**")
-    print(zone.to_str(style="console"))  # idf, console
+    print(zone.to_idf(style="console"))  # idf, console
 
 # check save_as
 if True:

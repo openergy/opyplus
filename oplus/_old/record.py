@@ -531,7 +531,7 @@ class Record(CachedMixin):
 
     # structure
     def get_idf(self):
-        return self._table.get_idf()
+        return self._table.get_epm()
 
     def get_table(self):
         """

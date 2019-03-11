@@ -4,10 +4,10 @@ from oplus import CONF
 
 RESOURCES_DIR_PATH = os.path.join(os.path.dirname(__file__), "resources")
 
-TESTED_EPLUS_VERSIONS = (
+TESTED_EPLUS_VERSIONS = [
     (8, 5, 0),
     (8, 6, 0)
-)
+]
 
 
 def iter_eplus_versions(test_case):

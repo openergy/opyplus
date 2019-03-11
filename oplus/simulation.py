@@ -11,8 +11,8 @@ import collections
 
 from oplus.configuration import CONF
 from oplus.util import run_subprocess, LoggerStreamWriter
-from oplus import Idf
-from oplus.idf.idd import Idd
+from oplus import Epm
+from oplus.epm.idd import Idd
 from oplus.epw import Epw
 from oplus.standard_output import StandardOutputFile
 from oplus.mtd import Mtd
@@ -101,7 +101,7 @@ def _copy_without_read_only(src, dst):
 
 class Simulation:
     # for subclassing
-    _idf_cls = Idf
+    _idf_cls = Epm
     _idd_cls = Idd
     _epw_cls = Epw
     _standard_output_file_cls = StandardOutputFile
@@ -304,7 +304,7 @@ def run_eplus(idf_or_path, epw_or_path, idd_or_path, dir_path, stdout=None, stde
 
     # save files
     simulation_idf_path = os.path.join(dir_path, CONF.simulation_base_name + ".idf")
-    if isinstance(idf_or_path, Idf):
+    if isinstance(idf_or_path, Epm):
         idf_or_path.save_as(simulation_idf_path)
     else:
         _copy_without_read_only(idf_or_path, simulation_idf_path)

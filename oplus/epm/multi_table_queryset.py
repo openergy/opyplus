@@ -5,8 +5,8 @@ from .queryset import Queryset
 
 
 class MultiTableQueryset:
-    def __init__(self, idf, records):
-        self._idf = idf
+    def __init__(self, epm, records):
+        self._epm = epm
 
         # organize by table (we use ordered dict so __iter__ is deterministic and __eq__ works)
         # to prevent exhausting group iterator too early :
@@ -20,7 +20,7 @@ class MultiTableQueryset:
 
     def __getattr__(self, item):
         # get table
-        table = getattr(self._idf, item)
+        table = getattr(self._epm, item)
         table_lower_ref = table.get_ref().lower()
 
         # return queryset with default if empty

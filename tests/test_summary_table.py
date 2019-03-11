@@ -2,7 +2,7 @@ import unittest
 import os
 import tempfile
 
-from oplus import CONF, Idf, simulate
+from oplus import CONF, Epm, simulate
 
 
 class SummaryTableTest(unittest.TestCase):
@@ -11,7 +11,7 @@ class SummaryTableTest(unittest.TestCase):
 
     def test_summary_table(self):
         with tempfile.TemporaryDirectory() as temp_dir_path:
-            idf = Idf(self.idf_path)
+            idf = Epm(self.idf_path)
             idf.batch_add_from_string('''OutputControl:Table:Style,Comma,JtoKWH;''')
             idf.batch_add_from_string('''Output:Table:SummaryReports,AllSummary;''')
             s = simulate(idf, self.epw_path, temp_dir_path)

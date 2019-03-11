@@ -577,7 +577,7 @@ class Idf(CachedMixin):
 
         # prepare records content [(table_ref, record_str), ...]
         formatted_records = [
-            (obj.get_table_ref(), "\n%s" % obj.to_str(style="idf", idf_style=style)) for obj in self._records
+            (obj.get_table_ref(), "\n%s" % obj.to_idf(style="idf", idf_style=style)) for obj in self._records
         ]
 
         # sort if asked

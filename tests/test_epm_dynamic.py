@@ -3,7 +3,7 @@ import os
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
-from oplus import Idf, BrokenIdfError, IsPointedError
+from oplus import Epm, BrokenEpmError, IsPointedError
 from oplus.idf.record import Record
 from oplus.configuration import CONF
 from oplus import ObsoleteRecordError
@@ -18,68 +18,6 @@ schedule_test_record_str = """Schedule:Compact,
     UNTIL: 24:00,0;          !- Field 5"""
 
 
-class StaticIdfTest(unittest.TestCase):
-    """
-    Only tests that do not modify Idf (avoid loading idf several times) - else use DynamicIdfTest.
-    """
-    idfs_d = None
-
-    @classmethod
-    def setUpClass(cls):
-        cls.idfs_d = {}
-        for eplus_version in TESTED_EPLUS_VERSIONS:
-            CONF.eplus_version = eplus_version
-            cls.idfs_d[eplus_version] = Idf(os.path.join(
-                CONF.eplus_base_dir_path,
-                "ExampleFiles",
-                "1ZoneEvapCooler.idf")
-            )
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        del cls.idfs_d
-
-    def simple_test(self):
-        self.assertTrue(True)
-
-    def test_get_table(self):
-        for eplus_version in iter_eplus_versions(self):
-            table = self.idfs_d[eplus_version].Construction
-            self.assertEqual(
-                {"r13wall", "floor", "roof31"},
-                set([c.name for c in table.select()])
-            )
-
-    def test_qs_one(self):
-        for eplus_version in iter_eplus_versions(self):
-            self.assertEqual(
-                self.idfs_d[eplus_version].BuildingSurface_Detailed.one(
-                    lambda x: x.name == "zn001:roof001").name,
-                "zn001:roof001"
-            )
-
-    def test_idf_add_object(self):
-        for eplus_version in iter_eplus_versions(self):
-            sch_name = "NEW TEST SCHEDULE"
-            sch = self.idfs_d[eplus_version].add_from_string(schedule_test_record_str % sch_name)
-            self.assertTrue(isinstance(sch, Record))
-
-    def test_multi_level_filter(self):
-        for eplus_version in iter_eplus_versions(self):
-            # get all building surfaces that have a zone with Z-Origin 0
-            simple_filter_l = []
-            for bsd in self.idfs_d[eplus_version].BuildingSurface_Detailed.select():
-                if bsd.zone_name[4] == 0:
-                    simple_filter_l.append(bsd)
-            multi_filter_l = list(
-                self.idfs_d[eplus_version].BuildingSurface_Detailed.select(
-                    lambda x: x.zone_name[4] == 0
-                )
-            )
-            self.assertEqual(simple_filter_l, multi_filter_l)
-
-
 class DynamicIdfTest(unittest.TestCase):
     """
     The following tests modify the idf.
@@ -87,7 +25,7 @@ class DynamicIdfTest(unittest.TestCase):
 
     @staticmethod
     def get_idf():
-        return Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
+        return Epm(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))
 
     def test_idf_add_record(self):
         for _ in iter_eplus_versions(self):
@@ -198,7 +136,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             def raise_if_you_care():
                 supply_fan.availability_schedule_name = schedule_test_record_str % name
-            self.assertRaises(BrokenIdfError, raise_if_you_care)
+            self.assertRaises(BrokenEpmError, raise_if_you_care)
 
     def test_set_record_broken_constructing_mode(self):
         for _ in iter_eplus_versions(self):
@@ -206,7 +144,7 @@ class DynamicIdfTest(unittest.TestCase):
             supply_fan = idf.Fan_ConstantVolume.one(lambda x: x.name == "supply fan")
             name = supply_fan.availability_schedule_name.name
 
-            with self.assertRaises(BrokenIdfError):
+            with self.assertRaises(BrokenEpmError):
                 with idf.is_under_construction():
                     supply_fan.availability_schedule_name = schedule_test_record_str % name
 
@@ -241,7 +179,7 @@ class DynamicIdfTest(unittest.TestCase):
     until: 24:00,                  ! - Field 3
     1;                             ! - Field 3
 """,
-                sch.to_str())
+                sch.to_idf())
 
             # pop
             self.assertEqual("through: 12/31", sch.pop(2))
@@ -255,7 +193,7 @@ class DynamicIdfTest(unittest.TestCase):
     until: 24:00,                  ! - Field 3
     1;                             ! - Field 3
 """,
-                sch.to_str())
+                sch.to_idf())
 
     def test_pop_raises(self):
         for _ in iter_eplus_versions(self):
@@ -292,17 +230,161 @@ class DynamicIdfTest(unittest.TestCase):
 
             # check cache was cleared
             self.assertEqual(0, len(idf._dev_cache))
-
-
-class MiscellaneousIdfTest(unittest.TestCase):
-    def test_simple_read(self):
+            
+    def test_idf_add_record(self):
         for _ in iter_eplus_versions(self):
-            for idf_name in ("4ZoneWithShading_Simple_1",):
-                Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", f"{idf_name}.idf"))
+            idf_manager = self.get_idf_manager()
+            sch_name = "NEW TEST SCHEDULE"
+            new_record = idf_manager.add_records(schedule_test_record_str % sch_name)
+            self.assertEqual(new_record._.idf_manager, idf_manager)
 
-    def test_multiple_branch_links(self):
+    def test_idf_add_record_broken(self):
         for _ in iter_eplus_versions(self):
-            idf = Idf(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "5ZoneAirCooled.idf"))
-            bl = idf.BranchList.one(lambda x: x.name == "heating supply side branches")
-            b3 = idf.Branch.one(lambda x: x.name == "heating supply bypass branch")
-            self.assertEqual(bl[3], b3)
+            idf_manager = self.get_idf_manager()
+            self.assertRaises(
+                BrokenEpmError,
+                lambda: idf_manager.add_records("""Material,
+    C5 - 4 IN HW CONCRETE,   !- Name
+    MediumRough,             !- Roughness
+    0.1014984,               !- Thickness {m}
+    1.729577,                !- Conductivity {W/m-K}
+    2242.585,                !- Density {kg/m3}
+    836.8000,                !- Specific Heat {J/kg-K}
+    0.9000000,               !- Thermal Absorptance
+    0.6500000,               !- Solar Absorptance
+    0.6500000;               !- Visible Absorptance""")
+                              )
+
+    def test_idf_add_record_broken_construct_mode(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+            with self.assertRaises(BrokenEpmError):
+                with idf_manager.is_under_construction:
+                    idf_manager.add_records("""
+                    Material,
+                        C5 - 4 IN HW CONCRETE,   !- Name
+                        MediumRough,             !- Roughness
+                        0.1014984,               !- Thickness {m}
+                        1.729577,                !- Conductivity {W/m-K}
+                        2242.585,                !- Density {kg/m3}
+                        836.8000,                !- Specific Heat {J/kg-K}
+                        0.9000000,               !- Thermal Absorptance
+                        0.6500000,               !- Solar Absorptance
+                        0.6500000;               !- Visible Absorptance""")
+
+    def test_idf_remove_record(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+            sch_name = "NEW TEST SCHEDULE"
+            sch = idf_manager.add_records(schedule_test_record_str % sch_name)
+            idf_manager.remove_records(sch)
+            self.assertEqual(
+                len(idf_manager.get_table("Schedule:Compact").select(lambda x: x["name"] == sch_name)),
+                0
+            )
+
+    def test_idf_remove_record_raise(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+            zone = idf_manager.get_table("Zone").one()
+            self.assertRaises(IsPointedError, lambda: idf_manager.remove_records(zone))
+
+    def test_idf_unlink_and_remove_record(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+            zone = idf_manager.get_table("Zone").one()
+
+            # unlink
+            zone.unlink_pointing_records()
+
+            # check that pointing's pointed fields have been removed
+            for pointing_record, pointing_index in zone._._dev_get_pointing_links():
+                self.assertEqual(pointing_record._._get_value(pointing_index), None)
+
+            # remove record should be possible
+            idf_manager.remove_records(zone)
+
+    def test_set_value_record(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+
+            # set
+            new_name = "fan availability schedule - 2"
+            supply_fan = idf_manager.get_table("Fan:ConstantVolume").one(
+                lambda x: x["name"] == "supply fan")
+            supply_fan._._set_value("availability schedule name", schedule_test_record_str % new_name)
+            print(idf_manager.to_idf())
+
+            # get
+            obj = idf_manager.get_table("Fan:ConstantVolume").one(
+                lambda x: x["name"] == "supply fan")
+            name = obj._._get_value("AvaiLABIlity schedule name")._._get_value("NAME")
+
+            # check
+            self.assertEqual(new_name, name)
+
+    def test_set_value_reference(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+
+            # set
+            new_zone_name = "new zone name"
+            zone = idf_manager.get_table("Zone").one()
+            pointing_links_l = zone._._dev_get_pointing_links()
+            zone._._set_value("name", new_zone_name)
+
+            # check
+            self.assertEqual(zone._._get_value("name"), new_zone_name)
+
+            # check pointing
+            for pointing_record, pointing_index in pointing_links_l:
+                self.assertEqual(pointing_record._.get_raw_value(pointing_index), new_zone_name)
+
+    def test_copy_record(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+            zone = idf_manager.get_table("Zone").one()
+            new = zone._.copy()
+            for i in range(zone._._dev_fields_nb):
+                if i == 0:
+                    self.assertNotEqual(zone._._get_value(i), new._._get_value(i))
+                else:
+                    self.assertEqual(zone._._get_value(i), new._._get_value(i))
+
+    def test_replace_values(self):
+        for _ in iter_eplus_versions(self):
+            idf_manager = self.get_idf_manager()
+
+            # get pointing
+            sch = idf_manager.get_table("Schedule:Compact").one(
+                lambda x: x["name"] == "heating setpoint schedule")
+            pointing_l = [o for (o, i) in sch._._dev_get_pointing_links()]
+
+            # replace with bigger
+            new_str = """
+            Schedule:Compact,
+                My New Heating Setpoint Schedule,  !- Name
+                Any Number,              !- Schedule Type Limits Name
+                Through: 12/31,          !- Field 1
+                For: AllDays,            !- Field 2
+                Until: 12:00,20.0,       !- Field 3
+                Until: 24:00,25.0;       !- Field 3"""
+            sch._.replace_values(new_str)
+
+            # check
+            self.assertEqual(sch["name"], "heating setpoint schedule")
+            self.assertEqual([o for (o, i) in sch._._dev_get_pointing_links()], pointing_l)
+
+            # replace with smaller
+            new_str = """
+            Schedule:Compact,
+                ,  !- Name
+                Any Number,              !- Schedule Type Limits Name
+                Through: 12/31,          !- Field 1
+                For: AllDays,            !- Field 2
+                Until: 12:00,20.0;       !- Field 3"""
+            sch._.replace_values(new_str)
+
+            # check
+            self.assertEqual(len(sch), 6)
+

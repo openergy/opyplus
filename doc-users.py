@@ -25,7 +25,7 @@ idf_path = os.path.join(
     "1ZoneEvapCooler.idf"
 )
 
-idf = op.Idf(idf_path)
+idf = op.Epm(idf_path)
 idf.save_as(os.path.join(work_dir_path, "my_idf.idf"))
 print(idf)
 

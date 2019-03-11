@@ -26,7 +26,7 @@ def to_num(raw_value):
 
 class FieldDescriptor:
     """
-    No checks implemented (idf is considered as ok).
+    No checks implemented (idd is considered as ok).
     """
     BASIC_FIELDS = ("integer", "real", "alpha", "choice", "node", "external-list")
 
@@ -36,9 +36,11 @@ class FieldDescriptor:
         self.basic_type = field_basic_type  # A -> alphanumeric, N -> numeric
         self.name = name
         self.ref = None if name is None else var_name_to_ref(name)
-        self._tags = {}
+        self.tags = {}
 
         self._detailed_type = None
+        
+    # ----------------------------------------- public api -------------------------------------------------------------
 
     def deserialize(self, value):
         # todo: make validation errors
@@ -59,7 +61,7 @@ class FieldDescriptor:
             value = unidecode.unidecode(value)
 
             # make lower case if not retaincase
-            if not self.has_tag("retaincase"):
+            if "retaincase" not in self.tags:
                 value = value.lower()
 
             # check not too big
@@ -88,111 +90,42 @@ class FieldDescriptor:
 
         # manage hooks (eplus reference)
         if self.detailed_type == "reference":
-            references = self.get_tag("reference")
+            references = self.tags["reference"]
             return Hook(references, value)
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
-            reference = self.get_tag("object-list")
+            reference = self.tags["object-list"][0]
             return Link(reference, value)
     
         raise RuntimeError("should not be here")
 
-
-
-
-
-
-
-
-
-    @property
-    def tags(self):
-        return self._tags
-
     def append_tag(self, ref, value=None):
-        if ref not in self._tags:
-            self._tags[ref] = []
+        if ref not in self.tags:
+            self.tags[ref] = []
         if value is not None:
-            self._tags[ref].append(value)
-
-    def get_tag(self, ref, raw=False):
-        """
-        Returns tag belonging to field descriptor. If 'note', will be string, else list of elements.
-        """
-        if ref == "note" and not raw:  # memo is for object descriptors
-            return " ".join(self._tags[ref])
-        return self._tags[ref]
-
-    def has_tag(self, ref):
-        return ref in self._tags
-
-    def cleanup_and_check_raw_value(self, unsafe_raw_value):
-        # manage None
-        if unsafe_raw_value is None:
-            unsafe_raw_value = ""
-
-        # check is string
-        assert isinstance(unsafe_raw_value, str), f"'raw_value' must be a string, got {type(unsafe_raw_value)}"
-
-        # change multiple spaces to mono spaces
-        raw_value = re.sub(spaces_pattern, lambda x: " ", unsafe_raw_value.strip())
-
-        # make ASCII compatible
-        raw_value = unidecode.unidecode(raw_value)
-
-        # make lower case if not retaincase
-        if not self.has_tag("retaincase"):
-            raw_value = raw_value.lower()
-
-        # check not too big
-        assert len(raw_value) <= 100, "Field has more than 100 characters which is the limit."
-
-        # check if num and not None
-        if (raw_value != "") and (self.basic_type == "N"):
-            to_num(raw_value)
-
-        return raw_value
-
-    def basic_parse(self, raw_value):
-        """
-        Parses raw value (string or None) to string, int, float or None.
-        """
-        # no value
-        if (raw_value is None) or (raw_value == ""):
-            return None
-
-        # alphabetical
-        if self.basic_type == "A":
-            return raw_value
-
-        # numeric
-        if isinstance(raw_value, str):
-            return to_num(raw_value)
-
-        # in case has already been parsed
-        elif type(raw_value) in (int, float):
-            return raw_value
+            self.tags[ref].append(value)
 
     @property
     def detailed_type(self):
         """
         Uses EPlus double approach of type ('type' tag, and/or 'key', 'object-list', 'external-list', 'reference' tags)
         to determine detailed type.
+        
         Returns
         -------
         "integer", "real", "alpha", "choice", "reference", "object-list", "external-list", "node"
         """
         if self._detailed_type is None:
-            if "reference" in self._tags:
+            if "reference" in self.tags:
                 self._detailed_type = "reference"
-            elif "type" in self._tags:
-                self._detailed_type = self._tags["type"][0].lower()  # idd is not very rigorous on case
-            elif "key" in self._tags:
+            elif "type" in self.tags:
+                self._detailed_type = self.tags["type"][0].lower()  # idd is not very rigorous on case
+            elif "key" in self.tags:
                 self._detailed_type = "choice"
-            elif "object-list" in self._tags:
+            elif "object-list" in self.tags:
                 self._detailed_type = "object-list"
-            elif "external-list" in self._tags:
+            elif "external-list" in self.tags:
                 self._detailed_type = "external-list"
             elif self.basic_type == "A":
                 self._detailed_type = "alpha"
@@ -201,20 +134,3 @@ class FieldDescriptor:
             else:
                 raise ValueError("Can't find detailed type.")
         return self._detailed_type
-
-    def __eq__(self, other):
-        """ Eq between two FieldDescriptor instances """
-        assert isinstance(other, FieldDescriptor), "other should be a FieldDescriptor instance"
-
-        if self.name != other.name:
-            return False
-        elif self.basic_type != other.basic_type:
-            return False
-        elif (
-                len(self._tags) != len(other._tags)
-                or sorted(self._tags.items()) != sorted(self._tags.items())
-        ):
-            return False
-        else:
-            return True
-

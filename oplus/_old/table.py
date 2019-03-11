@@ -5,7 +5,7 @@ def get_documented_add(record_descriptors):
     we therefore create a function (who's __doc__ attribute is read/write), and will bind it to Table in __init__
     """
     def add(self, **record_data):
-        return self.get_idf().add(self.get_ref(), **record_data)
+        return self.get_epm().add(self.get_ref(), **record_data)
     add.__doc__ = "\n".join([fd.ref.lower() for fd in record_descriptors if fd.ref is not None])
     return add
 

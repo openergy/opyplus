@@ -1,7 +1,7 @@
 from itertools import filterfalse
 
+from .util import json_data_to_json
 from .exceptions import RecordDoesNotExistError, MultipleRecordsReturnedError
-from .cache import clear_cache
 
 
 def unique_ever_seen(iterable, key=None):
@@ -41,7 +41,7 @@ class Queryset:
 
         # manage empty
         if records is None:
-            records = []
+            records = ()
 
         # ensure unique, sort, make un-mutable
         self._records = tuple(sorted(unique_ever_seen(records)))
@@ -58,19 +58,18 @@ class Queryset:
 
     def __iter__(self):
         return iter(self._records)
-
-    def __str__(self):
+    
+    def __repr__(self):
         return "<Queryset of %s: %s records>" % (self.get_table_ref(), str(len(self._records)))
 
     def __len__(self):
         return len(self._records)
 
-    @clear_cache
     def __add__(self, other):
         """
         Add new query set to query set (only new records will be added since uniqueness is ensured in __init__).
         """
-        return Queryset(list(self) + list(other))
+        return Queryset(self._table, list(self) + list(other))
 
     def __eq__(self, other):
         return set(self) == set(other)
@@ -85,7 +84,6 @@ class Queryset:
         """
         select a sub queryset
         """
-        # !! we copy list so it can't change in the future !!
         iterator = self._records if filter_by is None else filter(filter_by, self._records)
         return Queryset(self._table, iterator)
 
@@ -104,3 +102,15 @@ class Queryset:
 
         # return record
         return qs[0]
+
+    # ------------------------------------------- export ---------------------------------------------------------------
+    def to_json_data(self, style=None):
+        return [r.to_json_data(style=style) for r in sorted(self._records)]
+
+    def to_json(self, buffer_or_path=None, indent=2, style=None):
+        d = self.to_json_data(style=style)
+        return json_data_to_json(
+            d,
+            buffer_or_path=buffer_or_path,
+            indent=indent
+        )
