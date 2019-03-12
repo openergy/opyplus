@@ -1,22 +1,14 @@
-import io
 import os
-import itertools
 import collections
-from oplus import CONF  # todo: change conf style ?
-from contextlib import contextmanager
-from oplus.epm.idd import Idd
-from .table import Table
-from .queryset import Queryset
 
+from ..configuration import CONF
+from .idd import Idd
+from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
-from ..util import get_string_buffer
-from .exceptions import BrokenEpmError, IsPointedError
-from ..epm.table_descriptor import table_name_to_ref
 from .idf_parse import parse_idf
 
 
-# todo: it seams that we removed head comments
 class Epm:
     """
     Energyplus model
@@ -37,7 +29,7 @@ class Epm:
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
             for table_descriptor in self._dev_idd.table_descriptors.values()
         ]))
-        self._relations_manager = RelationsManager()
+        self._dev_relations_manager = RelationsManager(self)
         self._comment = "" if comment is None else str(comment)
         
         # parse if relevant
@@ -83,12 +75,6 @@ class Epm:
         for r in added_records:
             r._dev_activate_links()
 
-    def _dev_add_hook(self, hook):
-        self._relations_manager.add_hook(hook)
-        
-    def _dev_add_link(self, link):
-        self._relations_manager.add_link(link)
-
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
     def __str__(self):
@@ -109,11 +95,10 @@ class Epm:
         return "<Epm>"
 
     def __eq__(self, other):
-        # todo: code
-        pass
+        return self.to_json_data() != other.to_json_data()
 
     def __dir__(self):
-        return [t.get_ref() for t in self._tables.values()] + [k for k in self.__dict__]
+        return [t.get_ref() for t in self._tables.values()] + list(self.__dict__)
 
     def __getattr__(self, item):
         try:
@@ -123,11 +108,18 @@ class Epm:
 
     def __iter__(self):
         return iter(self._tables.values())
+    
+    # get info
+    def get_comment(self):
+        return self._comment
 
+    # remove records
     def remove(self, record):
         self.batch_remove([record])
 
     def batch_remove(self, records):
+        
+        
         # todo: code
         pass
 
@@ -159,19 +151,6 @@ class Epm:
     def to_idf(self):
         # todo: manage copyright and comment
         formatted_records = []
-        for table_ref, table in sorted(self._tables.items()):
+        for table_ref, table in self._tables.items():  # self._tables is already sorted
             formatted_records.extend([r.to_idf() for r in sorted(table)])
         return "\n\n".join(formatted_records)
-
-
-
-
-
-
-
-
-
-
-
-
-

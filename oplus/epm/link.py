@@ -12,18 +12,24 @@ class Link:
         self.initial_hook_value = hook_value
         self.source_record = None
         self.target_record = None
+        self.target_index = None
+
+    @property
+    def relations_manager(self):
+        return self.source_record.get_epm()._dev_relations_manager
         
-    def deactivate(self):
-        pass
-        # todo: code and create obsolete status
+    def unregister(self):
+        self.relations_manager.unregister_hook(self)
     
-    def set_target_record(self, target_record):
+    def set_target(self, target_record, target_index):
         self.target_record = target_record
+        self.target_index = target_index
     
     def serialize(self):
+
         # todo: code
         return self.initial_hook_value # if self.source_record is None else code
     
     def activate(self, source_record):
         self.source_record = source_record
-        source_record.get_epm()._dev_add_link(self)
+        self.relations_manager.register_link(self)

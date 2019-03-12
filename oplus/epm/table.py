@@ -10,6 +10,18 @@ class Table:
 
         # auto pk if first field is not a reference
         self._dev_auto_pk = "reference" not in table_descriptor.field_descriptors[0].tags
+        
+    def _dev_record_pk_was_updated(self, old_pk):
+        # remove old pk
+        record = self._records.pop(old_pk)
+
+        # check uniqueness
+        new_pk = record.get_pk()
+        if new_pk in self._records:
+            raise RuntimeError("duplicate pk")  # todo: manage error properly
+
+        # store with new pk
+        self._records[new_pk] = record
 
     def _dev_add_inert(self, records_data):
         """
@@ -58,8 +70,8 @@ class Table:
     def get_epm(self):
         return self._epm
     
-    def add(self, **record_data):
-        return self.batch_add([record_data])[0]
+    def add(self, _record_data=None, **record_data):
+        return self.batch_add([record_data if _record_data is None else _record_data])[0]
     
     def batch_add(self, records_data):
         # add inert
@@ -80,6 +92,10 @@ class Table:
         pass
     
     def batch_remove(self, records):
+        for r in records:
+            # remove pointing links
+            self.get_epm()._dev_remove_pointing_links(r)
+        
         # todo: code
         pass
     

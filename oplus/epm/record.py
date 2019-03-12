@@ -31,18 +31,13 @@ class Record:
         table
         data: dict, default {}
             key: index_or_ref, value: raw value or value
-        comments: dict, default {}
-            key: index_or_ref, value: raw value or value
-        head_comment: str, default ""
-        tail_comment: str, default ""
         """
         # todo: manage what happens if comment on field > fields_nb (extensible), but no data.
         self._table = table
         self._data = {}
 
         if data is not None:
-            for k, v in data.items():
-                self._dev_set_value_inert(k, v)
+            self._update_inert(data)
 
         # check required
         for i, fd in enumerate(self._table._dev_descriptor.field_descriptors):
@@ -51,16 +46,37 @@ class Record:
         
         # todo: manage comments properly
 
-    def _dev_set_value_inert(self, field_index_or_ref, value):
+    def _field_key_to_index(self, ref_or_index):
+        if isinstance(ref_or_index, int):
+            return ref_or_index
+        return self._table._dev_descriptor.get_field_index(ref_or_index)
+
+    def _update_inert(self, data):
+        # transform keys to indexes
+        data = dict([(self._field_key_to_index(k), v) for (k, v) in data.items()])
+
+        # set values inert (must be ordered, otherwise some extensible values may be rejected by mistake)
+        for k, v in sorted(data.items()):
+            self._dev_set_value_inert(k, v)
+
+    def _dev_set_none_inert(self, index):
+        if index not in self._data:
+            return
+
+        # get field descriptor
+        field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
+
+        # check not required
+        if "required-field" in field_descriptor.tags:
+            raise RuntimeError("field is required, can't be none")  # todo: manage errors properly
+
+        # remove
+        del self._data[index]
+
+    def _dev_set_value_inert(self, index, value):
         """
         inert: links and hooks will not be activated
         """
-        # get index
-        if isinstance(field_index_or_ref, int):
-            index = field_index_or_ref
-        else:
-            index = self._table._dev_descriptor.get_field_index(field_index_or_ref)
-        
         # get field descriptor
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
         
@@ -72,26 +88,65 @@ class Record:
             # de-activate current link if any
             current_link = self._data.get(index)
             if current_link is not None:
-                current_link.deactivate()
+                current_link.unregister()
                 
         # manage if hook
         if isinstance(value, Hook):
             current_hook = self._data.get(index)
             if current_hook is not None:
-                current_hook.deactivate()
+                current_hook.unregister()
+
+        # if extensible: make appropriate checks
+        if self.is_extensible():
+            cycle_start, cycle_len, patterns = self.get_extensible_info()
+
+            # see if extensible fields
+            if index >= cycle_start:
+                # 1. can't set to None if not last field
+                if (value is None) and index != (len(self)-1):
+                    # todo: manage errors
+                    raise RuntimeError("can't set an extensible field to None, use pop or clear_extensible_fields")
+                # 2. previous field must not be empty (except for first extensible field)
+                if (index-1 >= cycle_start) and self._data.get(index-1) is None:
+                    # todo: manage errors
+                    raise RuntimeError("can't set an extensible field if some previous extensible fields are empty")
                 
-        # if None check ok and remove
-        if value is None and index in self._data:
-            if "required-field" in field_descriptor.tags:
-                raise RuntimeError("field is required, can't be none")  # todo: manage errors properly
-            
-            # remove
-            del self._data[index]
+        # if None remove
+        if value is None:
+            self._dev_set_none_inert(index)
+
+        # if relevant, store current pk to signal table
+        old_pk = None
+        if index == 0 and not self._table._dev_auto_pk:
+            old_pk = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
         
         # else remove
-        else:
-            self._data[index] = value
-            
+        self._data[index] = value
+
+        # signal pk update if relevant
+        if old_pk is not None:
+            self._table._dev_record_pk_was_updated(old_pk)
+
+    def _prepare_pop_insert_index(self, index=None):
+        if not self.is_extensible():
+            # todo: manage errors
+            raise RuntimeError("can't use add_fields on a non extensible record")
+
+        # manage None or negative index
+        self_len = len(self)
+        if index is None:
+            index = self_len - 1
+        elif index < 0:
+            index = self_len + index
+
+        # check index is >= cycle_start
+        cycle_start, cycle_len, patterns = self.get_extensible_info()
+        if not cycle_start <= index < self_len:
+            # todo: manage errors
+            raise RuntimeError("can't use pop for non extensible fields")
+
+        return index
+
     def _dev_activate_hooks(self):
         for v in self._data.values():
             if not isinstance(v, Hook):
@@ -103,13 +158,11 @@ class Record:
             if not isinstance(v, Link):
                 continue
             v.activate(self)
-    
-    def _get_fields_nb(self):
-        return max(max(self._data.keys())+1, self._table._dev_descriptor.base_fields_nb)
 
     # --------------------------------------------- public api ---------------------------------------------------------
+    # python magic
     def __getitem__(self, item):
-        if item >= self._get_fields_nb():
+        if item >= len(self):
             raise IndexError("index out of range")
 
         # get value
@@ -125,8 +178,7 @@ class Record:
         return value
 
     def __setitem__(self, key, value):
-        pass
-        # todo: don't forget to notify pk update
+        self.update({key: value})
 
     def __getattr__(self, item):
         index = self._table._dev_descriptor.get_field_index(item)
@@ -139,17 +191,28 @@ class Record:
         except AttributeError:
             pass
 
-        # todo: code
-        # todo: don't forget to notify pk update
+        self.update({name: value})
         
     def __repr__(self):
         # todo: manage obsolete
         return f"<{self.get_table_ref()}: {self.get_pk()}>"
 
     def __len__(self):
-        return len(self._data)
+        biggest_index = -1 if (len(self._data) == 0) else max(self._data)
+        return max(
+            biggest_index+1,
+            self._table._dev_descriptor.base_fields_nb
+        )
     
     def __lt__(self, other):
+        # compare tables
+        self_ref = self.get_table_ref()
+        other_ref = other.get_table_ref()
+        if self_ref < other_ref:
+            return True
+        if self_ref > other_ref:
+            return False
+        
         # get lengths
         self_len = len(self)
         other_len = len(other)
@@ -180,9 +243,12 @@ class Record:
         # equality on common fields, len will settle
         return self_len <= other_len
 
+    # get info
     def get_raw_value(self, ref_or_index):
-        index = (self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
-                 else ref_or_index)
+        index = (
+            self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
+            else ref_or_index
+        )
         value = self._data.get(index)
         return value.serialize() if isinstance(value, (Link, Hook)) else value
     
@@ -204,16 +270,92 @@ class Record:
         return self._table
     
     def get_pointed_records(self):
-        # todo: code
-        pass
+        return self.get_epm()._dev_relations_manager.get_pointed_from(self)
     
     def get_pointing_records(self):
-        # todo: code
-        pass
+        return self.get_epm()._dev_relations_manager.get_pointing_on(self)
+
+    def is_extensible(self):
+         return self.get_extensible_info() is not None
     
-    def update(self, **data):
-        # todo: code
-        pass
+    def get_extensible_info(self):
+        """
+        Returns
+        -------
+        cycle_start, cycle_len, patterns
+        """
+        return self._table._dev_descriptor.extensible_info
+
+    # construct
+    def update(self, _record_data=None, **record_data):
+        self._update_inert(record_data if _record_data is None else record_data)
+        self._dev_activate_hooks()
+        self._dev_activate_links()
+
+    def copy(self):
+        # create new record
+        new_data = dict([(
+            str(uuid.uuid4()),
+            self._data[i] if "reference" in self._table._dev_descriptor.get_field_descriptor(i).tags else self._data[i]
+        ) for i in self._data])
+        return self._table.add(new_data)
+
+    # construct extensible fields
+    def add_fields(self, *args):
+        if not self.is_extensible():
+            # todo: manage errors
+            raise RuntimeError("can't use add_fields on a non extensible record")
+
+        # prepare update data
+        self_len = len(self)
+        data = dict([(self_len + i, args[i]) for i in range(len(args))])
+
+        # update
+        self._update(data)
+
+    def pop(self, index=None):
+        # prepare index (will check for extensible)
+        index = self._prepare_pop_insert_index(index=index)
+
+        # get extensible info
+        cycle_start, cycle_len, patterns = self.get_extensible_info()
+        
+        # remove extensible fields
+        fields = self.clear_extensible_fields()
+        
+        # pop
+        fields.pop(cycle_start-index)
+        
+        # add remaining
+        self.add_fields(*fields)
+
+    def insert(self, index, value):
+        # prepare index (will check for extensible)
+        index = self._prepare_pop_insert_index(index=index)
+
+        # get extensible info
+        cycle_start, cycle_len, patterns = self.get_extensible_info()
+
+        # remove extensible fields
+        fields = self.clear_extensible_fields()
+
+        # insert
+        fields.insert(index, value)
+
+        # add new list
+        self.add_fields(*fields)
+
+    def clear_extensible_fields(self):
+        """
+        Returns
+        -------
+        list of cleared fields
+        """
+        if not self.is_extensible():
+            # todo: manage errors
+            raise RuntimeError("can't use add_fields on a non extensible record")
+        cycle_start, cycle_len, patterns = self.get_extensible_info()
+        return [self._data.pop(i) for i in range(cycle_start, len(self))]
         
     # --------------------------------------------- export -------------------------------------------------------------
     def to_dict(self):
@@ -231,7 +373,7 @@ class Record:
         s = f"{self._table._dev_descriptor.table_name},\n"
 
         # fields
-        fields_nb = self._get_fields_nb()
+        fields_nb = len(self)
         for i in range(fields_nb):
             # value
             tab = " " * TAB_LEN

@@ -30,9 +30,10 @@ class FieldDescriptor:
     """
     BASIC_FIELDS = ("integer", "real", "alpha", "choice", "node", "external-list")
 
-    def __init__(self, field_basic_type, name=None):
+    def __init__(self, index, field_basic_type, name=None):
         if field_basic_type not in ("A", "N"):
             raise ValueError("Unknown field type: '%s'." % field_basic_type)
+        self.index = index
         self.basic_type = field_basic_type  # A -> alphanumeric, N -> numeric
         self.name = name
         self.ref = None if name is None else var_name_to_ref(name)
@@ -41,7 +42,6 @@ class FieldDescriptor:
         self._detailed_type = None
         
     # ----------------------------------------- public api -------------------------------------------------------------
-
     def deserialize(self, value):
         # todo: make validation errors
         # manage none
@@ -91,7 +91,7 @@ class FieldDescriptor:
         # manage hooks (eplus reference)
         if self.detailed_type == "reference":
             references = self.tags["reference"]
-            return Hook(references, value)
+            return Hook(self.index, references, value)
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":

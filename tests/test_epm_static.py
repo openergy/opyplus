@@ -22,16 +22,16 @@ class StaticIdfTest(unittest.TestCase):
     """
     Only tests that do not modify Idf (avoid loading idf several times) - else use DynamicIdfTest.
     """
-    idfs_d = None
+    epms_d = None
 
     @classmethod
     def setUpClass(cls):
-        cls.idfs_d = {}
+        cls.epms_d = {}
         TESTED_EPLUS_VERSIONS.pop()  # todo: !! remove !! this is for quick debug
 
         for eplus_version in TESTED_EPLUS_VERSIONS:
             CONF.eplus_version = eplus_version
-            cls.idfs_d[eplus_version] = Epm(os.path.join(
+            cls.epms_d[eplus_version] = Epm(os.path.join(
                 CONF.eplus_base_dir_path,
                 "ExampleFiles",
                 "1ZoneEvapCooler.idf")
@@ -39,7 +39,7 @@ class StaticIdfTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        del cls.idfs_d
+        del cls.epms_d
         
     # ----------------------------------------- navigate ---------------------------------------------------------------
     def test_table_getattr(self):
@@ -47,24 +47,24 @@ class StaticIdfTest(unittest.TestCase):
             ref = "BuildingSurface_Detailed"
 
             # exact ref
-            bsd = self.idfs_d[eplus_version].BuildingSurface_Detailed
+            bsd = self.epms_d[eplus_version].BuildingSurface_Detailed
             self.assertEqual(bsd.get_ref(), ref)
 
             # case insensitive ref
-            bsd = self.idfs_d[eplus_version].BuILdINGsURFaCE_DETaILED
+            bsd = self.epms_d[eplus_version].BuILdINGsURFaCE_DETaILED
             self.assertEqual(bsd.get_ref(), ref)
 
     def test_record_getitem_getattr_and_pk(self):
         bsd_name = "zn001:roof001"
         for eplus_version in iter_eplus_versions(self):
-            bsd = self.idfs_d[eplus_version].BuildingSurface_Detailed[bsd_name]
+            bsd = self.epms_d[eplus_version].BuildingSurface_Detailed[bsd_name]
             self.assertEqual(bsd.name, bsd_name)
             self.assertEqual(bsd[0], bsd_name)
             self.assertEqual(bsd.get_pk(), bsd_name)
 
     def test_get_table(self):
         for eplus_version in iter_eplus_versions(self):
-            table = self.idfs_d[eplus_version].Construction
+            table = self.epms_d[eplus_version].Construction
             self.assertEqual(
                 {"r13wall", "floor", "roof31"},
                 set([c.name for c in table.select()])
@@ -73,99 +73,100 @@ class StaticIdfTest(unittest.TestCase):
     def test_qs_one(self):
         for eplus_version in iter_eplus_versions(self):
             self.assertEqual(
-                self.idfs_d[eplus_version].BuildingSurface_Detailed.one(
+                self.epms_d[eplus_version].BuildingSurface_Detailed.one(
                     lambda x: x.name == "zn001:roof001").name,
                 "zn001:roof001"
             )
 
-    # ----------------------------------------- construct --------------------------------------------------------------
-    def test_add_records(self):
+    def test_qs_select(self):
         for eplus_version in iter_eplus_versions(self):
-            schedule_compact = self.idfs_d[eplus_version].Schedule_Compact
-
-            # add schedule
-            sch1 = schedule_compact.add(name="sch1")
-            print(sch1.to_idf())
-            #
-            # add schedule with values
-            sch2 = schedule_compact.add(
-                name="sch2",
-                field_1="Through: 12/31",
-                field_2="For: AllDays",
-                field_3="Until: 24:00,4"
-            )
-            print(sch2.to_idf())
-
-    def test_idf_add_object(self):
-        for eplus_version in iter_eplus_versions(self):
-            sch_name = "NEW TEST SCHEDULE"
-            sch = self.idfs_d[eplus_version].add_from_string(schedule_test_record_str % sch_name)
-            self.assertTrue(isinstance(sch, Record))
-
-    def test_multi_level_filter(self):
-        for eplus_version in iter_eplus_versions(self):
+            epm = self.epms_d[eplus_version]
             # get all building surfaces that have a zone with Z-Origin 0
-            simple_filter_l = []
-            for bsd in self.idfs_d[eplus_version].BuildingSurface_Detailed.select():
-                if bsd.zone_name[4] == 0:
-                    simple_filter_l.append(bsd)
+            simple_filter_l = [bsd for bsd in epm.BuildingSurface_Detailed if bsd.zone_name[4] == 0]
+
             multi_filter_l = list(
-                self.idfs_d[eplus_version].BuildingSurface_Detailed.select(
+                epm.BuildingSurface_Detailed.select(
                     lambda x: x.zone_name[4] == 0
                 )
             )
             self.assertEqual(simple_filter_l, multi_filter_l)
 
-    def test_idf_call(self):
+    def test_pointing(self):
         for eplus_version in iter_eplus_versions(self):
-            qs = self.idf_managers_d[eplus_version].get_table("Construction").select()
-            self.assertEqual({"r13wall", "floor", "roof31"}, set([c._._get_value("name") for c in qs]))
+            epm = self.epms_d[eplus_version]
+            z = epm.zone.one()
 
-    def test_qs_one(self):
-        for eplus_version in iter_eplus_versions(self):
-            idf = self.idf_managers_d[eplus_version]
-            obj = idf.get_table("BuildingSurface:Detailed").one(
-                lambda x: x["naMe"] == "zn001:roof001"
-            )
-            name = obj._._get_value("name")
-
-            self.assertEqual(
+            # check pointing surfaces
+            self.assertEqual({
+                "zn001:wall001",
+                "zn001:wall002",
+                "zn001:wall003",
+                "zn001:wall004",
+                "zn001:flr001",
                 "zn001:roof001",
-                name
+            },
+                {s.name for s in z.get_pointing_records().BuildingSurface_Detailed}
             )
 
-    def test_idf_create_record(self):
+            # check number of pointing objects
+            self.assertEqual(9, len(z.get_pointing_records()))
+
+    def test_pointed(self):
         for eplus_version in iter_eplus_versions(self):
-            sch_name = "NEW TEST SCHEDULE"
-            sch = self.idf_managers_d[eplus_version].add_records(schedule_test_record_str % sch_name)
-            self.assertTrue(isinstance(sch, Record))
+            epm = self.epms_d[eplus_version]
+            bsd = epm.BuildingSurface_Detailed["zn001:wall001"]
 
-    def test_pointing_links_l(self):
+            pointed = bsd.get_pointed_records()
+
+            self.assertEqual(2, len(pointed))
+
+            self.assertEqual("main zone", pointed.Zone.one().name)
+            self.assertEqual("r13wall", pointed.Construction.one().get_pk())
+
+    # ----------------------------------------- construct --------------------------------------------------------------
+    def test_add_records(self):
         for eplus_version in iter_eplus_versions(self):
-            zone = self.idf_managers_d[eplus_version].get_table("Zone").one()
-            d = {  # ref: [pointing_index, nb of records], ...
-                "BuildingSurface:Detailed": [3, 6],  # index 3
-                "ZoneInfiltration:DesignFlowRate": [1, 1],  # index 1
-                "ZoneHVAC:EquipmentConnections": [0, 1],  # index 0
-                "ZoneControl:Thermostat": [1, 1]  # index 1
-            }
+            epm = self.epms_d[eplus_version]
+            schedule_compact = epm.Schedule_Compact
 
-            # check all pointing
-            _d = {}
-            for pointing_record, pointing_index in zone._._dev_get_pointing_links():
-                # check points
-                self.assertEqual(pointing_record._._get_value(pointing_index), zone)
-                # verify all are identified
-                if pointing_record._.get_table_ref() not in _d:
-                    _d[pointing_record._.get_table_ref()] = [pointing_index, 1]
-                else:
-                    self.assertEqual(pointing_index, _d[pointing_record._.get_table_ref()][0])
-                    _d[pointing_record._.get_table_ref()][1] += 1
-            self.assertEqual(d, _d)
+            # add schedule with simple field
+            sch1 = schedule_compact.add(name="sch1")
+            self.assertEqual(sch1.name, "sch1")
 
-            # check pointing on pointed_index
-            self.assertEqual(len(zone._._dev_get_pointing_links(0)), 9)  # 9 pointing
-            self.assertEqual(len(zone._._dev_get_pointing_links(3)), 0)  # no pointing
+            # add schedule with extensible fields
+            sch2 = schedule_compact.add(  # kwargs like
+                name="sch2",
+                field_1="Through: 12/31",
+                field_2="For: AllDays",
+                field_3="Until: 24:00,4"
+            )
+            self.assertEqual(5, len(sch2))
+
+            # add schedule from dict
+            sch3 = schedule_compact.add({  # dict like
+                0: "sch3",
+                2: "Through: 12/31",
+                "field_2": "For: AllDays",
+                "field_3": "Until: 24:00,4"
+            })
+            self.assertEqual(5, len(sch3))
+
+            # batch add schedules
+            schedules = schedule_compact.batch_add([
+                dict(name="batch0"),
+                dict(name="batch1"),
+                dict(name="batch2")
+            ])
+            self.assertEqual(3, len(schedules))
+            self.assertEqual(set(schedules), set(schedule_compact.select(lambda x: "batch" in x.name)))
+
+    # todo: test pk change
+    # todo: test link/hook change
+    # todo: test extensible fields limitations
+    # todo: check to_str, including comments and copyright
+    # todo: check __dir__ and help
+    # todo: shouldn't we propose a record.delete() method ? (and queryset.delete()) ?
+
 
 
 class DynamicIdfTest(unittest.TestCase):

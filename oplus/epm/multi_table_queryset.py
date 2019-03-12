@@ -13,7 +13,8 @@ class MultiTableQueryset:
         # 1. we don't sort in groupby
         # 2. we change from iterator to list
         d = {}
-        for k, g in itertools.groupby(records, lambda x: x.get_table_ref()):
+        # we sort records because groupby only groups consecutive items
+        for k, g in itertools.groupby(sorted(records), lambda x: x.get_table_ref()):
             _records = list(g)  # change from iterator to list (we need to access first element without breaking group)
             d[k.lower()] = Queryset(_records[0].get_table(), _records)
         self._querysets = collections.OrderedDict(sorted(d.items()))
@@ -32,10 +33,15 @@ class MultiTableQueryset:
         -------
         only returns non-empty querysets
         """
-        return {g[0].get_table_ref() for g in self._querysets.values()}  # all stored querysets have at least 1 element
+        # all stored querysets have at least 1 element
+        return [g[0].get_table_ref() for g in self._querysets.values()] + list(self.__dict__)
 
     def __iter__(self):
         return itertools.chain(*self._querysets.values())
 
     def __eq__(self, other):
         return set(self) == set(other)
+
+    def __len__(self):
+        # works with 0 (checked)
+        return sum(len(qs) for qs in self._querysets.values())

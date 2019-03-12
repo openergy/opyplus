@@ -19,11 +19,7 @@ import os
 import re
 import logging
 
-from collections import OrderedDict
-
-from oplus.configuration import CONF
-
-from .field_descriptor import FieldDescriptor
+from ..configuration import CONF
 from .table_descriptor import TableDescriptor
 
 
@@ -96,7 +92,7 @@ class Idd:
 
                 # store
                 if field_descriptor is None:  # we are not in a field -> record descriptor comment
-                    rd._add_tag(tag_ref, tag_value)
+                    rd.add_tag(tag_ref, tag_value)
                 else:  # we are in a field
                     field_descriptor.append_tag(tag_ref, tag_value)
                 continue
@@ -111,8 +107,7 @@ class Idd:
                     name = None
 
                 # store
-                field_descriptor = FieldDescriptor(fieldd_type, name=name)
-                rd._append_field_descriptor(field_descriptor)
+                field_descriptor = rd.add_field_descriptor(fieldd_type, name=name)
                 continue
 
             # unnamed field descriptors
@@ -124,8 +119,7 @@ class Idd:
                     fieldd_type = fieldd_s[0]
 
                     # store
-                    field_descriptor = FieldDescriptor(fieldd_type)
-                    rd._append_field_descriptor(field_descriptor)
+                    field_descriptor = rd.add_field_descriptor(fieldd_type)
                 continue
 
             # rd: record descriptor

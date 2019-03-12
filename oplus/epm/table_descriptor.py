@@ -1,9 +1,10 @@
 import logging
 import re
 
-logger = logging.getLogger(__name__)
-
+from .field_descriptor import FieldDescriptor
 from .util import table_name_to_ref
+
+logger = logging.getLogger(__name__)
 
 
 class TableDescriptor:
@@ -14,31 +15,53 @@ class TableDescriptor:
         self.table_name = table_name
         self.table_ref = table_name_to_ref(table_name)
         self.group_name = group_name
-        self.field_descriptors = []  # we use list (and not dict) because some field descriptors do not have a name
-        self.tags = {}
+        self._field_descriptors = []  # we use list (and not dict) because some field descriptors do not have a name
+        self._tags = {}
 
         # extensible management
         # (cycle_start, cycle_len, patterns) where patterns is (var_a_(\d+)_ref, var_b_(\d+)_ref, ...)
-        self._extensible_info = None
+        self.extensible_info = None
+
+    @property
+    def field_descriptors(self):
+        return self._field_descriptors
+
+    @property
+    def tags(self):
+        return self._tags
+
+    def add_tag(self, tag_ref, value=None):
+        if tag_ref not in self._tags:
+            self._tags[tag_ref] = []
+        if value is not None:
+            self._tags[tag_ref].append(value)
+
+    def add_field_descriptor(self, fieldd_type, name=None):
+        # create
+        field_descriptor = FieldDescriptor(len(self._field_descriptors), fieldd_type, name=name)
+
+        # append
+        self._field_descriptors.append(field_descriptor)
+
+        return field_descriptor
 
     def prepare_extensible(self):
         """
         This function finishes initialization, must be called once all field descriptors and tag have been filled.
         """
         # manage extensible
-        for k in self.tags:
+        for k in self._tags:
             if "extensible" in k:
                 cycle_len = int(k.split(":")[1])
                 break
         else:
             # not extensible
-            self._extensible_info = None, None, None
             return
 
         # find cycle start and prepare patterns
         cycle_start = None
         cycle_patterns = []
-        for i, field_descriptor in enumerate(self.field_descriptors):
+        for i, field_descriptor in enumerate(self._field_descriptors):
             # quit if finished
             if (cycle_start is not None) and (i >= (cycle_start + cycle_len)):
                 break
@@ -80,7 +103,7 @@ class TableDescriptor:
 
                 # create ref that will be looked for in previous field descriptors
                 previous_ref = field_descriptor.ref.replace(c, "1")
-                for previous_i, previous_fieldd in enumerate(self.field_descriptors[:i]):
+                for previous_i, previous_fieldd in enumerate(self._field_descriptors[:i]):
                     if previous_fieldd.ref == previous_ref:  # found
                         break
                 else:
@@ -106,43 +129,22 @@ class TableDescriptor:
             raise RuntimeError("cycle start not found")
 
         # detach unnecessary field descriptors
-        self.field_descriptors = self.field_descriptors[:cycle_start + cycle_len]
+        self._field_descriptors = self._field_descriptors[:cycle_start + cycle_len]
 
         # store cycle info
-        self._extensible_info = (cycle_start, cycle_len, tuple(cycle_patterns))
-
-    def _add_tag(self, tag_ref, value=None):
-        if tag_ref not in self.tags:
-            self.tags[tag_ref] = []
-        if value is not None:
-            self.tags[tag_ref].append(value)
-
-    def _append_field_descriptor(self, field_descriptor):
-        """
-        Adds a new field descriptor.
-        """
-        # append
-        self.field_descriptors.append(field_descriptor)
-        
-    # --------------------------------------------- public api ---------------------------------------------------------
-    @property
-    def extensible_info(self):
-        """
-        Returns (cycle_len, cycle_start, patterns) or (None, None, None) if not extensible
-        """
-        return self._extensible_info
+        self.extensible_info = (cycle_start, cycle_len, tuple(cycle_patterns))
 
     @property
     def base_fields_nb(self):
         """
         base fields: without extensible
         """
-        return len(self.field_descriptors) if self.extensible_info == (None, None, None) else self.extensible_info[0]
+        return len(self._field_descriptors) if self.extensible_info is None else self.extensible_info[0]
 
     def get_field_index(self, ref):
         # general case
         for pattern_num in range(self.base_fields_nb):
-            field_descriptor = self.field_descriptors[pattern_num]
+            field_descriptor = self._field_descriptors[pattern_num]
             if field_descriptor.ref is None:  # can happen
                 continue
             if field_descriptor.ref == ref:
@@ -166,20 +168,25 @@ class TableDescriptor:
         """
         reduced index: modulo of extensible has been applied
         """
-        cycle_start, cycle_len, _ = self._extensible_info
+        # return index if not extensible
+        if self.extensible_info is None:
+            return index
+        
+        # manage extensible
+        cycle_start, cycle_len, _ = self.extensible_info
         
         # base field
-        if (cycle_start is None) or (index < cycle_start):
+        if index < cycle_start:
             return index
         
         # extensible field
         return cycle_start + ((index - cycle_start) % cycle_len)
 
     def get_field_descriptor(self, index):
-        return self.field_descriptors[self.get_field_reduced_index(index)]
+        return self._field_descriptors[self.get_field_reduced_index(index)]
 
     def get_field_name(self):
-        return None if len(self.field_descriptors) == 0 else self.field_descriptors[0].name
+        return None if len(self._field_descriptors) == 0 else self._field_descriptors[0].name
 
 
     # def get_info(self, how="txt"):

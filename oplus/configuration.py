@@ -5,13 +5,11 @@ from .operating_system import APPS_DIR_PATH, EPLUS_DIR_PATTERN
 
 # ------------------------------------------------- DEFAULT VARIABLES --------------------------------------------------
 class _Conf:
+    encoding = "latin-1"
+    simulation_base_name = "oplus"
+    
     def __init__(self):
         self.eplus_available_versions = {}  # {version: base_dir_path, ...
-        self.encoding = "latin-1"
-        self.simulation_base_name = "oplus"
-        self.default_write_style = "default write"
-        self.default_read_style = None
-
         self._eplus_version = None  # (i1, i2, i3)
 
         # set available versions
