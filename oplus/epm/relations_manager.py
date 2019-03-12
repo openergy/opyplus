@@ -76,7 +76,7 @@ class RelationsManager:
                 continue
 
             # set link field to none on source record
-            link.source_record._dev_set_none_inert(hook.index)
+            link.source_record._dev_set_none_without_unregistering(hook.index)
 
             # unregister link
             link.unregister()

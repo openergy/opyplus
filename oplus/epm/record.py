@@ -57,9 +57,9 @@ class Record:
 
         # set values inert (must be ordered, otherwise some extensible values may be rejected by mistake)
         for k, v in sorted(data.items()):
-            self._dev_set_value_inert(k, v)
+            self._dev_set_value_without_activating(k, v)
 
-    def _dev_set_none_inert(self, index):
+    def _dev_set_none_without_unregistering(self, index):
         if index not in self._data:
             return
 
@@ -73,10 +73,7 @@ class Record:
         # remove
         del self._data[index]
 
-    def _dev_set_value_inert(self, index, value):
-        """
-        inert: links and hooks will not be activated
-        """
+    def _dev_set_value_without_activating(self, index, value):
         # get field descriptor
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
         
@@ -113,7 +110,7 @@ class Record:
                 
         # if None remove
         if value is None:
-            self._dev_set_none_inert(index)
+            self._dev_set_none_without_unregistering(index)
 
         # if relevant, store current pk to signal table
         old_pk = None
