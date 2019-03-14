@@ -170,5 +170,5 @@ class FieldDescriptor:
         return self._detailed_type
 
     def get_error_location_message(self, value=None):
-        return f"Table: {self.table_descriptor.table_name}, " \
-                   f"index: {self.index}" + "." if value is None else f", value: {value}."
+        return f"Table: {self.table_descriptor.table_name}, index: {self.index}, ref: {self.ref}" +\
+               ("." if value is None else f", value: {value}.")

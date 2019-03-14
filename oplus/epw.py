@@ -214,7 +214,6 @@ class Epw:
         assert_index_equal(value.columns, self._df.columns)
 
 
-
 def parse_epw(file_like, encoding=None, logger_name=None):
     header_s = ""
 

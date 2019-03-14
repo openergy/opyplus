@@ -64,6 +64,11 @@ class Record:
         # check not required
         field_descriptor.check_not_required()
 
+        # check not pk (in case idd was baddly written)
+        if not self._table._dev_auto_pk and index == 0:
+            raise FieldValidationError(
+                f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
+
         # remove
         del self._data[index]
 
@@ -106,16 +111,17 @@ class Record:
                         f"{field_descriptor.get_error_location_message(value)}"
                     )
                 
-        # if None remove
+        # if None remove and leave
         if value is None:
             self._dev_set_none_without_unregistering(index)
+            return
 
         # if relevant, store current pk to signal table
         old_pk = None
         if index == 0 and not self._table._dev_auto_pk:
             old_pk = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
         
-        # else remove
+        # set value
         self._data[index] = value
 
         # signal pk update if relevant
@@ -189,6 +195,12 @@ class Record:
         index = self._table._dev_descriptor.get_field_index(item)
         return self[index]
 
+    def __dir__(self):
+        return [
+            f"f{i}" if fd.ref is None else fd.ref for
+            (i, fd) in enumerate(self._table._dev_descriptor.field_descriptors)
+        ] + list(self.__dict__)
+
     def __setattr__(self, name, value):
         try:
             super().__setattr__(name, value)
@@ -199,7 +211,19 @@ class Record:
         self.update({name: value})
         
     def __repr__(self):
-        return f"<Deleted record>" if self._table is None else f"<{self.get_table_ref()}: {self.get_pk()}>"
+        if self._table is None:
+            return "<Record deleted>"
+
+        if self._table._dev_auto_pk:
+            return f"<Record {self.get_table()._dev_descriptor.table_name}>"
+
+        return f"<Record {self.get_table().get_name()} '{self.get_pk()}'>"
+
+    def __str__(self):
+        if self._table is None:
+            return repr(self)
+
+        return self.to_idf()
 
     def __len__(self):
         biggest_index = -1 if (len(self._data) == 0) else max(self._data)
@@ -279,6 +303,9 @@ class Record:
         else:
             index = self._table._dev_descriptor.get_field_index(ref_or_index)
         return self._table._dev_descriptor.get_field_descriptor(index)
+
+    def get_info(self):
+        return self._table._dev_descriptor.get_info()
     
     def get_pointed_records(self):
         return self.get_epm()._dev_relations_manager.get_pointed_from(self)
@@ -298,8 +325,11 @@ class Record:
         return self._table._dev_descriptor.extensible_info
 
     # construct
-    def update(self, _record_data=None, **record_data):
-        self._update_inert(record_data if _record_data is None else record_data)
+    def update(self, data=None, **or_data):
+        data = or_data if data is None else data
+        if len(data) == 0:
+            return
+        self._update_inert(data)
         self._dev_activate_hooks()
         self._dev_activate_links()
 
@@ -311,6 +341,20 @@ class Record:
         ) for i in self._data
         ])
         return self._table.add(new_data)
+
+    def set_defaults(self):
+        """
+        sets all empty fields with default value to default value
+        """
+        defaults = {}
+        for i in range(len(self)):
+            if i in self._data:
+                continue
+            default = self.get_field_descriptor(i).tags.get("default", [None])[0]
+            if default is not None:
+                defaults[i] = default
+
+        self.update(defaults)
 
     # construct extensible fields
     def add_fields(self, *args):
@@ -409,11 +453,10 @@ class Record:
                 spaces_nb = TAB_LEN
                
             # comment
-            comment = " " * spaces_nb + f"! {self._table._dev_descriptor.get_field_descriptor(i).name}"
+            name = self._table._dev_descriptor.get_extended_name(i)
+            comment = "" if name is None else " " * spaces_nb + f"! {name}"
 
             # store
             s += f"{content}{comment}\n"
 
         return s
-
-    # todo: get_info and str

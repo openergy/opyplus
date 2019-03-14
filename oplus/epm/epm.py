@@ -18,7 +18,7 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, encoding=None):
+    def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, encoding=None):
         # set variables
         self._encoding = CONF.encoding if encoding is None else encoding
         self._path = None
@@ -34,14 +34,14 @@ class Epm:
         self._comment = "" if comment is None else str(comment)
 
         # parse if relevant
-        if buffer_or_path is not None:
-            if isinstance(buffer_or_path, str):
-                if not os.path.isfile(buffer_or_path):
-                    raise FileNotFoundError(f"no idf found at given path: {buffer_or_path}")
-                self._path = buffer_or_path
-                buffer = open(buffer_or_path, encoding=self._encoding)
+        if idf_buffer_or_path is not None:
+            if isinstance(idf_buffer_or_path, str):
+                if not os.path.isfile(idf_buffer_or_path):
+                    raise FileNotFoundError(f"no idf found at given path: {idf_buffer_or_path}")
+                self._path = idf_buffer_or_path
+                buffer = open(idf_buffer_or_path, encoding=self._encoding)
             else:
-                buffer = buffer_or_path
+                buffer = idf_buffer_or_path
 
             # raw parse and parse
             with buffer as f:
@@ -78,22 +78,20 @@ class Epm:
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
+    def __repr__(self):
+        return "<Epm>"
+
     def __str__(self):
-        s = "Epm"
-        if self._path is not None:
-            s += f" (path: {self._path}"
-        s += "\n"
+        s = "Epm\n"
 
         for table in self._tables.values():
             records_nb = len(table)
             if records_nb == 0:
                 continue
-            s += f"    {table.get_name()}: {records_nb} records\n"
+            plural = "" if records_nb == 1 else "s"
+            s += f"  {table.get_name()}: {records_nb} record{plural}\n"
 
         return s
-
-    def __repr__(self):
-        return "<Epm>"
 
     def __eq__(self, other):
         return self.to_json_data() != other.to_json_data()
@@ -114,6 +112,16 @@ class Epm:
     def get_comment(self):
         return self._comment
 
+    def get_info(self):
+        return "Energy plus model\n" + "\n".join(
+            f"  {table._dev_descriptor.table_ref}" for table in self._tables.values()
+        )
+
+    def set_defaults(self):
+        for table in self._tables.values():
+            for r in table:
+                r.set_defaults()
+
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
     def from_json_data(cls, json_data):
@@ -124,7 +132,7 @@ class Epm:
     @classmethod
     def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, comment=None, encoding=None):
         return cls(
-            buffer_or_path=buffer_or_path,
+            idf_buffer_or_path=buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             comment=comment,
             encoding=encoding

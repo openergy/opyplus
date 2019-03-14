@@ -48,7 +48,7 @@ class RelationsManager:
         """
         for key in hook.keys:
             if key in self._hooks:
-                field_descriptor = hook.target_record.get_field_descriptor(hook.target_index)
+                field_descriptor = hook.target_record.get_field_descriptor(hook.index)
                 raise FieldValidationError(
                     f"Reference key already exists, can't create: {key}. "
                     f"{field_descriptor.get_error_location_message(hook.value)}"

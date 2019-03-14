@@ -29,6 +29,9 @@ class Hook:
         return self.target_record.get_epm()._dev_relations_manager
 
     def activate(self, target_record):
+        # return if already active
+        if self.target_record is not None:
+            return
         self.target_record = target_record
         self.relations_manager.register_hook(self)
 

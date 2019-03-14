@@ -1,5 +1,6 @@
 import logging
 import re
+import collections
 
 from .field_descriptor import FieldDescriptor
 from .util import table_name_to_ref
@@ -153,25 +154,29 @@ class TableDescriptor:
     def get_field_descriptor(self, index):
         return self._field_descriptors[self.get_field_reduced_index(index)]
 
-    def get_field_name(self):
-        return None if len(self._field_descriptors) == 0 else self._field_descriptors[0].name
+    def get_extended_name(self, index):
+        """
+        manages extensible names
+        """
+        field_descriptor = self.get_field_descriptor(index)
+        if self.extensible_info is None:
+            return field_descriptor.name
+        cycle_start, cycle_len, _ = self.extensible_info
+        cycle_num = (index - cycle_start) // cycle_len
+        return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num))
 
+    def get_info(self):
+        header = f"{self.table_name} ({self.table_ref})"
 
-    # def get_info(self, how="txt"):
-    #     if how not in ("txt", "dict"):
-    #         raise ValueError(f"unknown how: '{how}'")
-    # 
-    #     d = collections.OrderedDict()
-    #     for fd in self.field_descriptors:
-    #         fields_d = {}
-    #         d[fd.name] = fields_d
-    #         for tag in fd.tags:
-    #             fields_d[tag] = fd.get_tag(tag)
-    #     if how == "dict":
-    #         return d
-    #     msg = "%s\n%s\n%s" % ("-" * len(self.table_ref), self.table_ref, "-" * len(self.table_ref))
-    #     for i, (field_name, field_tags) in enumerate(d.items()):
-    #         msg += "\n%i: %s" % (i, field_name)
-    #         for (tag_name, values) in field_tags.items():
-    #             msg += "\n\t* %s: %s" % (tag_name, values)
-    #     return msg
+        msg = f"{header}\n"
+        for i, field_descriptor in enumerate(self.field_descriptors):
+            msg += f" {i}" + (
+                "\n" if field_descriptor.name is None else f": {field_descriptor.name} ({field_descriptor.ref})\n"
+            )
+
+            for k, v in sorted(field_descriptor.tags.items()):
+                if k == "begin-extensible":  # we indicate cycle len
+                    v = [f"cycle length {self.extensible_info[1]}"]
+                msg += f"    * {k}: {'; '.join(v)}\n"
+
+        return msg

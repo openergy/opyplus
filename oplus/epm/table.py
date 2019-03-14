@@ -3,6 +3,20 @@ from .queryset import Queryset
 from .exceptions import FieldValidationError
 
 
+def get_documented_add(self, record_descriptors):
+    """
+    this hack is used to document add function
+    a methods __doc__ attribute is read-only (or must use metaclasses, what I certainly don't want to do...)
+    we therefore create a function (who's __doc__ attribute is read/write), and will bind it to Table in __init__
+    """
+    def add(data=None, **or_data):
+        return self.batch_add([or_data if data is None else data])[0]
+
+    add.__doc__ = "\n".join([fd.ref.lower() for fd in record_descriptors if fd.ref is not None])
+
+    return add
+
+
 class Table:
     def __init__(self, table_descriptor, epm):
         self._dev_descriptor = table_descriptor
@@ -11,6 +25,9 @@ class Table:
 
         # auto pk if first field is not a reference
         self._dev_auto_pk = table_descriptor.field_descriptors[0].detailed_type != "reference"
+
+        # monkey-patch add
+        self.add = get_documented_add(self, self._dev_descriptor.field_descriptors)
         
     def _dev_record_pk_was_updated(self, old_pk):
         # remove old pk
@@ -51,8 +68,14 @@ class Table:
 
     # --------------------------------------------- public api ---------------------------------------------------------
     def __repr__(self):
-        return f"<table: {self.get_ref()}>"
-    
+        return f"<Table {self.get_name()}>"
+
+    def __str__(self):
+        header = f"Table {self.get_name()} ({self.get_ref()})"
+        if self._dev_auto_pk:
+            return header
+        return header + "\n" + "\n".join(f"  {pk}" for pk in sorted(self._records))
+
     def __getitem__(self, item):
         if self._dev_auto_pk:
             raise KeyError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
@@ -75,9 +98,12 @@ class Table:
 
     def get_epm(self):
         return self._epm
+
+    def get_info(self):
+        return self._dev_descriptor.get_info()
     
-    def add(self, _record_data=None, **record_data):
-        return self.batch_add([record_data if _record_data is None else _record_data])[0]
+    # def add(self, data=None, **or_data):
+    #     return self.batch_add([or_data if data is None else data])[0]
     
     def batch_add(self, records_data):
         # add inert
@@ -103,5 +129,3 @@ class Table:
     # ------------------------------------------- export ---------------------------------------------------------------
     def to_json_data(self):
         return self.select().to_json_data()
-
-    # todo: get_info and str

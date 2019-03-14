@@ -30,5 +30,8 @@ class Link:
         return self.initial_hook_value if self.target_record is None else self.target_record[self.target_index]
     
     def activate(self, source_record):
+        # return if already active
+        if self.source_record is not None:
+            return
         self.source_record = source_record
         self.relations_manager.register_link(self)
