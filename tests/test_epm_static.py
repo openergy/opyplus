@@ -27,7 +27,6 @@ class StaticIdfTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.epms_d = {}
-        TESTED_EPLUS_VERSIONS.pop()  # todo: !! remove !! this is for quick debug
 
         for eplus_version in TESTED_EPLUS_VERSIONS:
             CONF.eplus_version = eplus_version
@@ -166,7 +165,6 @@ class StaticIdfTest(unittest.TestCase):
     # todo: check to_str, including comments and copyright
     # todo: check __dir__ and help
     # todo: shouldn't we propose a record.delete() method ? (and queryset.delete()) ?
-
 
 
 class DynamicIdfTest(unittest.TestCase):

@@ -9,7 +9,7 @@ class Table:
         self._records = dict()
 
         # auto pk if first field is not a reference
-        self._dev_auto_pk = "reference" not in table_descriptor.field_descriptors[0].tags
+        self._dev_auto_pk = table_descriptor.field_descriptors[0].detailed_type != "reference"
         
     def _dev_record_pk_was_updated(self, old_pk):
         # remove old pk

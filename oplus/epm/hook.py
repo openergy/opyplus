@@ -1,5 +1,7 @@
+import itertools
+
 class Hook:
-    def __init__(self, index, references, value):
+    def __init__(self, table_name, index, value, references, class_references):
         """
         status:
             if target_record is None: inert
@@ -8,9 +10,18 @@ class Hook:
         value must always be relevant : !! don't forget to deactivate hook if field of record changes !!
         """
         self.index = index
-        self.references = references
         self.value = value
+        self.references = references
+        self.class_value = table_name.lower()
+        self.class_references = class_references
         self.target_record = None
+
+    @property
+    def keys(self):
+        return itertools.chain(
+            ((ref, self.value) for ref in self.references),
+            ((ref, self.class_value) for ref in self.class_references)
+        )
 
     @property
     def relations_manager(self):

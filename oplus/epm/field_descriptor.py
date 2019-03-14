@@ -30,7 +30,8 @@ class FieldDescriptor:
     """
     BASIC_FIELDS = ("integer", "real", "alpha", "choice", "node", "external-list")
 
-    def __init__(self, index, field_basic_type, name=None):
+    def __init__(self, table_descriptor, index, field_basic_type, name=None):
+        self.table_descriptor = table_descriptor
         if field_basic_type not in ("A", "N"):
             raise ValueError("Unknown field type: '%s'." % field_basic_type)
         self.index = index
@@ -90,8 +91,17 @@ class FieldDescriptor:
 
         # manage hooks (eplus reference)
         if self.detailed_type == "reference":
-            references = self.tags["reference"]
-            return Hook(self.index, references, value)
+            # reference class name appears in v9.0.1
+            references = self.tags.get("reference", [])
+            class_references = self.tags.get("reference-class-name", [])
+            # table_name, index, value, references, class_references
+            return Hook(
+                self.table_descriptor.table_name,
+                self.index,
+                value,
+                references,
+                class_references
+            )
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
@@ -103,8 +113,12 @@ class FieldDescriptor:
     def append_tag(self, ref, value=None):
         if ref not in self.tags:
             self.tags[ref] = []
-        if value is not None:
-            self.tags[ref].append(value)
+
+        # manage value
+        if value is None:
+            return
+
+        self.tags[ref].append(value)
 
     @property
     def detailed_type(self):
@@ -117,7 +131,7 @@ class FieldDescriptor:
         "integer", "real", "alpha", "choice", "reference", "object-list", "external-list", "node"
         """
         if self._detailed_type is None:
-            if "reference" in self.tags:
+            if ("reference" in self.tags) or ("reference-class-name" in self.tags):
                 self._detailed_type = "reference"
             elif "type" in self.tags:
                 self._detailed_type = self.tags["type"][0].lower()  # idd is not very rigorous on case

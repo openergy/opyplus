@@ -292,9 +292,10 @@ class Record:
     def copy(self):
         # create new record
         new_data = dict([(
-            str(uuid.uuid4()),
-            self._data[i] if "reference" in self._table._dev_descriptor.get_field_descriptor(i).tags else self._data[i]
-        ) for i in self._data])
+            str(uuid.uuid4()) if self._table._dev_descriptor.get_field_descriptor(i).detailed_type == "reference"
+            else self._data[i]
+        ) for i in self._data
+        ])
         return self._table.add(new_data)
 
     # construct extensible fields

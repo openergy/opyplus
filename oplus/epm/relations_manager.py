@@ -45,17 +45,16 @@ class RelationsManager:
         self._links_by_target = {}  # {target_record: links_set, ...}
         
     def register_hook(self, hook):
-        initial_len = len(self._hooks)
-        for ref in hook.references:
-            self._hooks[(ref, hook.value)] = hook
-        if len(self._hooks) != initial_len + len(hook.references):
-            raise RuntimeError("not unique")
+        for key in hook.keys:
+            if key in self._hooks:
+                raise RuntimeError(f"non unique reference key, can't create: {key}")
+            self._hooks[key] = hook
 
     def register_link(self, link):
         key = (link.hook_ref, link.initial_hook_value)
         hook = self._hooks.get(key)
         if hook is None:
-            raise RuntimeError("hook not found")
+            raise RuntimeError(f"reference not found: {key}")
         link.set_target(self._hooks[key].target_record, hook.index)
 
         # store by source
@@ -82,9 +81,8 @@ class RelationsManager:
             link.unregister()
 
         # unregister hook
-        keys = {k for (k, v) in self._hooks if v is hook}
-        for k in keys:
-            self._hooks.pop(k)
+        for key in hook.keys:
+            self._hooks.pop(key)
 
     def unregister_link(self, link):
         self._links_by_target[link.target_record].remove(link)
