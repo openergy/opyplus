@@ -1,5 +1,6 @@
 import itertools
 
+
 class Hook:
     def __init__(self, table_name, index, value, references, class_references):
         """

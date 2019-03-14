@@ -51,14 +51,14 @@ class Queryset:
             raise RuntimeError(
                 f"queryset contains records that belong to other table than {self.get_table_ref()}"
             )
-        
+
     # python magic
     def __getitem__(self, item):
         return self._records[item]
 
     def __iter__(self):
         return iter(self._records)
-    
+
     def __repr__(self):
         return "<Queryset of %s: %s records>" % (self.get_table_ref(), str(len(self._records)))
 
@@ -74,6 +74,7 @@ class Queryset:
     def __eq__(self, other):
         return set(self) == set(other)
 
+    # get info
     def get_table(self):
         return self._table
 
@@ -103,12 +104,21 @@ class Queryset:
         # return record
         return qs[0]
 
-    # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self, style=None):
-        return [r.to_json_data(style=style) for r in self._records]  # records are already sorted
+    # delete
+    def delete(self):
+        # delete each record
+        for r in self:
+            r.delete()
 
-    def to_json(self, buffer_or_path=None, indent=2, style=None):
-        d = self.to_json_data(style=style)
+        # clear content
+        self._records = ()
+
+    # ------------------------------------------- export ---------------------------------------------------------------
+    def to_json_data(self):
+        return [r.to_json_data() for r in self._records]  # records are already sorted
+
+    def to_json(self, buffer_or_path=None, indent=2):
+        d = self.to_json_data()
         return json_data_to_json(
             d,
             buffer_or_path=buffer_or_path,

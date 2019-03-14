@@ -1,5 +1,6 @@
 from .record import Record
 from .queryset import Queryset
+from .exceptions import FieldValidationError
 
 
 class Table:
@@ -18,7 +19,9 @@ class Table:
         # check uniqueness
         new_pk = record.get_pk()
         if new_pk in self._records:
-            raise RuntimeError("duplicate pk")  # todo: manage error properly
+            field_descriptor = record.get_field_descriptor(0)
+            raise FieldValidationError(
+                f"Primary key already exists, can't create. {field_descriptor.get_error_location_message(new_pk)}")
 
         # store with new pk
         self._records[new_pk] = record
@@ -42,6 +45,9 @@ class Table:
             added_records.append(record)
         
         return added_records
+
+    def _dev_remove_record_without_unregistering(self, record):
+        del self._records[record.get_pk()]
 
     # --------------------------------------------- public api ---------------------------------------------------------
     def __repr__(self):
@@ -86,19 +92,7 @@ class Table:
             r._dev_activate_links()
 
         return added_records
-    
-    def remove(self, record):
-        # todo: code
-        pass
-    
-    def batch_remove(self, records):
-        for r in records:
-            # remove pointing links
-            self.get_epm()._dev_remove_pointing_links(r)
-        
-        # todo: code
-        pass
-    
+
     def select(self, filter_by=None):
         records = self._records.values() if filter_by is None else filter(filter_by, self._records.values())
         return Queryset(self, records=records)
@@ -107,12 +101,7 @@ class Table:
         return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self, style=None):
-        return self.select().to_json_data(style=style)
+    def to_json_data(self):
+        return self.select().to_json_data()
 
-    def to_json(self, buffer_or_path=None, indent=2, style=None):
-        return self.select().to_json(
-            buffer_or_path=buffer_or_path,
-            indent=indent,
-            style=style
-        )
+    # todo: get_info and str

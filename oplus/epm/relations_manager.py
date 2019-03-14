@@ -1,7 +1,5 @@
 from .multi_table_queryset import MultiTableQueryset
-
-# todo: manage not unique error
-# todo: manage hook not found error
+from .exceptions import FieldValidationError
 
 
 class RelationsManager:
@@ -45,16 +43,30 @@ class RelationsManager:
         self._links_by_target = {}  # {target_record: links_set, ...}
         
     def register_hook(self, hook):
+        """
+        target record must have been set
+        """
         for key in hook.keys:
             if key in self._hooks:
-                raise RuntimeError(f"non unique reference key, can't create: {key}")
+                field_descriptor = hook.target_record.get_field_descriptor(hook.target_index)
+                raise FieldValidationError(
+                    f"Reference key already exists, can't create: {key}. "
+                    f"{field_descriptor.get_error_location_message(hook.value)}"
+                )
             self._hooks[key] = hook
 
     def register_link(self, link):
+        """
+        source record and index must have been set
+        """
         key = (link.hook_ref, link.initial_hook_value)
         hook = self._hooks.get(key)
         if hook is None:
-            raise RuntimeError(f"reference not found: {key}")
+            field_descriptor = link.source_record.get_field_descriptor(link.source_index)
+            raise FieldValidationError(
+                f"No object found with given reference : {key}. "
+                f"{field_descriptor.get_error_location_message(link.source_index)}"
+            )
         link.set_target(self._hooks[key].target_record, hook.index)
 
         # store by source

@@ -20,3 +20,7 @@ class MultipleRecordsReturnedError(EpmError):
 
 class ObsoleteRecordError(EpmError):
     pass
+
+
+class FieldValidationError(EpmError):
+    pass

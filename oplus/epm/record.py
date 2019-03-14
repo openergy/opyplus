@@ -1,12 +1,9 @@
 import uuid
-import io
 import collections
 
-from ..configuration import CONF
-from .exceptions import ObsoleteRecordError, IsPointedError, BrokenEpmError
-from .multi_table_queryset import MultiTableQueryset
 from .link import Link
 from .hook import Hook
+from .exceptions import FieldValidationError
 
 TAB_LEN = 4
 COMMENT_COLUMN_START = 35
@@ -32,19 +29,17 @@ class Record:
         data: dict, default {}
             key: index_or_ref, value: raw value or value
         """
-        # todo: manage what happens if comment on field > fields_nb (extensible), but no data.
-        self._table = table
+        self._table = table  # when record is deleted, __init__ fields are set to None
         self._data = {}
 
         if data is not None:
             self._update_inert(data)
 
-        # check required
-        for i, fd in enumerate(self._table._dev_descriptor.field_descriptors):
-            if ("required-field" in fd.tags) and (i not in self._data):
-                raise RuntimeError("field is required")  # todo: manage errors properly
-        
-        # todo: manage comments properly
+        # check that no required fields are missing
+        for i in range(len(self)):
+            if i in self._data:
+                continue
+            self._table._dev_descriptor.field_descriptors[i].check_not_required()
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -67,8 +62,7 @@ class Record:
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
         # check not required
-        if "required-field" in field_descriptor.tags:
-            raise RuntimeError("field is required, can't be none")  # todo: manage errors properly
+        field_descriptor.check_not_required()
 
         # remove
         del self._data[index]
@@ -101,12 +95,16 @@ class Record:
             if index >= cycle_start:
                 # 1. can't set to None if not last field
                 if (value is None) and index != (len(self)-1):
-                    # todo: manage errors
-                    raise RuntimeError("can't set an extensible field to None, use pop or clear_extensible_fields")
+                    raise FieldValidationError(
+                        f"Can't set an extensible field to None, use pop or clear_extensible_fields. "
+                        f"{field_descriptor.get_error_location_message()}"
+                    )
                 # 2. previous field must not be empty (except for first extensible field)
                 if (index-1 >= cycle_start) and self._data.get(index-1) is None:
-                    # todo: manage errors
-                    raise RuntimeError("can't set an extensible field if some previous extensible fields are empty")
+                    raise FieldValidationError(
+                        f"Can't set an extensible field if some previous extensible fields are empty. "
+                        f"{field_descriptor.get_error_location_message(value)}"
+                    )
                 
         # if None remove
         if value is None:
@@ -126,8 +124,7 @@ class Record:
 
     def _prepare_pop_insert_index(self, index=None):
         if not self.is_extensible():
-            # todo: manage errors
-            raise RuntimeError("can't use add_fields on a non extensible record")
+            raise TypeError("Can't use add_fields on a non extensible record.")
 
         # manage None or negative index
         self_len = len(self)
@@ -139,10 +136,21 @@ class Record:
         # check index is >= cycle_start
         cycle_start, cycle_len, patterns = self.get_extensible_info()
         if not cycle_start <= index < self_len:
-            # todo: manage errors
-            raise RuntimeError("can't use pop for non extensible fields")
+            raise TypeError("Can't use pop for non extensible fields.")
 
         return index
+
+    def _unregister_hooks(self):
+        for v in self._data.values():
+            if not isinstance(v, Hook):
+                continue
+            v.unregister()
+
+    def _unregister_links(self):
+        for v in self._data.values():
+            if not isinstance(v, Link):
+                continue
+            v.unregister()
 
     def _dev_activate_hooks(self):
         for v in self._data.values():
@@ -191,8 +199,7 @@ class Record:
         self.update({name: value})
         
     def __repr__(self):
-        # todo: manage obsolete
-        return f"<{self.get_table_ref()}: {self.get_pk()}>"
+        return f"<Deleted record>" if self._table is None else f"<{self.get_table_ref()}: {self.get_pk()}>"
 
     def __len__(self):
         biggest_index = -1 if (len(self._data) == 0) else max(self._data)
@@ -265,6 +272,13 @@ class Record:
     
     def get_table(self):
         return self._table
+
+    def get_field_descriptor(self, ref_or_index):
+        if isinstance(ref_or_index, int):
+            index = ref_or_index
+        else:
+            index = self._table._dev_descriptor.get_field_index(ref_or_index)
+        return self._table._dev_descriptor.get_field_descriptor(index)
     
     def get_pointed_records(self):
         return self.get_epm()._dev_relations_manager.get_pointed_from(self)
@@ -273,7 +287,7 @@ class Record:
         return self.get_epm()._dev_relations_manager.get_pointing_on(self)
 
     def is_extensible(self):
-         return self.get_extensible_info() is not None
+        return self.get_extensible_info() is not None
     
     def get_extensible_info(self):
         """
@@ -301,8 +315,7 @@ class Record:
     # construct extensible fields
     def add_fields(self, *args):
         if not self.is_extensible():
-            # todo: manage errors
-            raise RuntimeError("can't use add_fields on a non extensible record")
+            raise TypeError("Can't use add_fields on a non extensible record.")
 
         # prepare update data
         self_len = len(self)
@@ -350,10 +363,24 @@ class Record:
         list of cleared fields
         """
         if not self.is_extensible():
-            # todo: manage errors
-            raise RuntimeError("can't use add_fields on a non extensible record")
+            raise TypeError("Can't use add_fields on a non extensible record.")
         cycle_start, cycle_len, patterns = self.get_extensible_info()
         return [self._data.pop(i) for i in range(cycle_start, len(self))]
+
+    # delete
+    def delete(self):
+        # unregister links
+        self._unregister_links()
+
+        # unregister hooks
+        self._unregister_hooks()
+
+        # tell table to remove without unregistering
+        self.get_table()._dev_remove_record_without_unregistering(self)
+
+        # make stale
+        self._table = None
+        self._data = None
         
     # --------------------------------------------- export -------------------------------------------------------------
     def to_dict(self):
@@ -363,8 +390,6 @@ class Record:
         return collections.OrderedDict([(k, self.get_raw_value(k)) for k in self._data])
     
     def to_idf(self):
-        # todo: manage obsolescence ?
-        #  self._check_obsolescence()
         json_data = self.to_json_data()
             
         # record descriptor ref
@@ -390,3 +415,5 @@ class Record:
             s += f"{content}{comment}\n"
 
         return s
+
+    # todo: get_info and str

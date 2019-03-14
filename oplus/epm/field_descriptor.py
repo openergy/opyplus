@@ -2,6 +2,7 @@ import re
 import unidecode
 from .link import Link
 from .hook import Hook
+from .exceptions import FieldValidationError
 
 
 spaces_pattern = re.compile(r"\s+")
@@ -44,7 +45,6 @@ class FieldDescriptor:
         
     # ----------------------------------------- public api -------------------------------------------------------------
     def deserialize(self, value):
-        # todo: make validation errors
         # manage none
         if value is None:
             return None
@@ -67,8 +67,9 @@ class FieldDescriptor:
 
             # check not too big
             if len(value) >= 100:
-                # todo: manage errors properly
-                raise RuntimeError("Field has more than 100 characters which is the limit.")
+                raise FieldValidationError(
+                    f"Field has more than 100 characters which is the limit. {self.get_error_location_message(value)}"
+                )
             
         # manage numeric types
         if self.detailed_type in ("integer", "real"):
@@ -77,16 +78,27 @@ class FieldDescriptor:
                 return value
             
             if self.detailed_type == "integer":
-                return int(value)
-            
-            return float(value)
-        
+                try:
+                    return int(value)
+                except:
+                    raise FieldValidationError(
+                        f"Couldn't parse to integer. {self.get_error_location_message(value)}"
+                    )
+
+            try:
+                return float(value)
+            except:
+                raise FieldValidationError(
+                    f"Couldn't parse to float. {self.get_error_location_message(value)}"
+                )
+
         # manage simple string types
         if self.detailed_type in ("alpha", "choice", "node", "external-list"):
             # ensure it was str
             if not isinstance(value, str):
-                # todo: manage errors properly
-                raise RuntimeError("should be str")
+                raise FieldValidationError(
+                    f"Value must be a string. {self.get_error_location_message(value)}"
+                )
             return value
 
         # manage hooks (eplus reference)
@@ -106,9 +118,17 @@ class FieldDescriptor:
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
             reference = self.tags["object-list"][0]
-            return Link(reference, value)
-    
+            return Link(self.index, reference, value)
+
         raise RuntimeError("should not be here")
+
+    @property
+    def is_required(self):
+        return "required-field" in self.tags
+
+    def check_not_required(self):
+        if self.is_required:
+            raise FieldValidationError(f"Field is required. {self.get_error_location_message()}")
 
     def append_tag(self, ref, value=None):
         if ref not in self.tags:
@@ -148,3 +168,7 @@ class FieldDescriptor:
             else:
                 raise ValueError("Can't find detailed type.")
         return self._detailed_type
+
+    def get_error_location_message(self, value=None):
+        return f"Table: {self.table_descriptor.table_name}, " \
+                   f"index: {self.index}" + "." if value is None else f", value: {value}."

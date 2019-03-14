@@ -19,6 +19,7 @@ class MultiTableQueryset:
             d[k.lower()] = Queryset(_records[0].get_table(), _records)
         self._querysets = collections.OrderedDict(sorted(d.items()))
 
+    # python magic
     def __getattr__(self, item):
         # get table
         table = getattr(self._epm, item)

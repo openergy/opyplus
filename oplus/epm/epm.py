@@ -7,6 +7,7 @@ from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
 from .idf_parse import parse_idf
+from .util import json_data_to_json
 
 
 class Epm:
@@ -31,7 +32,7 @@ class Epm:
         ]))
         self._dev_relations_manager = RelationsManager(self)
         self._comment = "" if comment is None else str(comment)
-        
+
         # parse if relevant
         if buffer_or_path is not None:
             if isinstance(buffer_or_path, str):
@@ -41,11 +42,11 @@ class Epm:
                 buffer = open(buffer_or_path, encoding=self._encoding)
             else:
                 buffer = buffer_or_path
-                
+
             # raw parse and parse
             with buffer as f:
                 json_data = parse_idf(f)
-                
+
             # populate
             self._dev_populate_from_json_data(json_data)
 
@@ -54,13 +55,13 @@ class Epm:
         comment = json_data.pop("_comment", None)
         if comment is not None:
             self._comment = comment
-        
+
         # manage records
         added_records = []
         for table_ref, json_data_records in json_data.items():
             # find table
             table = getattr(self, table_ref)
-            
+
             # create record (inert)
             records = table._dev_add_inert(json_data_records)
 
@@ -108,20 +109,10 @@ class Epm:
 
     def __iter__(self):
         return iter(self._tables.values())
-    
+
     # get info
     def get_comment(self):
         return self._comment
-
-    # remove records
-    def remove(self, record):
-        self.batch_remove([record])
-
-    def batch_remove(self, records):
-        
-        
-        # todo: code
-        pass
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
@@ -141,12 +132,15 @@ class Epm:
 
     # ----------------------------------------- export -----------------------------------------------------------------
     def to_json_data(self):
-        # todo: code
-        return collections.OrderedDict()
+        return collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
 
-    def to_json(self):
-        # todo: code
-        pass
+    def to_json(self, buffer_or_path=None, indent=2):
+        # todo: manage copyright and comment
+        return json_data_to_json(
+            self.to_json_data(),
+            buffer_or_path=buffer_or_path,
+            indent=indent
+        )
         
     def to_idf(self):
         # todo: manage copyright and comment

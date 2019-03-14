@@ -1,5 +1,5 @@
 class Link:
-    def __init__(self, hook_ref, hook_value):
+    def __init__(self, source_index, hook_ref, hook_value):
         """
         status:
             if self.source_record is None: inert
@@ -11,6 +11,7 @@ class Link:
         self.hook_ref = hook_ref
         self.initial_hook_value = hook_value
         self.source_record = None
+        self.source_index = source_index
         self.target_record = None
         self.target_index = None
 
@@ -26,9 +27,7 @@ class Link:
         self.target_index = target_index
     
     def serialize(self):
-
-        # todo: code
-        return self.initial_hook_value # if self.source_record is None else code
+        return self.initial_hook_value if self.target_record is None else self.target_record[self.target_index]
     
     def activate(self, source_record):
         self.source_record = source_record
