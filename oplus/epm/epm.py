@@ -9,7 +9,7 @@ from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
 from .idf_parse import parse_idf
-from .util import json_data_to_json, get_copyright_message
+from .util import json_data_to_json, get_copyright_message, multi_mode_write
 
 
 class Epm:
@@ -129,18 +129,19 @@ class Epm:
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls, json_data):
-        idf = cls()
+    def from_json_data(cls, json_data, check_required=True):
+        idf = cls(check_required=check_required)
         idf._dev_populate_from_json_data(json_data)
         return idf
 
     @classmethod
-    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, comment=None, encoding=None):
+    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, comment=None, encoding=None, check_required=True):
         return cls(
             idf_buffer_or_path=buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             comment=comment,
-            encoding=encoding
+            encoding=encoding,
+            check_required=check_required
         )
 
     # ----------------------------------------- export -----------------------------------------------------------------
@@ -155,18 +156,23 @@ class Epm:
             indent=indent
         )
         
-    def to_idf(self):
+    def to_idf(self, buffer_or_path=None):
         # prepare comment
         comment = get_copyright_message()
         if self._comment != "":
             comment += textwrap.indent(self._comment, "! ", lambda line: True)
         comment += "\n\n"
 
-        # prepare content
+        # prepare body
         formatted_records = []
         for table_ref, table in self._tables.items():  # self._tables is already sorted
             formatted_records.extend([r.to_idf() for r in sorted(table)])
-        content = "\n\n".join(formatted_records)
+        body = "\n\n".join(formatted_records)
 
         # return
-        return comment + content
+        content = comment + body
+        return multi_mode_write(
+            lambda f: f.write(content),
+            lambda: content,
+            buffer_or_path
+        )

@@ -21,6 +21,8 @@ def get_type_level(value):
 
 
 class Record:
+    _initialized = False  # used by __setattr__
+
     def __init__(self, table, data=None):
         """
         Parameters
@@ -41,6 +43,9 @@ class Record:
                 if i in self._data:
                     continue
                 self._table._dev_descriptor.field_descriptors[i].check_not_required()
+
+        # signal initialized
+        self._initialized = True
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -197,20 +202,18 @@ class Record:
         index = self._table._dev_descriptor.get_field_index(item)
         return self[index]
 
+    def __setattr__(self, name, value):
+        if self._initialized:
+            self.update({name: value})
+            return
+        super().__setattr__(name, value)
+
     def __dir__(self):
         return [
             f"f{i}" if fd.ref is None else fd.ref for
             (i, fd) in enumerate(self._table._dev_descriptor.field_descriptors)
         ] + list(self.__dict__)
-
-    def __setattr__(self, name, value):
-        try:
-            super().__setattr__(name, value)
-            return
-        except AttributeError:
-            pass
-
-        self.update({name: value})
+    # todo: order methods
         
     def __repr__(self):
         if self._table is None:
@@ -281,9 +284,17 @@ class Record:
         )
         value = self._data.get(index)
         return value.serialize() if isinstance(value, (Link, Hook)) else value
+
+    def get_epm(self):
+        return self._table.get_epm()
+
+    def get_table(self):
+        return self._table
     
     def get_table_ref(self):
         return self._table.get_ref()
+
+    # todo: order methods
 
     def get_pk(self):
         """
@@ -292,12 +303,6 @@ class Record:
         python id if auto pk, else pk
         """
         return id(self) if self._table._dev_auto_pk else self[0]
-    
-    def get_epm(self):
-        return self._table.get_epm()
-    
-    def get_table(self):
-        return self._table
 
     def get_field_descriptor(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -335,7 +340,7 @@ class Record:
         self._dev_activate_hooks()
         self._dev_activate_links()
 
-    def copy(self):
+    def copy(self):  # todo: choose new ref (check if references on other than index 0
         # create new record
         new_data = dict([(
             str(uuid.uuid4()) if self._table._dev_descriptor.get_field_descriptor(i).detailed_type == "reference"

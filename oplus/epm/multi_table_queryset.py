@@ -38,11 +38,11 @@ class MultiTableQueryset:
         return [g[0].get_table_ref() for g in self._querysets.values()] + list(self.__dict__)
 
     def __iter__(self):
-        return itertools.chain(*self._querysets.values())
+        return self._querysets.values()
 
     def __eq__(self, other):
         return set(self) == set(other)
 
     def __len__(self):
         # works with 0 (checked)
-        return sum(len(qs) for qs in self._querysets.values())
+        return len(self._querysets)

@@ -104,6 +104,7 @@ class Table:
     
     # def add(self, data=None, **or_data):
     #     return self.batch_add([or_data if data is None else data])[0]
+    # monkey-patched
     
     def batch_add(self, records_data):
         # add inert
@@ -129,3 +130,6 @@ class Table:
     # ------------------------------------------- export ---------------------------------------------------------------
     def to_json_data(self):
         return self.select().to_json_data()
+
+
+    # todo: uniformize with queryset

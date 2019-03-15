@@ -9,19 +9,29 @@ def table_name_to_ref(name):
     return name.replace(":", "_")
 
 
-def json_data_to_json(json_data, buffer_or_path=None, indent=2):
-    is_path = False
+def multi_mode_write(buffer_writer, string_writer, buffer_or_path=None):
+    # manage string mode
+    if buffer_or_path is None:
+        return string_writer()
+
+    # manage buffer mode
     if isinstance(buffer_or_path, str):
-        is_path = True
-        buffer_or_path = open(buffer_or_path, "w")
+        buffer = open(buffer_or_path, "w")
+    else:
+        buffer = buffer_or_path
 
     try:
-        if buffer_or_path is None:
-            return json.dumps(json_data, indent=indent)
-        return json.dump(json_data, buffer_or_path, indent=indent)
+        buffer_writer(buffer)
     finally:
-        if is_path:
-            buffer_or_path.close()
+        buffer.close()
+
+
+def json_data_to_json(json_data, buffer_or_path=None, indent=2):
+    return multi_mode_write(
+        lambda buffer: json.dump(json_data, buffer_or_path, indent=indent),
+        lambda: json.dumps(json_data, indent=indent),
+        buffer_or_path=buffer_or_path
+    )
 
 
 def get_copyright_message(prefix="! "):
@@ -31,4 +41,5 @@ Copyright (c) {dt.datetime.now().year}, Openergy development team
 http://www.openergy.fr
 https://github.com/openergy/oplus\n""" + "-"*45 + "\n\n",
         prefix,
-        lambda line: True)
+        lambda line: True
+    )
