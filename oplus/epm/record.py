@@ -373,7 +373,7 @@ class Record:
         data = dict([(self_len + i, args[i]) for i in range(len(args))])
 
         # update
-        self._update(data)
+        self.update(data)
 
     def pop(self, index=None):
         # prepare index (will check for extensible)
