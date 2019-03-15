@@ -179,6 +179,21 @@ class Record:
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
+    def __repr__(self):
+        if self._table is None:
+            return "<Record deleted>"
+
+        if self._table._dev_auto_pk:
+            return f"<Record {self.get_table()._dev_descriptor.table_name}>"
+
+        return f"<Record {self.get_table().get_name()} '{self.get_pk()}'>"
+
+    def __str__(self):
+        if self._table is None:
+            return repr(self)
+
+        return self.to_idf()
+
     def __getitem__(self, item):
         if item >= len(self):
             raise IndexError("index out of range")
@@ -213,22 +228,6 @@ class Record:
             f"f{i}" if fd.ref is None else fd.ref for
             (i, fd) in enumerate(self._table._dev_descriptor.field_descriptors)
         ] + list(self.__dict__)
-    # todo: order methods
-        
-    def __repr__(self):
-        if self._table is None:
-            return "<Record deleted>"
-
-        if self._table._dev_auto_pk:
-            return f"<Record {self.get_table()._dev_descriptor.table_name}>"
-
-        return f"<Record {self.get_table().get_name()} '{self.get_pk()}'>"
-
-    def __str__(self):
-        if self._table is None:
-            return repr(self)
-
-        return self.to_idf()
 
     def __len__(self):
         biggest_index = -1 if (len(self._data) == 0) else max(self._data)
@@ -276,26 +275,17 @@ class Record:
         # equality on common fields, len will settle
         return self_len <= other_len
 
-    # get info
-    def get_raw_value(self, ref_or_index):
-        index = (
-            self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
-            else ref_or_index
-        )
-        value = self._data.get(index)
-        return value.serialize() if isinstance(value, (Link, RecordHook)) else value
-
+    # get context
     def get_epm(self):
         return self._table.get_epm()
 
     def get_table(self):
         return self._table
-    
+
     def get_table_ref(self):
         return self._table.get_ref()
 
-    # todo: order methods
-
+    # explore specific info
     def get_pk(self):
         """
         Returns
@@ -304,32 +294,19 @@ class Record:
         """
         return id(self) if self._table._dev_auto_pk else self[0]
 
-    def get_field_descriptor(self, ref_or_index):
-        if isinstance(ref_or_index, int):
-            index = ref_or_index
-        else:
-            index = self._table._dev_descriptor.get_field_index(ref_or_index)
-        return self._table._dev_descriptor.get_field_descriptor(index)
+    def get_raw_value(self, ref_or_index):
+        index = (
+            self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
+            else ref_or_index
+        )
+        value = self._data.get(index)
+        return value.serialize() if isinstance(value, (Link, RecordHook)) else value
 
-    def get_info(self):
-        return self._table._dev_descriptor.get_info()
-    
     def get_pointed_records(self):
         return self.get_epm()._dev_relations_manager.get_pointed_from(self)
-    
+
     def get_pointing_records(self):
         return self.get_epm()._dev_relations_manager.get_pointing_on(self)
-
-    def is_extensible(self):
-        return self.get_extensible_info() is not None
-    
-    def get_extensible_info(self):
-        """
-        Returns
-        -------
-        cycle_start, cycle_len, patterns
-        """
-        return self._table._dev_descriptor.extensible_info
 
     # construct
     def update(self, data=None, **or_data):
@@ -340,13 +317,14 @@ class Record:
         self._dev_activate_hooks()
         self._dev_activate_links()
 
-    def copy(self):  # todo: choose new ref (check if references on other than index 0
-        # create new record
-        new_data = dict([(
-            str(uuid.uuid4()) if self._table._dev_descriptor.get_field_descriptor(i).detailed_type == "reference"
-            else self._data[i]
-        ) for i in self._data
-        ])
+    def copy(self, new_name=None):
+        # auto pk tables can just be copied
+        if self._table._dev_auto_pk:
+            return self._table.add(self._data)
+
+        # for ref pk tables, must manage name
+        name = str(uuid.uuid4()) if new_name is None else new_name
+        new_data = dict((k, name if k == 0 else v) for (k, v) in self._data.items())
         return self._table.add(new_data)
 
     def set_defaults(self):
@@ -432,6 +410,28 @@ class Record:
         # make stale
         self._table = None
         self._data = None
+
+    # get idd info
+    def get_field_descriptor(self, ref_or_index):
+        if isinstance(ref_or_index, int):
+            index = ref_or_index
+        else:
+            index = self._table._dev_descriptor.get_field_index(ref_or_index)
+        return self._table._dev_descriptor.get_field_descriptor(index)
+
+    def get_info(self):
+        return self._table._dev_descriptor.get_info()
+
+    def is_extensible(self):
+        return self.get_extensible_info() is not None
+
+    def get_extensible_info(self):
+        """
+        Returns
+        -------
+        cycle_start, cycle_len, patterns
+        """
+        return self._table._dev_descriptor.extensible_info
         
     # --------------------------------------------- export -------------------------------------------------------------
     def to_dict(self):

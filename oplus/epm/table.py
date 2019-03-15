@@ -1,7 +1,7 @@
 from .record import Record
 from .queryset import Queryset
 from .exceptions import FieldValidationError
-
+from .util import json_data_to_json
 
 def get_documented_add(self, record_descriptors):
     """
@@ -82,19 +82,25 @@ class Table:
         return header + "\n" + "\n".join(f"  {pk}" for pk in sorted(self._records))
 
     def __getitem__(self, item):
-        if self._dev_auto_pk:
-            raise KeyError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
-        try:
-            return self._records[item]
-        except KeyError:
-            raise KeyError(f"table {self.get_ref()} does not contain a record who's pk is '{item}'")
+        if isinstance(item, str):
+            if self._dev_auto_pk:
+                raise KeyError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
+            try:
+                return self._records[item]
+            except KeyError:
+                raise KeyError(f"table {self.get_ref()} does not contain a record who's pk is '{item}'")
+        if isinstance(item, int):
+            return self.select()[item]  # queryset will be ordered
+
+        raise KeyError("item must be an int or a str")
     
     def __iter__(self):
         return iter(self._records.values())
     
     def __len__(self):
         return len(self._records)
-    
+
+    # get context
     def get_ref(self):
         return self._dev_descriptor.table_ref
     
@@ -104,9 +110,15 @@ class Table:
     def get_epm(self):
         return self._epm
 
-    def get_info(self):
-        return self._dev_descriptor.get_info()
-    
+    # explore
+    def select(self, filter_by=None):
+        records = self._records.values() if filter_by is None else filter(filter_by, self._records.values())
+        return Queryset(self, records=records)
+
+    def one(self, filter_by=None):
+        return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
+
+    # construct
     # def add(self, data=None, **or_data):
     #     return self.batch_add([or_data if data is None else data])[0]
     # monkey-patched
@@ -125,16 +137,10 @@ class Table:
 
         return added_records
 
-    def select(self, filter_by=None):
-        records = self._records.values() if filter_by is None else filter(filter_by, self._records.values())
-        return Queryset(self, records=records)
-    
-    def one(self, filter_by=None):
-        return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
+    # get idd info
+    def get_info(self):
+        return self._dev_descriptor.get_info()
 
     # ------------------------------------------- export ---------------------------------------------------------------
     def to_json_data(self):
         return self.select().to_json_data()
-
-
-    # todo: uniformize with queryset

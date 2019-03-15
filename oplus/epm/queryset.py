@@ -53,14 +53,25 @@ class Queryset:
             )
 
     # python magic
+    def __repr__(self):
+        return "<Queryset of %s: %s records>" % (self.get_table_ref(), str(len(self._records)))
+
     def __getitem__(self, item):
-        return self._records[item]
+        if isinstance(item, str):
+            if self._table._dev_auto_pk:
+                raise KeyError(f"table {self._table.get_ref()} does not have a primary key, can't use getitem syntax")
+            for r in self._records:
+                if r.get_pk() == item:
+                    return r
+            else:
+                raise KeyError(f"queryset does not contain a record who's pk is '{item}'")
+        if isinstance(item, int):
+            return self._records[item]
+
+        raise KeyError("item must be an int or a str")
 
     def __iter__(self):
         return iter(self._records)
-
-    def __repr__(self):
-        return "<Queryset of %s: %s records>" % (self.get_table_ref(), str(len(self._records)))
 
     def __len__(self):
         return len(self._records)
@@ -116,11 +127,3 @@ class Queryset:
     # ------------------------------------------- export ---------------------------------------------------------------
     def to_json_data(self):
         return [r.to_json_data() for r in self._records]  # records are already sorted
-
-    def to_json(self, buffer_or_path=None, indent=2):
-        d = self.to_json_data()
-        return json_data_to_json(
-            d,
-            buffer_or_path=buffer_or_path,
-            indent=indent
-        )

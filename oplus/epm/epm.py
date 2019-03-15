@@ -102,30 +102,32 @@ class Epm:
 
         return s
 
-    def __eq__(self, other):
-        return self.to_json_data() != other.to_json_data()
-
-    def __dir__(self):
-        return [t.get_ref() for t in self._tables.values()] + list(self.__dict__)
-
     def __getattr__(self, item):
         try:
             return self._tables[item.lower()]
         except KeyError:
             raise AttributeError(f"No table with reference '{item}'.")
 
+    def __eq__(self, other):
+        return self.to_json_data() != other.to_json_data()
+
     def __iter__(self):
         return iter(self._tables.values())
+
+    def __dir__(self):
+        return [t.get_ref() for t in self._tables.values()] + list(self.__dict__)
 
     # get info
     def get_comment(self):
         return self._comment
 
+    # get idd info
     def get_info(self):
         return "Energy plus model\n" + "\n".join(
             f"  {table._dev_descriptor.table_ref}" for table in self._tables.values()
         )
 
+    # construct
     def set_defaults(self):
         for table in self._tables.values():
             for r in table:
@@ -150,10 +152,12 @@ class Epm:
 
     # ----------------------------------------- export -----------------------------------------------------------------
     def to_json_data(self):
-        return collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
+        d = collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
+        d["_comment"] = self._comment
+        d.move_to_end("_comment", last=False)
+        return d
 
     def to_json(self, buffer_or_path=None, indent=2):
-        # todo: manage copyright and comment
         return json_data_to_json(
             self.to_json_data(),
             buffer_or_path=buffer_or_path,
