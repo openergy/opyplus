@@ -8,6 +8,14 @@ if __name__ == "__main__":
         "ExampleFiles",
         "1ZoneEvapCooler.idf")
     )
+    print(epm.to_idf())
+    path = "temp.idf"
+
+    for i in range(3):
+        with open(path, "w") as f:
+            f.write(epm.to_idf())
+            epm = op.Epm(path)
+    print(epm.to_idf())
     # epm = op.Epm()
 
     # print([epm])

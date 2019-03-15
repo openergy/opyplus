@@ -1,8 +1,7 @@
-from ..configuration import CONF
-from .util import table_name_to_ref
+from .util import table_name_to_ref, get_copyright_message
 
 
-def parse_idf(file_like, style=None):
+def parse_idf(file_like):
     """
     Records are created from string.
     They are not attached to idf yet.
@@ -14,7 +13,18 @@ def parse_idf(file_like, style=None):
     record_data = None
     make_new_record = True
 
+    copyright_list = "\n".split(get_copyright_message())
+
     for i, raw_line in enumerate(file_like):
+        # # manage if copyright
+        # try:
+        #     copyright_line = copyright_list[i]
+        #     if raw_line == copyright_line:
+        #         # skip copyright line
+        #         continue
+        # except IndexError:
+        #     pass
+
         # GET LINE CONTENT AND COMMENT
         split_line = raw_line.split("!")
 

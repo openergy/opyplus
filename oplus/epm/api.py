@@ -1,3 +1,2 @@
 from .epm import Epm
-from .exceptions import MultipleRecordsReturnedError, RecordDoesNotExistError, BrokenEpmError, IsPointedError, \
-    ObsoleteRecordError
+from .exceptions import MultipleRecordsReturnedError, RecordDoesNotExistError, FieldValidationError

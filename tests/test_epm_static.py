@@ -3,9 +3,8 @@ import os
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
-from oplus import Epm, BrokenEpmError, IsPointedError
+from oplus import Epm
 from oplus.configuration import CONF
-from oplus import ObsoleteRecordError
 
 
 schedule_test_record_str = """Schedule:Compact,

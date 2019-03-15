@@ -36,10 +36,11 @@ class Record:
             self._update_inert(data)
 
         # check that no required fields are missing
-        for i in range(len(self)):
-            if i in self._data:
-                continue
-            self._table._dev_descriptor.field_descriptors[i].check_not_required()
+        if self._table.get_epm()._dev_check_required:
+            for i in range(len(self)):
+                if i in self._data:
+                    continue
+                self._table._dev_descriptor.field_descriptors[i].check_not_required()
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -61,8 +62,9 @@ class Record:
         # get field descriptor
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
-        # check not required
-        field_descriptor.check_not_required()
+        # check not required (if check required mode)
+        if self._table.get_epm()._dev_check_required:
+            field_descriptor.check_not_required()
 
         # check not pk (in case idd was baddly written)
         if not self._table._dev_auto_pk and index == 0:

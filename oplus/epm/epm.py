@@ -1,13 +1,15 @@
 import os
 import collections
+import textwrap
 
 from ..configuration import CONF
+
 from .idd import Idd
 from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
 from .idf_parse import parse_idf
-from .util import json_data_to_json
+from .util import json_data_to_json, get_copyright_message
 
 
 class Epm:
@@ -18,7 +20,8 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, encoding=None):
+    def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, encoding=None,
+                 check_required=True):
         # set variables
         self._encoding = CONF.encoding if encoding is None else encoding
         self._path = None
@@ -31,6 +34,8 @@ class Epm:
             for table_descriptor in self._dev_idd.table_descriptors.values()
         ]))
         self._dev_relations_manager = RelationsManager(self)
+        self._dev_check_required = check_required
+
         self._comment = "" if comment is None else str(comment)
 
         # parse if relevant
@@ -151,8 +156,17 @@ class Epm:
         )
         
     def to_idf(self):
-        # todo: manage copyright and comment
+        # prepare comment
+        comment = get_copyright_message()
+        if self._comment != "":
+            comment += textwrap.indent(self._comment, "! ", lambda line: True)
+        comment += "\n\n"
+
+        # prepare content
         formatted_records = []
         for table_ref, table in self._tables.items():  # self._tables is already sorted
             formatted_records.extend([r.to_idf() for r in sorted(table)])
-        return "\n\n".join(formatted_records)
+        content = "\n\n".join(formatted_records)
+
+        # return
+        return comment + content
