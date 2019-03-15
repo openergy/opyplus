@@ -1,5 +1,6 @@
 import unittest
 import os
+import itertools
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
@@ -105,8 +106,15 @@ class StaticIdfTest(unittest.TestCase):
                 {s.name for s in z.get_pointing_records().BuildingSurface_Detailed}
             )
 
+            # check number of pointing tables
+            self.assertEqual(4, len(z.get_pointing_records()))
+
             # check number of pointing objects
-            self.assertEqual(9, len(z.get_pointing_records()))
+            count = 0
+            for qs in z.get_pointing_records():
+
+                count += len(qs)
+            self.assertEqual(9, count)
 
     def test_pointed(self):
         for eplus_version in iter_eplus_versions(self):

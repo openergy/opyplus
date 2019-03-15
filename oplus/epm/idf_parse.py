@@ -13,17 +13,17 @@ def parse_idf(file_like):
     record_data = None
     make_new_record = True
 
-    copyright_list = "\n".split(get_copyright_message())
+    copyright_list = get_copyright_message().split("\n")
 
     for i, raw_line in enumerate(file_like):
-        # # manage if copyright
-        # try:
-        #     copyright_line = copyright_list[i]
-        #     if raw_line == copyright_line:
-        #         # skip copyright line
-        #         continue
-        # except IndexError:
-        #     pass
+        # manage if copyright
+        try:
+            copyright_line = copyright_list[i]
+            if raw_line.strip() == copyright_line:
+                # skip copyright line
+                continue
+        except IndexError:
+            pass
 
         # GET LINE CONTENT AND COMMENT
         split_line = raw_line.split("!")

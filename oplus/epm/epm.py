@@ -29,11 +29,15 @@ class Epm:
             idd_or_buffer_or_path if isinstance(idd_or_buffer_or_path, Idd) else
             self._dev_idd_cls(idd_or_buffer_or_path, encoding=encoding)
         )
+        # !! relations manager must be defined before table creation because table creation will trigger
+        # hook registering
+        self._dev_relations_manager = RelationsManager(self)
+
         self._tables = collections.OrderedDict(sorted([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
             for table_descriptor in self._dev_idd.table_descriptors.values()
         ]))
-        self._dev_relations_manager = RelationsManager(self)
+
         self._dev_check_required = check_required
 
         self._comment = "" if comment is None else str(comment)

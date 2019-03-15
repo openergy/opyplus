@@ -2,7 +2,7 @@ import uuid
 import collections
 
 from .link import Link
-from .hook import Hook
+from .record_hook import RecordHook
 from .exceptions import FieldValidationError
 
 TAB_LEN = 4
@@ -94,10 +94,10 @@ class Record:
                 current_link.unregister()
                 
         # manage if hook
-        if isinstance(value, Hook):
-            current_hook = self._data.get(index)
-            if current_hook is not None:
-                current_hook.unregister()
+        if isinstance(value, RecordHook):
+            current_record_hook = self._data.get(index)
+            if current_record_hook is not None:
+                current_record_hook.unregister()
 
         # if extensible: make appropriate checks
         if self.is_extensible():
@@ -155,7 +155,7 @@ class Record:
 
     def _unregister_hooks(self):
         for v in self._data.values():
-            if not isinstance(v, Hook):
+            if not isinstance(v, RecordHook):
                 continue
             v.unregister()
 
@@ -167,7 +167,7 @@ class Record:
 
     def _dev_activate_hooks(self):
         for v in self._data.values():
-            if not isinstance(v, Hook):
+            if not isinstance(v, RecordHook):
                 continue
             v.activate(self)
 
@@ -187,8 +187,8 @@ class Record:
         value = self._data.get(item)
 
         # transform if hook or link
-        if isinstance(value, Hook):
-            return value.value
+        if isinstance(value, RecordHook):
+            return value.target_value
         if isinstance(value, Link):
             return value.target_record
 
@@ -283,7 +283,7 @@ class Record:
             else ref_or_index
         )
         value = self._data.get(index)
-        return value.serialize() if isinstance(value, (Link, Hook)) else value
+        return value.serialize() if isinstance(value, (Link, RecordHook)) else value
 
     def get_epm(self):
         return self._table.get_epm()

@@ -38,7 +38,7 @@ class MultiTableQueryset:
         return [g[0].get_table_ref() for g in self._querysets.values()] + list(self.__dict__)
 
     def __iter__(self):
-        return self._querysets.values()
+        return iter(self._querysets.values())
 
     def __eq__(self, other):
         return set(self) == set(other)

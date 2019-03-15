@@ -28,6 +28,11 @@ class Table:
 
         # monkey-patch add
         self.add = get_documented_add(self, self._dev_descriptor.field_descriptors)
+
+        # register table hooks
+        table_hooks_references = self._dev_descriptor.field_descriptors[0].tags.get("reference-class-name")
+        if table_hooks_references is not None:
+            self._epm._dev_relations_manager.register_table_hook(table_hooks_references, self)
         
     def _dev_record_pk_was_updated(self, old_pk):
         # remove old pk

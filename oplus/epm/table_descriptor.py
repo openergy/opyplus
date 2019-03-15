@@ -119,8 +119,12 @@ class TableDescriptor:
             if field_descriptor.ref == ref:
                 return pattern_num
 
+
         # extensible
-        cycle_start, cycle_len, patterns = self.extensible_info
+        ext_info = self.extensible_info
+        if ext_info is None:
+            return
+        cycle_start, cycle_len, patterns = ext_info
         for pattern_num, pat in enumerate(patterns):
             match = re.fullmatch(pat, ref)
             if match is None:  # not found

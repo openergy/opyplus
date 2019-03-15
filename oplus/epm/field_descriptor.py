@@ -1,7 +1,7 @@
 import re
 import unidecode
 from .link import Link
-from .hook import Hook
+from .record_hook import RecordHook
 from .exceptions import FieldValidationError
 
 
@@ -105,20 +105,13 @@ class FieldDescriptor:
         if self.detailed_type == "reference":
             # reference class name appears in v9.0.1
             references = self.tags.get("reference", [])
-            class_references = self.tags.get("reference-class-name", [])
             # table_name, index, value, references, class_references
-            return Hook(
-                self.table_descriptor.table_name,
-                self.index,
-                value,
-                references,
-                class_references
-            )
+            return RecordHook(references, value)
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
             reference = self.tags["object-list"][0]
-            return Link(self.index, reference, value)
+            return Link(reference, value)
 
         raise RuntimeError("should not be here")
 

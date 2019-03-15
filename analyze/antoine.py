@@ -10,20 +10,19 @@ if __name__ == "__main__":
         "1ZoneEvapCooler.idf"
     )
 
-    idf = op.Epm(check_required=False)
-    bsd = idf.BuildingSurface_Detailed.add(name="toto")
-    bsd.view_factor_to_ground = .5
-    print(bsd)
+    # idf = op.Epm(check_required=False)
+    # bsd = idf.BuildingSurface_Detailed.add(name="toto")
+    # bsd.view_factor_to_ground = .5
+    # print(bsd)
 
-    # local_eplus_path = "eplus.idf"
-    # shutil.copy2(eplus_path, local_eplus_path)
-    # epm = op.Epm(local_eplus_path)
-    #
-    #
-    # path = "temp.idf"
-    # epm.to_idf(path)
-    # epm = op.Epm(path)
+    local_eplus_path = "eplus.idf"
+    shutil.copy2(eplus_path, local_eplus_path)
+    epm = op.Epm(local_eplus_path)
 
+    path = "temp.idf"
+    epm.to_idf(path)
+    epm = op.Epm(path)
+    print(epm.to_idf())
 
 
     # for i in range(3):

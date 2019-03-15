@@ -1,19 +1,17 @@
-import itertools
 
 
 class RecordHook:
-    def __init__(self, index, value, references):
+    def __init__(self, references, value):
         """
-        value must always be relevant : !! don't forget to deactivate hook if field of record changes !!
+        target_value must always be relevant : !! don't forget to deactivate hook if field of record changes !!
         """
-        self.index = index
-        self.value = value
         self.references = references
+        self.target_value = value
         self.target_record = None
 
     @property
     def keys(self):
-        return ((ref, self.value) for ref in self.references)
+        return ((ref, self.target_value) for ref in self.references)
 
     @property
     def relations_manager(self):
@@ -24,11 +22,11 @@ class RecordHook:
         if self.target_record is not None:
             return
         self.target_record = target_record
-        self.relations_manager.register_hook(self)
+        self.relations_manager.register_record_hook(self)
 
     def unregister(self):
-        self.relations_manager.unregister_hook(self)
-
+        self.relations_manager.unregister_record_hook(self)
+    
     def serialize(self):
-        return self.value
+        return self.target_value
 
