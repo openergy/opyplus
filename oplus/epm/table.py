@@ -64,6 +64,7 @@ class Table:
             )
 
             # store
+            # we don't check uniqueness here => will be done while checking hooks
             self._records[record.get_pk()] = record
             
             # remember record
@@ -139,6 +140,10 @@ class Table:
             r._dev_activate_links()
 
         return added_records
+
+    # delete
+    def delete(self):
+        self.select().delete()
 
     # get idd info
     def get_info(self):

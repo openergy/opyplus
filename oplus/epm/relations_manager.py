@@ -112,7 +112,12 @@ class RelationsManager:
 
     def unregister_link(self, link):
         self._links_by_target[link.target].remove(link)
+        if len(self._links_by_target[link.target]) == 0:
+            del self._links_by_target[link.target]
+
         self._links_by_source[link.source_record].remove(link)
+        if len(self._links_by_source[link.source_record]) == 0:
+            del self._links_by_source[link.source_record]
         
     def get_pointing_on(self, target_record_or_table):
         return MultiTableQueryset(

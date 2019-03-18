@@ -22,10 +22,16 @@ class Link:
         if self.target_record is not None:
             return self.target_record
         raise AssertionError("should not be here")
-        
-    def unregister(self):
-        self.relations_manager.unregister_record_hook(self)
-    
+
+    def activate(self, source_record):
+        # return if already active
+        if self.source_record is not None:
+            return
+        self.source_record = source_record
+        self.relations_manager.register_link(self)
+        # clear initial hook value to prevent future incorrect use
+        self.initial_hook_value = None
+
     def set_target(self, target_record=None, target_table=None):
         if target_record is not None:
             self.target_record = target_record
@@ -33,7 +39,10 @@ class Link:
             self.target_table = target_table
         else:
             raise AssertionError("shouldn't be here")
-    
+        
+    def unregister(self):
+        self.relations_manager.unregiser_link(self)
+
     def serialize(self):
         if self.target_record is not None:
             return self.target_record[0]
@@ -41,9 +50,4 @@ class Link:
             return self.target_table.get_name().lower()
         raise AssertionError("shouldn't be here")
     
-    def activate(self, source_record):
-        # return if already active
-        if self.source_record is not None:
-            return
-        self.source_record = source_record
-        self.relations_manager.register_link(self)
+
