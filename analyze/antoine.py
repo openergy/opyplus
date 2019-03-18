@@ -46,7 +46,6 @@ if __name__ == "__main__":
     # print(bsd)
     # print(bsd.get_info())
 
-
     # zone = epm.Zone.add(name="Test")
     # print(epm.to_idf())
     #
@@ -67,4 +66,3 @@ if __name__ == "__main__":
     # eq = epm.ZoneHVAC_EquipmentList.add(name="eq")
     # eq2 = epm.ZoneHVAC_EquipmentList.add(name="eq")
     # print(eq.get_info())
-

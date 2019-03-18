@@ -34,18 +34,12 @@ class Record:
         self._table = table  # when record is deleted, __init__ fields are set to None
         self._data = {}
 
-        if data is not None:
-            self._update_inert(data)
-
-        # check that no required fields are missing
-        if self._table.get_epm()._dev_check_required:
-            for i in range(len(self)):
-                if i in self._data:
-                    continue
-                self._table._dev_descriptor.field_descriptors[i].check_not_required()
-
         # signal initialized
         self._initialized = True
+
+        # set data if any
+        if data is not None:
+            self._update_inert(data)
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -58,31 +52,52 @@ class Record:
 
         # set values inert (must be ordered, otherwise some extensible values may be rejected by mistake)
         for k, v in sorted(data.items()):
-            self._dev_set_value_without_activating(k, v)
+            self._update_value_inert(k, v)
 
-    def _dev_set_none_without_unregistering(self, index):
-        if index not in self._data:
+        # leave if empty required fields are tolerated
+        # check that no required fields are missing
+        if not self._table.get_epm()._dev_check_required:
             return
 
-        # get field descriptor
-        field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
+        # check required
 
-        # check not required (if check required mode)
-        if self._table.get_epm()._dev_check_required:
+        # prepare extensible checks
+        is_extensible = self.is_extensible()
+        if is_extensible:
+            cycle_start, cycle_len, patterns = self.get_extensible_info()
+        else:
+            cycle_start, cycle_len, patterns = None, None, None
+
+        # iter fields
+        for i in range(len(self)):
+            if i in self._data:
+                continue
+
+            # see if required field
+            field_descriptor = self._table._dev_descriptor.field_descriptors[i]
             field_descriptor.check_not_required()
 
-        # check not pk (in case idd was baddly written)
-        if not self._table._dev_auto_pk and index == 0:
-            raise FieldValidationError(
-                f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
+            # check not pk (in case idd was baddly written)
+            if i == 0 and not self._table._dev_auto_pk:
+                raise FieldValidationError(
+                    f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
-        # remove
-        del self._data[index]
+            # if extensible: make appropriate checks
+            if is_extensible and i >= cycle_start:
+                value = self._data.get(i)
+                if value is None:
+                    raise FieldValidationError(
+                        f"An extensible field can't be empty. Pop or clear_extensible_fields may be usefull. "
+                        f"{field_descriptor.get_error_location_message()}"
+                    )
 
-    def _dev_set_value_without_activating(self, index, value):
+    def _update_value_inert(self, index, value):
+        """
+        is only called by _update_inert
+        """
         # get field descriptor
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
-        
+
         # prepare value
         value = field_descriptor.deserialize(value)
 
@@ -92,48 +107,43 @@ class Record:
             current_link = self._data.get(index)
             if current_link is not None:
                 current_link.unregister()
-                
+
         # manage if hook
         if isinstance(value, RecordHook):
             current_record_hook = self._data.get(index)
             if current_record_hook is not None:
                 current_record_hook.unregister()
 
-        # if extensible: make appropriate checks
-        if self.is_extensible():
-            cycle_start, cycle_len, patterns = self.get_extensible_info()
-
-            # see if extensible fields
-            if index >= cycle_start:
-                # 1. can't set to None if not last field
-                if (value is None) and index != (len(self)-1):
-                    raise FieldValidationError(
-                        f"Can't set an extensible field to None, use pop or clear_extensible_fields. "
-                        f"{field_descriptor.get_error_location_message()}"
-                    )
-                # 2. previous field must not be empty (except for first extensible field)
-                if (index-1 >= cycle_start) and self._data.get(index-1) is None:
-                    raise FieldValidationError(
-                        f"Can't set an extensible field if some previous extensible fields are empty. "
-                        f"{field_descriptor.get_error_location_message(value)}"
-                    )
-                
         # if None remove and leave
         if value is None:
-            self._dev_set_none_without_unregistering(index)
+            # we don't check required, because this method is called by _update_inert which does the job
+            self._dev_set_none_without_unregistering(index, check_not_required=False)
             return
 
         # if relevant, store current pk to signal table
         old_pk = None
         if index == 0 and not self._table._dev_auto_pk:
             old_pk = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
-        
+
         # set value
         self._data[index] = value
 
         # signal pk update if relevant
         if old_pk is not None:
             self._table._dev_record_pk_was_updated(old_pk)
+
+    def _dev_set_none_without_unregistering(self, index, check_not_required=True):
+        # get field descriptor
+        field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
+
+        # check not required (if asked and check required mode)
+        if check_not_required and self._table.get_epm()._dev_check_required:
+            field_descriptor.check_not_required()
+
+        # check not pk (in case idd was badly written)
+        if not self._table._dev_auto_pk and index == 0:
+            raise FieldValidationError(
+                f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
     def _prepare_pop_insert_index(self, index=None):
         if not self.is_extensible():
@@ -181,7 +191,7 @@ class Record:
     # python magic
     def __repr__(self):
         if self._table is None:
-            return "<Record deleted>"
+            return "<Record (deleted)>"
 
         if self._table._dev_auto_pk:
             return f"<Record {self.get_table()._dev_descriptor.table_name}>"

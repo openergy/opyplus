@@ -16,7 +16,8 @@ class TableDescriptor:
         self.table_name = table_name
         self.table_ref = table_name_to_ref(table_name)
         self.group_name = group_name
-        self._field_descriptors = []  # we use list (and not dict) because some field descriptors do not have a name
+        # we use list (and not dict) because some field descriptors do not have a name (including non extensible tables)
+        self._field_descriptors = []
         self._tags = {}
 
         # extensible management

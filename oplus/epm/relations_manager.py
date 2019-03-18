@@ -24,9 +24,10 @@ class RelationsManager:
             set None inert
 
         relations_manager
-            find pointing records and field index
-                link = record._dev_pop_link(index) (and check if required)
-                relations_manager.unregister_link(link)
+            find pointing links
+                pointing_record.set_non_inert
+                link.unregister
+
             unregister hook
 
     record: remove link

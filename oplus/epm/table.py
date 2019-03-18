@@ -1,7 +1,7 @@
 from .record import Record
 from .queryset import Queryset
 from .exceptions import FieldValidationError
-from .util import json_data_to_json
+
 
 def get_documented_add(self, record_descriptors):
     """
@@ -23,8 +23,11 @@ class Table:
         self._epm = epm
         self._records = dict()
 
-        # auto pk if first field is not a reference
-        self._dev_auto_pk = table_descriptor.field_descriptors[0].detailed_type != "reference"
+        # auto pk if first field is not a required reference
+        self._dev_auto_pk = not (
+                (table_descriptor.field_descriptors[0].detailed_type == "reference") and
+                ("required-field" in table_descriptor.field_descriptors[0].tags)
+        )
 
         # monkey-patch add
         self.add = get_documented_add(self, self._dev_descriptor.field_descriptors)

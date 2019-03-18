@@ -12,3 +12,7 @@ if __name__ == "__main__":
             if "reference" in fd.tags:
                 print(table_ref, i)
 
+            if td.extensible_info is None or i<td.extensible_info[0]:
+                if "field" not in fd.tags:
+                    print(i, table_ref)
+
