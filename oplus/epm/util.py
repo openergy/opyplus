@@ -20,15 +20,13 @@ def multi_mode_write(buffer_writer, string_writer, buffer_or_path=None):
     else:
         buffer = buffer_or_path
 
-    try:
+    with buffer:
         buffer_writer(buffer)
-    finally:
-        buffer.close()
 
 
 def json_data_to_json(json_data, buffer_or_path=None, indent=2):
     return multi_mode_write(
-        lambda buffer: json.dump(json_data, buffer_or_path, indent=indent),
+        lambda buffer: json.dump(json_data, buffer, indent=indent),
         lambda: json.dumps(json_data, indent=indent),
         buffer_or_path=buffer_or_path
     )

@@ -60,6 +60,18 @@ class Epm:
             self._dev_populate_from_json_data(json_data)
 
     def _dev_populate_from_json_data(self, json_data):
+        """
+        workflow
+        --------
+        (methods belonging to create/update/delete framework:
+            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        1. add inert
+            * data is checked
+            * old links are unregistered
+            * record is stored in table (=> pk uniqueness is checked)
+        2. activate hooks
+        3. activate links
+        """
         # manage comment if any
         comment = json_data.pop("_comment", None)
         if comment is not None:

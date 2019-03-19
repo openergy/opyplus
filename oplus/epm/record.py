@@ -145,6 +145,10 @@ class Record:
             raise FieldValidationError(
                 f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
+        # set none
+        if index in self._data:
+            del self._data[index]
+
     def _prepare_pop_insert_index(self, index=None):
         if not self.is_extensible():
             raise TypeError("Can't use add_fields on a non extensible record.")
@@ -228,10 +232,10 @@ class Record:
         return self[index]
 
     def __setattr__(self, name, value):
-        if self._initialized:
-            self.update({name: value})
+        if name in self.__dict__ or not self._initialized:
+            super().__setattr__(name, value)
             return
-        super().__setattr__(name, value)
+        self.update({name: value})
 
     def __dir__(self):
         return [
@@ -320,9 +324,19 @@ class Record:
 
     # construct
     def update(self, data=None, **or_data):
+        """
+        workflow
+        --------
+        (methods belonging to create/update/delete framework:
+            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        1. add inert
+            * data is checked
+            * old links are unregistered
+            * record is stored in table (=> pk uniqueness is checked)
+        2. activate hooks
+        3. activate links
+        """
         data = or_data if data is None else data
-        if len(data) == 0:
-            return
         self._update_inert(data)
         self._dev_activate_hooks()
         self._dev_activate_links()
@@ -408,6 +422,15 @@ class Record:
 
     # delete
     def delete(self):
+        """
+        workflow
+        --------
+        (methods belonging to create/update/delete framework:
+            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        1. unregister links
+        2. unregister hooks
+        3. remove from table without unregistering
+        """
         # unregister links
         self._unregister_links()
 

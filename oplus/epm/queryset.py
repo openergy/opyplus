@@ -60,7 +60,7 @@ class Queryset:
         if isinstance(item, str):
             if self._table._dev_auto_pk:
                 raise KeyError(f"table {self._table.get_ref()} does not have a primary key, can't use getitem syntax")
-            for r in self._records:
+            for r in self._records:  # todo: we could store records in an ordered dict with pk keys
                 if r.get_pk() == item:
                     return r
             else:
@@ -117,6 +117,15 @@ class Queryset:
 
     # delete
     def delete(self):
+        """
+        workflow
+        --------
+        (methods belonging to create/update/delete framework:
+            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        1. unregister links
+        2. unregister hooks
+        3. remove from table without unregistering
+        """
         # delete each record
         for r in self:
             r.delete()

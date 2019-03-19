@@ -128,6 +128,18 @@ class Table:
     # monkey-patched
     
     def batch_add(self, records_data):
+        """
+        workflow
+        --------
+        (methods belonging to create/update/delete framework:
+            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        1. add inert
+            * data is checked
+            * old links are unregistered
+            * record is stored in table (=> pk uniqueness is checked)
+        2. activate hooks
+        3. activate links
+        """
         # add inert
         added_records = self._dev_add_inert(records_data)
         
