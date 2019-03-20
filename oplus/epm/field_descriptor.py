@@ -15,16 +15,6 @@ def var_name_to_ref(name):
     return re.sub(multiple_underscores_pattern, "_", ref)
 
 
-def to_num(raw_value):
-    if isinstance(raw_value, str):
-        if raw_value in ("autocalculate", "autosize"):  # raw_values are always lowercase
-            return raw_value
-        try:
-            return int(raw_value)
-        except ValueError:
-            return float(raw_value)
-
-
 class FieldDescriptor:
     """
     No checks implemented (idd is considered as ok).
@@ -73,8 +63,8 @@ class FieldDescriptor:
             
         # manage numeric types
         if self.detailed_type in ("integer", "real"):
-            # auto-calculate and auto-size
-            if value in ("autocalculate", "autosize"):
+            # special values: auto-calculate, auto-size, use-weather-file
+            if value in ("autocalculate", "autosize", "useweatherfile"):
                 return value
             
             if self.detailed_type == "integer":

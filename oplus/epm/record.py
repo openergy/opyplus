@@ -43,6 +43,10 @@ class Record:
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
+            if ref_or_index < 0:
+                ref_or_index = len(self) - ref_or_index
+            if ref_or_index < 0:
+                raise IndexError("index out of range")
             return ref_or_index
         return self._table._dev_descriptor.get_field_index(ref_or_index)
 
@@ -209,7 +213,11 @@ class Record:
         return self.to_idf()
 
     def __getitem__(self, item):
-        if item >= len(self):
+        # prepare item
+        item = self._field_key_to_index(item)
+
+        # check not out of range
+        if item > len(self):
             raise IndexError("index out of range")
 
         # get value

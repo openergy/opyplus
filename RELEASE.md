@@ -3,6 +3,9 @@
 **M: major, m: minor, p: patch**
 
 ## next
+* M: preparing 7.0.1.dev0
+* M: new syntax
+* m: links and hooks have been re-coded
 
 ## 6.1.1
 * p: manage EplusDt no leap year
