@@ -7,6 +7,7 @@ class Link:
         """
         self.hook_ref = hook_ref
         self.initial_hook_value = hook_value
+        self.source_index = None  # for cool error messages
         self.source_record = None
         self.target_record = None
         self.target_table = None
@@ -23,10 +24,11 @@ class Link:
             return self.target_record
         raise AssertionError("should not be here")
 
-    def activate(self, source_record):
+    def activate(self, source_record, source_index):
         # return if already active
         if self.source_record is not None:
             return
+        self.source_index = source_index
         self.source_record = source_record
         self.relations_manager.register_link(self)
         # clear initial hook value to prevent future incorrect use
