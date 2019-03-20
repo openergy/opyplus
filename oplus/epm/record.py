@@ -44,7 +44,7 @@ class Record:
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
             if ref_or_index < 0:
-                ref_or_index = ref_or_index + len(self)
+                ref_or_index += len(self)
             if ref_or_index < 0:
                 raise IndexError("index out of range")
             return ref_or_index
