@@ -81,7 +81,7 @@ class RelationsManager:
                 field_descriptor = link.source_record.get_field_descriptor(0)
                 raise FieldValidationError(
                     f"No object found with given reference : {key}. "
-                    f"{field_descriptor.get_error_location_message(link.source_index)}"
+                    f"{field_descriptor.get_error_location_message(link.initial_hook_value)}"
                 )
 
             # set link target

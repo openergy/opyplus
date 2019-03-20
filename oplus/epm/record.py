@@ -190,10 +190,10 @@ class Record:
             v.activate(self)
 
     def _dev_activate_links(self):
-        for k, v in self._data.items():
+        for v in self._data.values():
             if not isinstance(v, Link):
                 continue
-            v.activate(k, self)
+            v.activate(self)
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
