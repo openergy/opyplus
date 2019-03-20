@@ -24,7 +24,7 @@ class Link:
             return self.target_record
         raise AssertionError("should not be here")
 
-    def activate(self, source_record, source_index):
+    def activate(self, source_index, source_record):
         # return if already active
         if self.source_record is not None:
             return
