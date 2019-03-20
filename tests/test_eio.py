@@ -1,13 +1,15 @@
 import unittest
 import os
 
-from oplus.tests.util import iter_eplus_versions, RESOURCES_DIR_PATH
+from tests.util import iter_eplus_versions, RESOURCES_DIR_PATH
 from oplus import Simulation
 
 
 class TestValues(unittest.TestCase):
     def test_values(self):
         for eplus_version in iter_eplus_versions(self):
+            if eplus_version == (9, 0, 1):  # todo: make 9.0.1 tests !!
+                continue
             version_str = "-".join([str(v) for v in eplus_version])
             s = Simulation(os.path.join(
                 RESOURCES_DIR_PATH,
@@ -28,11 +30,11 @@ class TestValues(unittest.TestCase):
                 2.291
             )
             self.assertEqual(
-                float(eio._get_value("Material CTF Summary", 5, 0, "R13LAYER")),
+                float(eio.get_value("Material CTF Summary", 5, 0, "R13LAYER")),
                 2.291
             )
             self.assertEqual(
-                float(eio._get_value(
+                float(eio.get_value(
                     "Material CTF Summary",
                     "ThermalResistance {m2-K/w}",
                     "Material Name",

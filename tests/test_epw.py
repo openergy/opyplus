@@ -4,7 +4,7 @@ import io
 
 from oplus.configuration import CONF
 from oplus.epw import Epw
-from oplus.tests.util import assert_epw_equal, iter_eplus_versions
+from tests.util import assert_epw_equal, iter_eplus_versions
 
 from pandas.util.testing import assert_frame_equal
 

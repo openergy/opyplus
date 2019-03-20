@@ -4,8 +4,8 @@ import tempfile
 import io
 
 from oplus import simulate, CONF, Epm
-from oplus.tests.util import iter_eplus_versions
-from oplus.idd.idd import Idd
+from tests.util import iter_eplus_versions
+from oplus.epm.idd import Idd, get_idd_standard_path
 
 
 class SimulateTest(unittest.TestCase):
@@ -14,6 +14,8 @@ class SimulateTest(unittest.TestCase):
     """
     def test_simulate(self):
         for eplus_version in iter_eplus_versions(self):
+            if eplus_version == (9, 0, 1):  # todo: make 9.0.1 tests !!
+                continue
             # prepare paths
             idf_path = os.path.join(
                 CONF.eplus_base_dir_path,
@@ -28,11 +30,11 @@ class SimulateTest(unittest.TestCase):
 
             # prepare a quick simulation
             idf = Epm(idf_path)
-            sc = idf["SimulationControl"].one()
-            sc["Run Simulation for Sizing Periods"] = "No"
-            rp = idf["RunPeriod"].one()
-            rp["End Month"] = 1
-            rp["End Day of Month"] = 1
+            sc = idf.SimulationControl.one()
+            sc.run_simulation_for_sizing_periods = "No"
+            rp = idf.RunPeriod.one()
+            rp.end_month = 1
+            rp.end_day_of_month = 1
 
             # prepare outputs
             out_f = io.StringIO()
@@ -69,7 +71,10 @@ class SimulateTest(unittest.TestCase):
 
     def test_simulate_with_custom_idd(self):
         for eplus_version in iter_eplus_versions(self):
-            default_idd_path = Idd.get_idd_path()
+            if eplus_version == (9, 0, 1):  # todo: make 9.0.1 tests !!
+                continue
+
+            default_idd_path = get_idd_standard_path()
             dirname, basename = os.path.split(default_idd_path)
 
             with tempfile.TemporaryDirectory() as dir_path:
@@ -94,11 +99,11 @@ class SimulateTest(unittest.TestCase):
 
                 # prepare a quick simulation
                 idf = Epm(idf_path)
-                sc = idf["SimulationControl"].one()
-                sc["Run Simulation for Sizing Periods"] = "No"
-                rp = idf["RunPeriod"].one()
-                rp["End Month"] = 1
-                rp["End Day of Month"] = 1
+                sc = idf.SimulationControl.one()
+                sc.run_simulation_for_sizing_periods = "No"
+                rp = idf.RunPeriod.one()
+                rp.end_month = 1
+                rp.end_day_of_month = 1
 
                 # prepare outputs
                 out_f = io.StringIO()

@@ -488,7 +488,10 @@ class Record:
         s = f"{self._table._dev_descriptor.table_name},\n"
 
         # fields
-        fields_nb = len(self)
+        # fields_nb: we don't use len(self) but max(self). We wan't to stop if no more values (even base fields)
+        #   because some idd records are defined without extensibles (although they should used them), for example
+        #   construction, and eplus does not know what to do...
+        fields_nb = max(self._data)+1
         for i in range(fields_nb):
             # value
             tab = " " * TAB_LEN

@@ -19,6 +19,7 @@ from oplus.mtd import Mtd
 from oplus.eio import Eio
 from oplus.err import Err
 from oplus.summary_table import SummaryTable
+from .epm.idd import get_idd_standard_path
 from . import operating_system as ops  # oplus os => ops
 
 
@@ -138,8 +139,14 @@ class Simulation:
             os.mkdir(simulation_dir_path)
 
         # idd
-        idd_or_path_or_key = idd_or_path_or_key if isinstance(idd_or_path_or_key, Idd) \
-            else cls._idd_cls.get_idd_path(idd_or_path_or_key)
+        if isinstance(idd_or_path_or_key, Idd):
+            pass
+        elif idd_or_path_or_key in ("energy+", None):
+            idd_or_path_or_key = get_idd_standard_path()
+        else:
+            idd_or_path_or_key = str(idd_or_path_or_key)
+            if not os.path.isfile(idd_or_path_or_key):
+                raise FileNotFoundError(f"No file at given path: '{idd_or_path_or_key}'.")
 
         # run simulation
         stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
@@ -253,7 +260,10 @@ class Simulation:
     @property
     def _idd(self):
         if self.__idd is None:
-            self.__idd = Idd.get_idd(self._idd_or_path, encoding=self._encoding)
+            if isinstance(self._idd_or_path, Idd):
+                self.__idd = self._idd_or_path
+            else:
+                self.__idd = Idd(self._idd_or_path, encoding=self._encoding)
         return self.__idd
 
     def _check_file_ref(self, file_ref):
@@ -305,7 +315,7 @@ def run_eplus(idf_or_path, epw_or_path, idd_or_path, dir_path, stdout=None, stde
     # save files
     simulation_idf_path = os.path.join(dir_path, CONF.simulation_base_name + ".idf")
     if isinstance(idf_or_path, Epm):
-        idf_or_path.save_as(simulation_idf_path)
+        idf_or_path.to_idf(simulation_idf_path)
     else:
         _copy_without_read_only(idf_or_path, simulation_idf_path)
 

@@ -1,8 +1,6 @@
 import unittest
-import os
 
-from oplus.idf.idd import Idd
-from oplus.configuration import CONF
+from oplus.epm.idd import Idd
 
 from tests.util import iter_eplus_versions
 

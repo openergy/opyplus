@@ -120,21 +120,19 @@ class TableDescriptor:
             if field_descriptor.ref == ref:
                 return pattern_num
 
-
         # extensible
         ext_info = self.extensible_info
-        if ext_info is None:
-            return
-        cycle_start, cycle_len, patterns = ext_info
-        for pattern_num, pat in enumerate(patterns):
-            match = re.fullmatch(pat, ref)
-            if match is None:  # not found
-                continue
-            # we found cycle
-            cycle_num = int(match.group(1))
+        if ext_info is not None:
+            cycle_start, cycle_len, patterns = ext_info
+            for pattern_num, pat in enumerate(patterns):
+                match = re.fullmatch(pat, ref)
+                if match is None:  # not found
+                    continue
+                # we found cycle
+                cycle_num = int(match.group(1))
 
-            # calculate and return index
-            return cycle_start + (cycle_num-1)*cycle_len + pattern_num
+                # calculate and return index
+                return cycle_start + (cycle_num-1)*cycle_len + pattern_num
 
         raise AttributeError("No field of '%s' has ref '%s'." % (self.table_name, ref))
 

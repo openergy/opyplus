@@ -2,8 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
-## next
-* M: preparing 7.0.1.dev0
+## 7.0.1.dev0
+* WARNING: only epm chapter really works, and it is not thoroughly tested. Documentation is not up to date.
 * M: new syntax
 * m: links and hooks have been re-coded
 
