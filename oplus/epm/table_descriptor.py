@@ -104,6 +104,10 @@ class TableDescriptor:
         # store cycle info
         self.extensible_info = (cycle_start, cycle_len, tuple(cycle_patterns))
 
+        # set field descriptor cycle_start index (for error messages while serialization)
+        for i, fd in enumerate(self._field_descriptors[cycle_start:]):
+            fd.set_extensible_info(cycle_start, cycle_len, cycle_patterns[i])
+
     @property
     def base_fields_nb(self):
         """

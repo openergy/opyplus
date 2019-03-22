@@ -5,7 +5,7 @@ from .record_hook import RecordHook
 from .exceptions import FieldValidationError
 
 
-spaces_pattern = re.compile(r"\s+")
+spaces_and_newlines_pattern = re.compile(r"[\n\r\s]+")
 not_python_var_pattern = re.compile(r"(^[^\w]+)|([^\w\d]+)")
 multiple_underscores_pattern = re.compile(r"[_]{2,}")
 
@@ -31,10 +31,30 @@ class FieldDescriptor:
         self.ref = None if name is None else var_name_to_ref(name)
         self.tags = {}
 
+        # used for error messages on extensible fields
+        self._extensible_info = None
+
         self._detailed_type = None
-        
-    # ----------------------------------------- public api -------------------------------------------------------------
-    def deserialize(self, value):
+
+    # construct
+    def append_tag(self, ref, value=None):
+        if ref not in self.tags:
+            self.tags[ref] = []
+
+        # manage value
+        if value is None:
+            return
+
+        self.tags[ref].append(value)
+
+    def set_extensible_info(self, cycle_start, cycle_len, cycle_pattern):
+        self._extensible_info = (cycle_start, cycle_len, cycle_pattern)
+
+    # deserialize
+    def deserialize(self, value, index=None):
+        """
+        index is used for extensible fields error messages (if given)
+        """
         # manage none
         if value is None:
             return None
@@ -42,7 +62,7 @@ class FieldDescriptor:
         # prepare if string
         if isinstance(value, str):
             # change multiple spaces to mono spaces
-            value = re.sub(spaces_pattern, lambda x: " ", value.strip())
+            value = re.sub(spaces_and_newlines_pattern, lambda x: " ", value.strip())
             
             # see if still not empty
             if value == "":
@@ -58,7 +78,8 @@ class FieldDescriptor:
             # check not too big
             if len(value) >= 100:
                 raise FieldValidationError(
-                    f"Field has more than 100 characters which is the limit. {self.get_error_location_message(value)}"
+                    f"Field has more than 100 characters which is the limit. "
+                    f"{self.get_error_location_message(value, index=index)}"
                 )
             
         # manage numeric types
@@ -72,14 +93,14 @@ class FieldDescriptor:
                     return int(value)
                 except:
                     raise FieldValidationError(
-                        f"Couldn't parse to integer. {self.get_error_location_message(value)}"
+                        f"Couldn't parse to integer. {self.get_error_location_message(value, index=index)}"
                     )
 
             try:
                 return float(value)
             except:
                 raise FieldValidationError(
-                    f"Couldn't parse to float. {self.get_error_location_message(value)}"
+                    f"Couldn't parse to float. {self.get_error_location_message(value, index=index)}"
                 )
 
         # manage simple string types
@@ -87,7 +108,7 @@ class FieldDescriptor:
             # ensure it was str
             if not isinstance(value, str):
                 raise FieldValidationError(
-                    f"Value must be a string. {self.get_error_location_message(value)}"
+                    f"Value must be a string. {self.get_error_location_message(value, index=index)}"
                 )
             return value
 
@@ -105,6 +126,7 @@ class FieldDescriptor:
 
         raise RuntimeError("should not be here")
 
+    # get info
     @property
     def is_required(self):
         return "required-field" in self.tags
@@ -112,16 +134,6 @@ class FieldDescriptor:
     def check_not_required(self):
         if self.is_required:
             raise FieldValidationError(f"Field is required. {self.get_error_location_message()}")
-
-    def append_tag(self, ref, value=None):
-        if ref not in self.tags:
-            self.tags[ref] = []
-
-        # manage value
-        if value is None:
-            return
-
-        self.tags[ref].append(value)
 
     @property
     def detailed_type(self):
@@ -152,6 +164,13 @@ class FieldDescriptor:
                 raise ValueError("Can't find detailed type.")
         return self._detailed_type
 
-    def get_error_location_message(self, value=None):
-        return f"Table: {self.table_descriptor.table_name}, index: {self.index}, ref: {self.ref}" +\
+    def get_error_location_message(self, value=None, index=None):
+        # manage extensible field ref if relevant
+        if (index is not None) and (self._extensible_info is not None) and (index >= self._extensible_info[0]):
+            cycle_num = (index - self._extensible_info[0]) // self._extensible_info[1] +1
+            ref = self._extensible_info[2].replace(r"(\d+)", str(cycle_num))
+        else:
+            ref = self.ref
+
+        return f"Table: {self.table_descriptor.table_name}, index: {self.index}, ref: {ref}" +\
                ("." if value is None else f", value: {value}.")
