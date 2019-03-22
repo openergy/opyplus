@@ -19,6 +19,7 @@ import os
 import re
 import logging
 
+from ..util import to_buffer
 from ..configuration import CONF
 from .table_descriptor import TableDescriptor
 
@@ -36,14 +37,7 @@ class Idd:
         self.encoding = CONF.encoding if encoding is None else encoding
         if buffer_or_path is None:
             buffer_or_path = get_idd_standard_path()
-        if isinstance(buffer_or_path, str):
-            if not os.path.isfile(buffer_or_path):
-                raise FileNotFoundError(f"no idd found at given path: {buffer_or_path}")
-            self.path = buffer_or_path
-            buffer = open(buffer_or_path, encoding=self.encoding)
-        else:
-            self.path = None
-            buffer = buffer_or_path
+        self.path, buffer = to_buffer(buffer_or_path, encoding=encoding)
 
         self.table_descriptors = dict()
 

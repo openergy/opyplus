@@ -1,4 +1,5 @@
-from .util import table_name_to_ref, get_copyright_message
+from ..util import get_multi_line_copyright_message
+from .util import table_name_to_ref
 
 
 def parse_idf(file_like):
@@ -13,7 +14,7 @@ def parse_idf(file_like):
     record_data = None
     make_new_record = True
 
-    copyright_list = get_copyright_message().split("\n")
+    copyright_list = get_multi_line_copyright_message().split("\n")
 
     for i, raw_line in enumerate(file_like):
         # todo: manage copyright properly (should detect whole block, not by row)

@@ -3,13 +3,14 @@ import collections
 import textwrap
 
 from ..configuration import CONF
+from ..util import get_multi_line_copyright_message, to_buffer
 
 from .idd import Idd
 from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
 from .idf_parse import parse_idf
-from .util import json_data_to_json, get_copyright_message, multi_mode_write
+from .util import json_data_to_json, multi_mode_write
 
 
 class Epm:
@@ -44,13 +45,7 @@ class Epm:
 
         # parse if relevant
         if idf_buffer_or_path is not None:
-            if isinstance(idf_buffer_or_path, str):
-                if not os.path.isfile(idf_buffer_or_path):
-                    raise FileNotFoundError(f"no idf found at given path: {idf_buffer_or_path}")
-                self._path = idf_buffer_or_path
-                buffer = open(idf_buffer_or_path, encoding=self._encoding)
-            else:
-                buffer = idf_buffer_or_path
+            self._path, buffer = to_buffer(idf_buffer_or_path)
 
             # raw parse and parse
             with buffer as f:
@@ -178,7 +173,7 @@ class Epm:
         
     def to_idf(self, buffer_or_path=None):
         # prepare comment
-        comment = get_copyright_message()
+        comment = get_multi_line_copyright_message()
         if self._comment != "":
             comment += textwrap.indent(self._comment, "! ", lambda line: True)
         comment += "\n\n"

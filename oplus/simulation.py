@@ -11,9 +11,8 @@ import collections
 
 from oplus.configuration import CONF
 from oplus.util import run_subprocess, LoggerStreamWriter
-from oplus import Epm
+from oplus import Epm, WeatherData
 from oplus.epm.idd import Idd
-from oplus.epw import Epw
 from oplus.standard_output import StandardOutputFile
 from oplus.mtd import Mtd
 from oplus.eio import Eio
@@ -104,7 +103,7 @@ class Simulation:
     # for subclassing
     _idf_cls = Epm
     _idd_cls = Idd
-    _epw_cls = Epw
+    _epw_cls = WeatherData  # todo: change
     _standard_output_file_cls = StandardOutputFile
     _mtd_cls = Mtd
     _eio_cls = Eio
