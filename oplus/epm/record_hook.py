@@ -1,11 +1,12 @@
 
 
 class RecordHook:
-    def __init__(self, references, value):
+    def __init__(self, references, index, value):
         """
         target_value must always be relevant : !! don't forget to deactivate hook if field of record changes !!
         """
         self.references = references
+        self.target_index = index
         self.target_value = value
         self.target_record = None
 

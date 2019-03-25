@@ -319,7 +319,7 @@ def run_eplus(idf_or_path, epw_or_path, idd_or_path, dir_path, stdout=None, stde
         _copy_without_read_only(idf_or_path, simulation_idf_path)
 
     simulation_epw_path = os.path.join(dir_path, CONF.simulation_base_name + ".epw")
-    if isinstance(epw_or_path, Epw):
+    if isinstance(epw_or_path, WeatherData):
         epw_or_path.save_as(simulation_epw_path)
     else:
         _copy_without_read_only(epw_or_path, simulation_epw_path)

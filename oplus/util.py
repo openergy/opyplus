@@ -39,7 +39,7 @@ https://github.com/openergy/oplus\n""" + "-"*45 + "\n\n",
 
 
 def get_mono_line_copyright_message():
-    return "oplus version %s, copyright (c) %s, Openergy development team" % (__version__, dt.datetime.now().year)
+    return "oplus version %s - copyright (c) %s - Openergy development team" % (__version__, dt.datetime.now().year)
 
 
 class EPlusDt:

@@ -1,4 +1,5 @@
 import collections
+import datetime as dt
 
 import pandas as pd
 
@@ -6,11 +7,14 @@ from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-# "year",
-# "month",
-# "day",
-# "hour",
-# "minute",
+
+INSTANTS_COLUMNS = (
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute"
+)
 
 WEATHER_SERIES_DEFAULTS = collections.OrderedDict((  # if None: mandatory field, else optional
     ("datasource", ""),
@@ -70,10 +74,19 @@ class WeatherData:
             daylight_savings_end_day=0,
             holidays=None,  # [(name, day), ...]
             comments_1="",
-            comments_2=""
+            comments_2="",
+            start_day_of_week=None
     ):
-        # todo: document two df mode (datetime index or not)
+        # instants may be datetimes or tuples
         self._weather_series = _check_and_sanitize_weather_series(weather_series)
+
+        # manage start day of week (only relevant if tuples datetimes)
+        self._start_day_of_week = None
+        if self.has_tuple_instants and start_day_of_week is not None:
+            self._start_day_of_week = start_day_of_week
+        else:
+            self._set_start_day_of_week()
+
         # todo: check headers
         self._headers = dict(
             # mandatory location
@@ -103,17 +116,6 @@ class WeatherData:
             comments_1=comments_1,
             comments_2=comments_2
         )
-
-    @classmethod
-    def from_epw(cls, buffer_or_path, encoding=None):
-        from .epw_parse import parse_epw
-        _, buffer = to_buffer(buffer_or_path)
-        with buffer as f:
-            return parse_epw(f, encoding=encoding)
-
-    @property
-    def is_datetime_index_mode(self):
-        return isinstance(self._weather_series.index, pd.DatetimeIndex)
 
     def _headers_to_epw(self):
         location = [
@@ -167,12 +169,12 @@ class WeatherData:
         # comments
         comments_1 = get_mono_line_copyright_message()
         if comments_1 not in self._headers["comments_1"]:
-            comments_1 += self._headers["comments_1"]
+            comments_1 += " ; " + self._headers["comments_1"]
         comments_1 = ["COMMENTS 1", comments_1]
         comments_2 = ["COMMENTS 2", self._headers["comments_2"]]
 
         # data periods
-        if self.is_datetime_index_mode:
+        if self.has_datetime_instants:
             start_timestamp = self._weather_series.index[0]
             end_timestamp = self._weather_series.index[-1]
             data_periods = [
@@ -205,6 +207,64 @@ class WeatherData:
             data_periods
         )])
 
+    def _set_start_day_of_week(self):
+        if self.has_datetime_instants:
+            date = self._weather_series.index[0]
+        else:
+            date = dt.date(
+                self._weather_series["year"].iloc[0],
+                self._weather_series["month"].iloc[0],
+                self._weather_series["day"].iloc[0]
+            )
+
+        self._start_day_of_week = WEEK_DAYS[date.weekday()]
+
+    @classmethod
+    def from_epw(cls, buffer_or_path, encoding=None):
+        from .epw_parse import parse_epw
+        _, buffer = to_buffer(buffer_or_path)
+        with buffer as f:
+            return parse_epw(f, encoding=encoding)
+
+    @property
+    def has_datetime_instants(self):
+        return isinstance(self._weather_series.index, pd.DatetimeIndex)
+
+    @property
+    def has_tuple_instants(self):
+        return not self.has_datetime_instants
+
+    def switch_to_tuple_instants(self):
+        # don't switch if not relevant
+        if self.has_tuple_instants:
+            return
+        # remove datetime index
+        self._weather_series.index = range(len(self._weather_series))
+
+    def switch_to_datetime_instants(self):
+        # don't switch if not relevant
+        if self.has_datetime_instants:
+            return
+
+        # create index
+        index = self._weather_series.apply(lambda x: dt.datetime(x.year, x.month, x.day, x.hour-1, x.minute))
+
+        # check and sanitize
+        _check_and_sanitize_datetime_instants(index)
+
+        # remove old start day of week
+        self._start_day_of_week = None
+
+        # set new indew
+        self._weather_series.index = index
+
+        # set new start day of week
+        self._set_start_day_of_week()
+
+    @property
+    def weather_series(self):
+        return self._weather_series.copy()
+
     def to_epw(self, buffer_or_path=None):
         epw_content = self._headers_to_epw() + self._weather_series.to_csv(header=False, index=False)
         return multi_mode_write(
@@ -212,6 +272,7 @@ class WeatherData:
             lambda: epw_content,
             buffer_or_path=buffer_or_path
         )
+
 
 
 def _check_and_sanitize_weather_series(df):
@@ -233,13 +294,8 @@ def _check_and_sanitize_weather_series(df):
     if isinstance(df.index, pd.DatetimeIndex):  # datetime index mode
         is_datetime_index = True
 
-        # check frequency
-        if df.index.freq != "H":
-            raise ValueError("Weather series must have an hourly frequence.")
-
-        # check first minute is 0
-        if df.index[0].minute != 0:
-            raise ValueError("Minutes must be 0.")
+        # check and sanitize index
+        _check_and_sanitize_datetime_instants(df.index)
 
         # prepare instant columns
         data.update((
@@ -249,9 +305,10 @@ def _check_and_sanitize_weather_series(df):
             ("hour", df.index.hour + 1),
             ("minute", 0)
         ))
+
     else:
         # check instant columns
-        diff = {"year", "month", "day", "hour", "minute"}.difference(given_columns)
+        diff = set(INSTANTS_COLUMNS).difference(given_columns)
         if len(diff) != 0:
             raise ValueError(f"Missing mandatory columns: {diff}.")
 
@@ -273,3 +330,13 @@ def _check_and_sanitize_weather_series(df):
 
     # prepare
     return sanitized_df
+
+
+def _check_and_sanitize_datetime_instants(index):
+    # check frequency
+    if index.freq != "H":
+        raise ValueError("Weather series must have an hourly frequence.")
+
+    # check first minute is 0
+    if index[0].minute != 0:
+        raise ValueError("Minutes must be 0.")

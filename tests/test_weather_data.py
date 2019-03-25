@@ -1,6 +1,7 @@
 import unittest
 import os
-import io
+
+import pandas as pd
 
 from oplus.configuration import CONF
 from oplus import WeatherData
@@ -10,39 +11,42 @@ from pandas.util.testing import assert_frame_equal
 
 
 class EPlusWeatherData(unittest.TestCase):
-    def test_df_integrity(self):
-        """
-        tests if epw to df to epw works
-        """
+    # todo: make better checks
+    def test_weather_series(self):
         for _ in iter_eplus_versions(self):
             weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
 
             # check Chicago
             file_path = os.path.join(weather_dir, "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw")
+
+            # get weather series csv
             with open(file_path) as f:
-                expected_content = f.read()
+                # skip header
+                for i in range(8):
+                    next(f)
+                expected_df = pd.read_csv(f, header=None)
 
-            # read
+            # create weather data
             weather_data = WeatherData.from_epw(file_path)
-
-            # write
-            generated_content = weather_data.to_epw()
-
-            # check
-            # todo
-
-    def test_df_get_and_set_integrity(self):
-        for _ in iter_eplus_versions(self):
-            weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
-
-            # check sf
-            epw = Epw(os.path.join(weather_dir, "USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"))
-
-            # read
-            df = epw.df()
-
-            # write
-            epw.set_df(df)
+            generated_df = weather_data.weather_series
+            generated_df.columns = range(len(generated_df.columns))  # remove columns (for comparison)
 
             # check
-            assert_frame_equal(df, epw.df())
+            assert_frame_equal(expected_df, generated_df)
+
+
+    # def test_df_get_and_set_integrity(self):
+    #     for _ in iter_eplus_versions(self):
+    #         weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
+    #
+    #         # check sf
+    #         epw = Epw(os.path.join(weather_dir, "USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"))
+    #
+    #         # read
+    #         df = epw.df()
+    #
+    #         # write
+    #         epw.set_df(df)
+    #
+    #         # check
+    #         assert_frame_equal(df, epw.df())

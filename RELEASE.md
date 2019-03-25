@@ -3,6 +3,8 @@
 **M: major, m: minor, p: patch**
 
 ## next
+* p: hook error messages debug
+* M: new weather data management
 
 ## 7.0.1.dev0
 * WARNING: only epm chapter really works, and it is not thoroughly tested. Documentation is not up to date.

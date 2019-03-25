@@ -103,7 +103,7 @@ class Record:
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
         # prepare value
-        value = field_descriptor.deserialize(value, index=index)
+        value = field_descriptor.deserialize(value, index)
 
         # manage if link
         if isinstance(value, Link):

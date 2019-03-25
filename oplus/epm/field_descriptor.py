@@ -51,7 +51,7 @@ class FieldDescriptor:
         self._extensible_info = (cycle_start, cycle_len, cycle_pattern)
 
     # deserialize
-    def deserialize(self, value, index=None):
+    def deserialize(self, value, index):
         """
         index is used for extensible fields error messages (if given)
         """
@@ -117,7 +117,7 @@ class FieldDescriptor:
             # reference class name appears in v9.0.1
             references = self.tags.get("reference", [])
             # table_name, index, value, references, class_references
-            return RecordHook(references, value)
+            return RecordHook(references, index, value)
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":

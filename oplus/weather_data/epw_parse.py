@@ -95,7 +95,7 @@ def parse_epw(file_like, encoding=None):
     next(file_like)
 
     # load dataframe
-    weather_series = pd.read_csv(file_like, header=None, low_memory=False, encoding=encoding)
+    weather_series = pd.read_csv(file_like, header=None, encoding=encoding)
     weather_series.columns = EPW_COLUMNS
 
     return WeatherData(
