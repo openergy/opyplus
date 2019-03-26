@@ -60,43 +60,26 @@ class TableDescriptor:
             # not extensible
             return
 
-        # manage corrupt idds
-        if self.table_name == "MaterialProperty:GlazingSpectralData":
-            cycle_start = 1
-            cycle_len = 4
-            cycle_patterns = [
-                r"wavelength_(\d+)",
-                r"transmittance_(\d+)",
-                r"front_reflectance_(\d+)",
-                r"back_reflectance_(\d+)"
-            ]
+        # find cycle start and prepare patterns
+        cycle_start = None
+        cycle_patterns = []
+        for i, field_descriptor in enumerate(self._field_descriptors):
+            # quit if finished
+            if (cycle_start is not None) and (i >= (cycle_start + cycle_len)):
+                break
 
-        elif self.table_name == "Table:MultiVariableLookup":
-            cycle_start = 20
-            cycle_len = 1
-            cycle_patterns = [r"field_(\d+)_determined_by_the_number_of_independent_variables"]
+            # set cycle start if not set yet
+            if (cycle_start is None) and ("begin-extensible" in field_descriptor.tags):
+                cycle_start = i
 
+            # leave if cycle start not reached yet
+            if cycle_start is None:
+                continue
+
+            # store pattern
+            cycle_patterns.append(field_descriptor.ref.replace("1", r"(\d+)"))
         else:
-            # find cycle start and prepare patterns
-            cycle_start = None
-            cycle_patterns = []
-            for i, field_descriptor in enumerate(self._field_descriptors):
-                # quit if finished
-                if (cycle_start is not None) and (i >= (cycle_start + cycle_len)):
-                    break
-
-                # set cycle start if not set yet
-                if (cycle_start is None) and ("begin-extensible" in field_descriptor.tags):
-                    cycle_start = i
-
-                # leave if cycle start not reached yet
-                if cycle_start is None:
-                    continue
-
-                # store pattern
-                cycle_patterns.append(field_descriptor.ref.replace("1", r"(\d+)"))
-            else:
-                raise RuntimeError("cycle start not found")
+            raise RuntimeError("cycle start not found")
 
         # detach unnecessary field descriptors
         self._field_descriptors = self._field_descriptors[:cycle_start + cycle_len]

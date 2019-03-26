@@ -42,6 +42,7 @@ class SimulateTest(unittest.TestCase):
 
             # simulate
             with tempfile.TemporaryDirectory() as dir_path:
+                dir_path = r"C:\Users\geoffroy.destaintot\Downloads\yup"
                 s = simulate(
                     idf,
                     epw_path,

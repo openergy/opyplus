@@ -21,6 +21,7 @@ import logging
 
 from ..util import to_buffer
 from ..configuration import CONF
+from .idd_debug import correct_idd
 from .table_descriptor import TableDescriptor
 
 
@@ -44,6 +45,9 @@ class Idd:
         # parse
         with buffer as f:
             self._parse(f)
+
+        # correct
+        correct_idd(self)
 
         # prepare extensible table_descriptors
         for table_ref, table_descriptor in self.table_descriptors.items():
