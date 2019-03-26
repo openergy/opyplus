@@ -1,11 +1,11 @@
 import pandas as pd
 
-from .weather_data import WeatherData, WEATHER_SERIES_DEFAULTS
+from .weather_data import WeatherData, WEATHER_SERIES_DEFAULTS, INSTANTS_COLUMNS
 from .design_condition import DesignCondition
 from .typical_extreme_period import TypicalExtremePeriod
 from .ground_temperature import GroundTemperature
 
-EPW_COLUMNS = ("year", "month", "day", "hour", "minute") + tuple(WEATHER_SERIES_DEFAULTS)
+EPW_COLUMNS = INSTANTS_COLUMNS + tuple(WEATHER_SERIES_DEFAULTS)
 
 
 def _get_row_l(row):

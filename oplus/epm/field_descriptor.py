@@ -122,7 +122,7 @@ class FieldDescriptor:
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
             reference = self.tags["object-list"][0]
-            return Link(reference, value)
+            return Link(reference, value, index)
 
         raise RuntimeError("should not be here")
 
@@ -167,7 +167,7 @@ class FieldDescriptor:
     def get_error_location_message(self, value=None, index=None):
         # manage extensible field ref if relevant
         if (index is not None) and (self._extensible_info is not None) and (index >= self._extensible_info[0]):
-            cycle_num = (index - self._extensible_info[0]) // self._extensible_info[1] +1
+            cycle_num = (index - self._extensible_info[0]) // self._extensible_info[1] + 1
             ref = self._extensible_info[2].replace(r"(\d+)", str(cycle_num))
         else:
             ref = self.ref

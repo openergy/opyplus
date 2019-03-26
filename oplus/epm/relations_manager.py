@@ -78,7 +78,7 @@ class RelationsManager:
 
             # check hook found
             if table is None:
-                field_descriptor = link.source_record.get_field_descriptor(0)
+                field_descriptor = link.source_record.get_field_descriptor(link.source_index)
                 raise FieldValidationError(
                     f"No object found with given reference : {key}. "
                     f"{field_descriptor.get_error_location_message(link.initial_hook_value)}"

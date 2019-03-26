@@ -52,6 +52,10 @@ WEATHER_SERIES_DEFAULTS = collections.OrderedDict((  # if None: mandatory field,
 mandatory_columns = tuple(k for k, v in WEATHER_SERIES_DEFAULTS.items() if v is None)  # we use tuple for immutability
 
 
+def to_str(value):
+    return "" if value is None else str(value)
+
+
 class WeatherData:
     def __init__(
             self,
@@ -120,15 +124,15 @@ class WeatherData:
     def _headers_to_epw(self):
         location = [
             "LOCATION",
-            self._headers["city"],
-            self._headers["state_province_region"],
-            self._headers["country"],
-            self._headers["source"],
-            self._headers["wmo"],
-            self._headers["latitude"],
-            self._headers["longitude"],
-            self._headers["timezone_offset"],
-            self._headers["elevation"]
+            to_str(self._headers["city"]),
+            to_str(self._headers["state_province_region"]),
+            to_str(self._headers["country"]),
+            to_str(self._headers["source"]),
+            to_str(self._headers["wmo"]),
+            to_str(self._headers["latitude"]),
+            to_str(self._headers["longitude"]),
+            to_str(self._headers["timezone_offset"]),
+            to_str(self._headers["elevation"])
         ]
 
         # design conditions
@@ -168,10 +172,10 @@ class WeatherData:
 
         # comments
         comments_1 = get_mono_line_copyright_message()
-        if comments_1 not in self._headers["comments_1"]:
+        if (comments_1 not in self._headers["comments_1"]) and (self._headers["comments_1"] != ""):
             comments_1 += " ; " + self._headers["comments_1"]
         comments_1 = ["COMMENTS 1", comments_1]
-        comments_2 = ["COMMENTS 2", self._headers["comments_2"]]
+        comments_2 = ["COMMENTS 2", to_str(self._headers["comments_2"])]
 
         # data periods
         if self.has_datetime_instants:
@@ -197,7 +201,7 @@ class WeatherData:
                 f"{end_month}/{end_day}"
             ]
 
-        return "\n".join([", ".join([str(cell) for cell in row]) for row in (
+        return "\n".join([",".join([str(cell) for cell in row]) for row in (
             location,
             design_conditions,
             typical_extreme_periods,
@@ -205,7 +209,7 @@ class WeatherData:
             comments_1,
             comments_2,
             data_periods
-        )])
+        )]) + "\n"
 
     def _set_start_day_of_week(self):
         if self.has_datetime_instants:
