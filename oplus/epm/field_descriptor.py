@@ -121,8 +121,7 @@ class FieldDescriptor:
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
-            reference = self.tags["object-list"][0]
-            return Link(reference, value, index)
+            return Link(self.tags["object-list"], value, index)
 
         raise RuntimeError("should not be here")
 

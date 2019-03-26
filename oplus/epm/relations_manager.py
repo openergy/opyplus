@@ -66,26 +66,27 @@ class RelationsManager:
         """
         source record and index must have been set
         """
-        key = (link.hook_ref, link.initial_hook_value)
+        keys = tuple((ref, link.initial_hook_value) for ref in link.hook_references)
 
         # look for a record hook
-        record_hook = self._record_hooks.get(key)
-        if record_hook is not None:
-            # set link target
-            link.set_target(target_record=self._record_hooks[key].target_record)
+        for k in keys:
+            if k in self._record_hooks:
+                # set link target
+                link.set_target(target_record=self._record_hooks[k].target_record)
+                break
         else:
-            table = self._table_hooks.get(key)
-
-            # check hook found
-            if table is None:
+            # look for a table hook
+            for k in keys:
+                if k in self._table_hooks:
+                    # set link target
+                    link.set_target(target_table=self._table_hooks[k])
+                    break
+            else:
                 field_descriptor = link.source_record.get_field_descriptor(link.source_index)
                 raise FieldValidationError(
-                    f"No object found with given reference : {key}. "
+                    f"No object found with any of given references : {keys}. "
                     f"{field_descriptor.get_error_location_message(link.initial_hook_value)}"
                 )
-
-            # set link target
-            link.set_target(target_table=table)
 
         # store by source
         if link.source_record not in self._links_by_source:

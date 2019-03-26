@@ -1,11 +1,11 @@
 
 
 class Link:
-    def __init__(self, hook_ref, hook_value, source_index):
+    def __init__(self, hook_references, hook_value, source_index):
         """
         initial_hook_value may become obsolete when activated
         """
-        self.hook_ref = hook_ref
+        self.hook_references = hook_references
         self.initial_hook_value = hook_value
         self.source_index = source_index
         self.source_record = None
