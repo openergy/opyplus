@@ -11,3 +11,5 @@ from oplus.output_table import OutputTable
 from oplus.simulation import Simulation, simulate
 from oplus.standard_output import StandardOutputFile
 
+# todo: manage multi-files inputs
+# todo: must be able oplus even if eplus is not installed

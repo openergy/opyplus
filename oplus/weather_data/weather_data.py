@@ -278,7 +278,6 @@ class WeatherData:
         )
 
 
-
 def _check_and_sanitize_weather_series(df):
     # check dataframe
     if not isinstance(df, pd.DataFrame):
