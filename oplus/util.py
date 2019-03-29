@@ -42,149 +42,149 @@ def get_mono_line_copyright_message():
     return "oplus version %s - copyright (c) %s - Openergy development team" % (__version__, dt.datetime.now().year)
 
 
-class EPlusDt:
-    MONTH = 0
-    DAY = 1
-    HOUR = 2
-    MINUTE = 3
+# class EPlusDt:
+#     MONTH = 0
+#     DAY = 1
+#     HOUR = 2
+#     MINUTE = 3
+#
+#     @classmethod
+#     def from_datetime(cls, datetime):
+#         if datetime.minute == 0:
+#             datetime -= dt.timedelta(hours=1)
+#             minute = 60
+#         else:
+#             minute = datetime.minute
+#
+#         return cls(datetime.month, datetime.day, datetime.hour + 1, minute)
+#
+#     @classmethod
+#     def to_datetime(cls, year, month, day, eplus_hour, eplus_minute):
+#         """
+#         Arguments
+#         ---------
+#         month
+#         day
+#         hour (1 -> 24) => one hour shift
+#         minute (1 -> 60) => no shift, but 0 is 60 one hour before. We tolerate minute=0 even though eplus does not
+#             seem to use it.
+#         """
+#         hour_cor = 0
+#         if eplus_minute == 60:
+#             minute = 0
+#             hour_cor = 1
+#         else:
+#             minute = eplus_minute
+#
+#         try:
+#             my_dt = (
+#                     dt.datetime(year, month, day, eplus_hour-1, minute) +
+#                     dt.timedelta(hours=hour_cor)
+#             ).replace(year=year)  # we replace year for one case: y-12-31-24-60
+#             my_dt.replace(year=year)  # we replace in case timedelta operation impacted year
+#         except ValueError as e:
+#             if (month, day) == (2, 29):
+#                 raise RuntimeError("%s (probable leap year problem: year=%s, month=%s, day=%s)" % (e, year, month, day))
+#             raise e
+#
+#         return my_dt
+#
+#     def __init__(self, month, day, out_hour, out_minute):
+#         """
+#         Arguments
+#         ---------
+#         month
+#         day
+#         hour (1 -> 24) => one hour shift
+#         minute (1 -> 60) => no shift, but 0 is 60 one hour before. We tolerate minute=0 even though eplus does not
+#             seem to use it.
+#         """
+#         self._standard_dt = self.to_datetime(2000, month, day, out_hour, out_minute)  # 2000 is a leap year
+#
+#         # create and store value
+#         _datetime = copy.copy(self._standard_dt)
+#         if self._standard_dt.minute == 0:
+#             _datetime -= dt.timedelta(hours=1)
+#             minute = 60
+#         else:
+#             minute = _datetime.minute
+#
+#         self._value = _datetime.month, _datetime.day, _datetime.hour + 1, minute
+#
+#     def __lt__(self, other):
+#         return self.standard_dt < other.standard_dt
+#
+#     def __le__(self, other):
+#         return self.standard_dt <= other.standard_dt
+#
+#     def __eq__(self, other):
+#         return self.standard_dt == other.standard_dt
+#
+#     def __ne__(self, other):
+#         return self.standard_dt != other.standard_dt
+#
+#     def __gt__(self, other):
+#         return self.standard_dt > other.standard_dt
+#
+#     def __ge__(self, other):
+#         return self.standard_dt >= other.standard_dt
+#
+#     def __repr__(self):
+#         return "<eplus_dt: month=%s, day=%s, hour=%s, minute=%s>" % self._value
+#
+#     def datetime(self, year):
+#         # manage leap year problem
+#         day = self._value[self.DAY]
+#         if not calendar.isleap(year) and (
+#                     (self._value[self.MONTH], day, self._value[self.HOUR], self._value[self.MINUTE]) == (2, 29, 24, 60)
+#         ):
+#             day = 28  # skip 29/02')
+#         return self.to_datetime(
+#             year,
+#             self._value[self.MONTH],
+#             day,
+#             self._value[self.HOUR],
+#             self._value[self.MINUTE]
+#         )
+#
+#     @property
+#     def month(self):
+#         return self._value[self.MONTH]
+#
+#     @property
+#     def day(self):
+#         return self._value[self.DAY]
+#
+#     @property
+#     def hour(self):
+#         return self._value[self.HOUR]
+#
+#     @property
+#     def minute(self):
+#         return self._value[self.MINUTE]
+#
+#     @property
+#     def standard_dt(self):
+#         return self._standard_dt
 
-    @classmethod
-    def from_datetime(cls, datetime):
-        if datetime.minute == 0:
-            datetime -= dt.timedelta(hours=1)
-            minute = 60
-        else:
-            minute = datetime.minute
 
-        return cls(datetime.month, datetime.day, datetime.hour + 1, minute)
-
-    @classmethod
-    def to_datetime(cls, year, month, day, eplus_hour, eplus_minute):
-        """
-        Arguments
-        ---------
-        month
-        day
-        hour (1 -> 24) => one hour shift
-        minute (1 -> 60) => no shift, but 0 is 60 one hour before. We tolerate minute=0 even though eplus does not
-            seem to use it.
-        """
-        hour_cor = 0
-        if eplus_minute == 60:
-            minute = 0
-            hour_cor = 1
-        else:
-            minute = eplus_minute
-
-        try:
-            my_dt = (
-                    dt.datetime(year, month, day, eplus_hour-1, minute) +
-                    dt.timedelta(hours=hour_cor)
-            ).replace(year=year)  # we replace year for one case: y-12-31-24-60
-            my_dt.replace(year=year)  # we replace in case timedelta operation impacted year
-        except ValueError as e:
-            if (month, day) == (2, 29):
-                raise RuntimeError("%s (probable leap year problem: year=%s, month=%s, day=%s)" % (e, year, month, day))
-            raise e
-
-        return my_dt
-
-    def __init__(self, month, day, out_hour, out_minute):
-        """
-        Arguments
-        ---------
-        month
-        day
-        hour (1 -> 24) => one hour shift
-        minute (1 -> 60) => no shift, but 0 is 60 one hour before. We tolerate minute=0 even though eplus does not
-            seem to use it.
-        """
-        self._standard_dt = self.to_datetime(2000, month, day, out_hour, out_minute)  # 2000 is a leap year
-
-        # create and store value
-        _datetime = copy.copy(self._standard_dt)
-        if self._standard_dt.minute == 0:
-            _datetime -= dt.timedelta(hours=1)
-            minute = 60
-        else:
-            minute = _datetime.minute
-
-        self._value = _datetime.month, _datetime.day, _datetime.hour + 1, minute
-
-    def __lt__(self, other):
-        return self.standard_dt < other.standard_dt
-
-    def __le__(self, other):
-        return self.standard_dt <= other.standard_dt
-
-    def __eq__(self, other):
-        return self.standard_dt == other.standard_dt
-
-    def __ne__(self, other):
-        return self.standard_dt != other.standard_dt
-
-    def __gt__(self, other):
-        return self.standard_dt > other.standard_dt
-
-    def __ge__(self, other):
-        return self.standard_dt >= other.standard_dt
-
-    def __repr__(self):
-        return "<eplus_dt: month=%s, day=%s, hour=%s, minute=%s>" % self._value
-
-    def datetime(self, year):
-        # manage leap year problem
-        day = self._value[self.DAY]
-        if not calendar.isleap(year) and (
-                    (self._value[self.MONTH], day, self._value[self.HOUR], self._value[self.MINUTE]) == (2, 29, 24, 60)
-        ):
-            day = 28  # skip 29/02')
-        return self.to_datetime(
-            year,
-            self._value[self.MONTH],
-            day,
-            self._value[self.HOUR],
-            self._value[self.MINUTE]
-        )
-
-    @property
-    def month(self):
-        return self._value[self.MONTH]
-
-    @property
-    def day(self):
-        return self._value[self.DAY]
-
-    @property
-    def hour(self):
-        return self._value[self.HOUR]
-
-    @property
-    def minute(self):
-        return self._value[self.MINUTE]
-
-    @property
-    def standard_dt(self):
-        return self._standard_dt
-
-
-def get_start_dt(start):
-    """
-    Transforms start in start_dt.
-
-    Arguments
-    ---------
-    start: year num, or date, or datetime
-    """
-    if isinstance(start, dt.datetime):  # must first test datetime because date is datetime...
-        start_dt = start
-    elif isinstance(start, dt.date):
-        start_dt = dt.datetime(start.year, start.month, start.day)
-    elif isinstance(start, int):
-        start_dt = dt.datetime(start, 1, 1)
-    else:
-        raise RuntimeError("Unknown start type: '%s'." % type(start))
-    return start_dt
+# def get_start_dt(start):
+#     """
+#     Transforms start in start_dt.
+#
+#     Arguments
+#     ---------
+#     start: year num, or date, or datetime
+#     """
+#     if isinstance(start, dt.datetime):  # must first test datetime because date is datetime...
+#         start_dt = start
+#     elif isinstance(start, dt.date):
+#         start_dt = dt.datetime(start.year, start.month, start.day)
+#     elif isinstance(start, int):
+#         start_dt = dt.datetime(start, 1, 1)
+#     else:
+#         raise RuntimeError("Unknown start type: '%s'." % type(start))
+#     return start_dt
 
 
 def _redirect_stream(src, dst, stop_event, freq):
@@ -314,12 +314,12 @@ def multi_mode_write(buffer_writer, string_writer, buffer_or_path=None):
         buffer_writer(buffer)
 
 
-def to_buffer(buffer_or_path, encoding=None):
+def to_buffer(buffer_or_path):
     if isinstance(buffer_or_path, str):
         if not os.path.isfile(buffer_or_path):
             raise FileNotFoundError(f"no file found at given path: {buffer_or_path}")
         path = buffer_or_path
-        buffer = open(buffer_or_path, encoding=encoding)
+        buffer = open(buffer_or_path, encoding=CONF.encoding)
     else:
         path = None
         buffer = buffer_or_path

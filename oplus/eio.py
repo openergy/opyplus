@@ -6,13 +6,13 @@ from oplus.configuration import CONF
 
 
 class Eio:
-    def __init__(self, path, logger_name=None, encoding=None):
+    def __init__(self, path, logger_name=None):
         assert os.path.isfile(path), "No file at given path: '%s'." % path
         self._path = path
         self._logger_name = logger_name
         self._encoding = encoding
 
-        self._tables_d = parse_eio(self._path, encoding=encoding)  # { lower_ref: EioTable(), ...
+        self._tables_d = parse_eio(self._path)  # { lower_ref: EioTable(), ...
 
     @property
     def table_refs(self):
@@ -28,14 +28,14 @@ class Eio:
         return self._tables_d[lower_ref].get_value(column_name_or_i, filter_column_name_or_i, filter_criterion)
 
 
-def parse_eio(path, encoding=None):
+def parse_eio(path):
     headers_l2 = [["<Program Version>", "Program Version ID", "YMD"]]
     content_d = {}  # {ref: data_l2, ...}
     content_header_d = {}  # {ref (istr(): header_row, ...}
 
     # _header_ref_pattern_ = "^([^<.]*)<([^>.]*)>(.*)$"
 
-    with open(path, encoding=CONF.encoding if encoding is None else encoding) as f:
+    with open(path, encoding=CONF.encoding) as f:
         for line_s in f:
             if line_s == "End of Data":
                 break

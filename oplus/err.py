@@ -17,7 +17,7 @@ class Err:
 
     CATEGORIES = (WARNING, FATAL, SEVERE)
 
-    def __init__(self, path, encoding=None):
+    def __init__(self, path):
         assert os.path.isfile(path), "No file at given path: '%s'." % path
         self.path = path
         self.encoding = CONF.encoding if encoding is None else encoding

@@ -6,11 +6,9 @@ from oplus.configuration import CONF
 
 
 class OutputTable:
-    def __init__(self, path, logger_name=None, encoding=None):
+    def __init__(self, path):
         assert os.path.isfile(path), "No file at given path: '%s'." % path
         self._path = path
-        self._logger_name = logger_name
-        self._encoding = encoding
 
         self._reports_d = self._parse()  # {report_name: {table_name: df, ...}, ...}
 

@@ -1,5 +1,6 @@
 import pandas as pd
 
+from oplus import CONF
 from .weather_data import WeatherData, WEATHER_SERIES_DEFAULTS, INSTANTS_COLUMNS
 from .design_condition import DesignCondition
 from .typical_extreme_period import TypicalExtremePeriod
@@ -12,7 +13,7 @@ def _get_row_l(row):
     return [cell.strip() for cell in row.split(",")]
 
 
-def parse_epw(file_like, encoding=None):
+def parse_epw(file_like):
     # parse header
 
     # location
@@ -95,7 +96,7 @@ def parse_epw(file_like, encoding=None):
     next(file_like)
 
     # load dataframe
-    weather_series = pd.read_csv(file_like, header=None, encoding=encoding)
+    weather_series = pd.read_csv(file_like, header=None, encoding=CONF.encoding)
     weather_series.columns = EPW_COLUMNS
 
     return WeatherData(

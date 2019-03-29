@@ -9,7 +9,8 @@ from oplus.err import Err
 from oplus.summary_table import SummaryTable
 from oplus.output_table import OutputTable
 from oplus.simulation import Simulation, simulate
-from oplus.standard_output import StandardOutputFile
+# from oplus.standard_output import StandardOutputFile
 
+# todo: manage encoding properly
 # todo: manage multi-files inputs
 # todo: must be able oplus even if eplus is not installed

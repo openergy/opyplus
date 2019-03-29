@@ -21,14 +21,12 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, encoding=None,
-                 check_required=True):
+    def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, check_required=True):
         # set variables
-        self._encoding = CONF.encoding if encoding is None else encoding
         self._path = None
         self._dev_idd = (
             idd_or_buffer_or_path if isinstance(idd_or_buffer_or_path, Idd) else
-            self._dev_idd_cls(idd_or_buffer_or_path, encoding=encoding)
+            self._dev_idd_cls(idd_or_buffer_or_path)
         )
         # !! relations manager must be defined before table creation because table creation will trigger
         # hook registering
@@ -148,12 +146,11 @@ class Epm:
         return idf
 
     @classmethod
-    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, comment=None, encoding=None, check_required=True):
+    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, comment=None, check_required=True):
         return cls(
             idf_buffer_or_path=buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             comment=comment,
-            encoding=encoding,
             check_required=check_required
         )
 

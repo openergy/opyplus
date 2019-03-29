@@ -33,12 +33,11 @@ def get_idd_standard_path():
 
 
 class Idd:
-    def __init__(self, buffer_or_path=None, encoding=None):
+    def __init__(self, buffer_or_path=None):
         # prepare variables
-        self.encoding = CONF.encoding if encoding is None else encoding
         if buffer_or_path is None:
             buffer_or_path = get_idd_standard_path()
-        self.path, buffer = to_buffer(buffer_or_path, encoding=encoding)
+        self.path, buffer = to_buffer(buffer_or_path)
 
         self.table_descriptors = dict()
 

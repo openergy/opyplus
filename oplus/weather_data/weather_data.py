@@ -224,11 +224,11 @@ class WeatherData:
         self._start_day_of_week = WEEK_DAYS[date.weekday()]
 
     @classmethod
-    def from_epw(cls, buffer_or_path, encoding=None):
+    def from_epw(cls, buffer_or_path):
         from .epw_parse import parse_epw
         _, buffer = to_buffer(buffer_or_path)
         with buffer as f:
-            return parse_epw(f, encoding=encoding)
+            return parse_epw(f)
 
     @property
     def has_datetime_instants(self):
