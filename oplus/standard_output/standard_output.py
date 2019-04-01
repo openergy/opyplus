@@ -33,23 +33,32 @@ class StandardOutputFile:
         # switch all dataframes
         new_dfs = {}
         for env_title, env_data in self._dfs.items():
-            new_dfs[env_title] = {}
+            env_dfs = {}
+            new_dfs[env_title] = env_dfs
             for eplus_frequency, df in env_data.items():
-                new_dfs[eplus_frequency] = None if df is None else switch_to_datetime_instants(
+                env_dfs[eplus_frequency] = None if df is None else switch_to_datetime_instants(
                     df, start_year, eplus_frequency)
 
         # store result and start year
         self._dfs = new_dfs
         self._start_year = start_year
 
-    def get_df(self, environment_title_or_num=-1, timestep=HOURLY):
+    def get_df(self, environment_title_or_num=-1, frequency=HOURLY):
         # manage environment num
         if isinstance(environment_title_or_num, int):
             environment_title = tuple(self._environments.keys())[environment_title_or_num]
         else:
             environment_title = environment_title_or_num
 
-        return self._dfs[environment_title][timestep]
+        if environment_title not in self._dfs:
+            raise ValueError(f"No environment named {environment_title}. Available environments: {tuple(self._dfs)}.")
+
+        dfs = self._dfs[environment_title]
+
+        if frequency not in dfs:
+            raise ValueError(f"Required frequency ({frequency}) was not found. Available frequencies: {tuple(dfs)}.")
+
+        return self._dfs[environment_title][frequency]
 
     #
     #

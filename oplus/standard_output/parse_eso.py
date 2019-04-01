@@ -250,13 +250,14 @@ def parse(file_like):
     monthly_codes = tuple(var.code for var in variables_info.values() if var.frequency == MONTHLY)
     annual_codes = tuple(var.code for var in variables_info.values() if var.frequency == ANNUAL)
     run_period_codes = tuple(var.code for var in variables_info.values() if var.frequency == RUN_PERIOD)
+    columns_rename = dict((var.code, f"{var.key_value.lower()},{var.name}") for var in variables_info.values())
 
     # create dataframes
-    # todo: rename columns
     for env_title, env_data in environments_data.items():
         # create dataframes dict and store
         env_dfs = dict((frequency, None) for frequency in (TIMESTEP, HOURLY, DAILY, MONTHLY, ANNUAL, RUN_PERIOD))
         environments_dfs[env_title] = env_dfs
+        df = None
 
         # timestep
         if len(timestep_codes) != 0:
@@ -344,6 +345,10 @@ def parse(file_like):
         # run period
         if len(run_period_codes) != 0:
             env_dfs[ANNUAL] = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in run_period_codes))
+
+        # all: rename codes to columns fullname
+        if df is not None:
+            df.rename(columns=columns_rename, inplace=True)
 
     return environments, environments_dfs
 

@@ -38,6 +38,19 @@ def switch_to_datetime_instants(df, start_year, eplus_frequency):
         # drop old columns
         df.drop(columns=list(columns), inplace=True)
 
+        # force frequency
+        if eplus_frequency == TIMESTEP:
+            # find freq
+            ts = df.index[1] - df.index[0]
+            # force
+            df = df.asfreq(ts)
+        else:
+            df = df.asfreq({
+                HOURLY: "H",
+                DAILY: "D",
+                MONTHLY: "MS"
+            }[eplus_frequency])
+
         return df
 
     # annual
@@ -49,6 +62,10 @@ def switch_to_datetime_instants(df, start_year, eplus_frequency):
                 f"can't switch to datetime instants.")
         df.index = df["year"].map(lambda x: dt.datetime(x, 1, 1))
         del df["year"]
+
+        # force freq
+        df = df.asfreq("YS")
+
         return df
 
     # run period

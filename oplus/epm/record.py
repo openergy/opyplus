@@ -86,15 +86,6 @@ class Record:
                 raise FieldValidationError(
                     f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
-            # if extensible: make appropriate checks
-            if is_extensible and i >= cycle_start:
-                value = self._data.get(i)
-                if value is None:
-                    raise FieldValidationError(
-                        f"An extensible field can't be empty. Pop or clear_extensible_fields may be usefull. "
-                        f"{field_descriptor.get_error_location_message()}"
-                    )
-
     def _update_value_inert(self, index, value):
         """
         is only called by _update_inert
@@ -167,7 +158,9 @@ class Record:
         # check index is >= cycle_start
         cycle_start, cycle_len, patterns = self.get_extensible_info()
         if not cycle_start <= index < self_len:
-            raise TypeError("Can't use pop for non extensible fields.")
+            raise TypeError("Can't use pop or insert for non extensible fields.")
+        if cycle_len != 1:
+            raise TypeError("Can only use pop or insert for extensible fields who's cycle length is 1.")
 
         return index
 
@@ -253,6 +246,15 @@ class Record:
 
     def __len__(self):
         biggest_index = -1 if (len(self._data) == 0) else max(self._data)
+
+        # manage extensible
+        if self.is_extensible():
+            # go to end of extensible group
+            cycle_start, cycle_len, patterns = self.get_extensible_info()
+            extensible_position = biggest_index - cycle_start
+            last_position = (extensible_position//cycle_len+1)*cycle_len-1
+            biggest_index = cycle_start + last_position
+
         return max(
             biggest_index+1,
             self._table._dev_descriptor.base_fields_nb

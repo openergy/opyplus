@@ -5,7 +5,7 @@ from .operating_system import APPS_DIR_PATH, EPLUS_DIR_PATTERN
 
 # ------------------------------------------------- DEFAULT VARIABLES --------------------------------------------------
 class _Conf:
-    encoding = "utf-8"
+    encoding = "latin-1"  # even needed for example files...
     simulation_base_name = "oplus"
     
     def __init__(self):
