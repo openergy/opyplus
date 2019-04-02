@@ -7,7 +7,8 @@ from oplus.configuration import CONF
 
 class OutputTable:
     def __init__(self, path):
-        assert os.path.isfile(path), "No file at given path: '%s'." % path
+        if not os.path.isfile(path):
+            raise FileNotFoundError("No file at given path: '%s'." % path)
         self._path = path
 
         self._reports_d = self._parse()  # {report_name: {table_name: df, ...}, ...}
@@ -35,7 +36,7 @@ class OutputTable:
                     return s
 
         # loop
-        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding) as f:
             while True:
                 # next line
                 try:

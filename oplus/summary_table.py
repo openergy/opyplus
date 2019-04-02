@@ -15,10 +15,10 @@ from oplus.configuration import CONF
 
 
 class SummaryTable:
-    def __init__(self, path, encoding=None):
-        assert os.path.isfile(path), "No file at given path: '%s'." % path
+    def __init__(self, path):
+        if not os.path.isfile(path):
+            raise FileNotFoundError("No file at given path: '%s'." % path)
         self.path = path
-        self.encoding = CONF.encoding if encoding is None else encoding
 
         self.sep = None
         self.report_tables_ref = {}
@@ -26,7 +26,7 @@ class SummaryTable:
         self._parse()
 
     def _parse(self):
-        with open(self.path, encoding=self.encoding) as f:
+        with open(self.path, encoding=CONF.encoding) as f:
             start_parse = False
             search_end = False
 
@@ -115,7 +115,7 @@ class SummaryTable:
 
     def get_table_df(self, report_key, table_report):
         content_bytes = open(self.path, "rb").read()
-        content = content_bytes.decode(self.encoding).encode('ascii', 'ignore')
+        content = content_bytes.decode(CONF.encoding).encode('ascii', 'ignore')
         f = io.BytesIO(content)
 
         begin_line = self.report_tables_ref[report_key][table_report]['linestart']

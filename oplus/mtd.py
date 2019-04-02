@@ -5,11 +5,10 @@ from oplus.configuration import CONF
 
 
 class Mtd:
-    def __init__(self, path, logger_name=None, encoding=None):
-        assert os.path.isfile(path), "No file at given path: '%s'." % path
+    def __init__(self, path):
+        if not os.path.isfile(path):
+            raise FileNotFoundError("No file at given path: '%s'." % path)
         self._path = path
-        self._logger_name = logger_name
-        self._encoding = encoding
 
         self._variables_d, self._meters_d = self._parse()
 
@@ -22,7 +21,7 @@ class Mtd:
         meter_pattern = r"^ For Meter=([^\[\]]*) \[([\w\d]*)],(.*)$"
 
         # build variables and meters
-        with open(self._path, "r", encoding=CONF.encoding if self._encoding is None else self._encoding) as f:
+        with open(self._path, "r", encoding=CONF.encoding) as f:
             for line_s in f:
                 if line_s == "\n":
                     if output_l is None:  # initialize

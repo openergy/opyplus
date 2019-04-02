@@ -30,7 +30,8 @@ class _Conf:
         else most recent eplus available version
         """
         # check energy plus is installed
-        assert len(self.eplus_available_versions) > 0, "Energy plus is not install, can't use oplus package."
+        if len(self.eplus_available_versions) == 0:
+            raise RuntimeError("Energy plus is not install, can't use oplus package.")
 
         # see if version is defined
         if self._eplus_version is not None:
@@ -42,7 +43,9 @@ class _Conf:
     @eplus_version.setter
     def eplus_version(self, value):
         # check version is available
-        assert value in self.eplus_available_versions, f"Eplus version {value} was not found in available versions."
+        if value not in self.eplus_available_versions:
+            raise RuntimeError(f"Eplus version {value} was not found in available versions.")
+
         # set
         self._eplus_version = value
 

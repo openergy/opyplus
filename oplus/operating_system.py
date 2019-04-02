@@ -119,7 +119,8 @@ def get_output_files_layout(output_category):
         other: other
     """
     # check  category
-    assert output_category in ("inputs", "table", "other")
+    if output_category not in ("inputs", "table", "other"):
+        raise RuntimeError(f"unknown {output_category}")
 
     # get version dict
     layouts = _layouts_matrix[OS_NAME][output_category]
@@ -208,7 +209,8 @@ _simulation_input_command_matrix = {
 
 
 def get_simulation_input_command_style(extension):
-    assert extension in ("idf", "epw"), f"unknown extension: {extension}"
+    if extension not in ("idf", "epw"):
+        raise ValueError(f"unknown extension: {extension}")
     styles = _simulation_input_command_matrix[OS_NAME][extension]
     return _get_value_by_version(styles)
 

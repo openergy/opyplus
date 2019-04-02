@@ -28,7 +28,7 @@ class EPlusWeatherData(unittest.TestCase):
 
             # create weather data
             weather_data = WeatherData.from_epw(file_path)
-            generated_df = weather_data.weather_series
+            generated_df = weather_data.get_weather_series()
             generated_df.columns = range(len(generated_df.columns))  # remove columns (for comparison)
 
             # check

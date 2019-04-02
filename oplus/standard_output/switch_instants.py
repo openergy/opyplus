@@ -1,5 +1,6 @@
 import datetime as dt
 import pandas as pd
+from pandas.util.testing import assert_index_equal
 
 from .parse_eso import TIMESTEP, HOURLY, DAILY, MONTHLY, ANNUAL, RUN_PERIOD
 
@@ -31,9 +32,12 @@ def switch_to_datetime_instants(df, start_year, eplus_frequency):
             MONTHLY: ("year", "month")
         }[eplus_frequency]
         if eplus_frequency == MONTHLY:
-            df.index = df.apply(lambda x: dt.datetime(*tuple(x[k] for k in columns) + (1,)), axis=1)
+            df.index = df.apply(  # apply transforms ints to floats, we need to re-cast
+                lambda x: dt.datetime(*(tuple(int(x[k]) for k in columns) + (1,))),
+                axis=1
+            )
         else:
-            df.index = df.apply(lambda x: dt.datetime(*(x[k] for k in columns)), axis=1)
+            df.index = df.apply(lambda x: dt.datetime(*(int(x[k]) for k in columns)), axis=1)
 
         # drop old columns
         df.drop(columns=list(columns), inplace=True)
@@ -43,15 +47,25 @@ def switch_to_datetime_instants(df, start_year, eplus_frequency):
             # find freq
             ts = df.index[1] - df.index[0]
             # force
-            df = df.asfreq(ts)
+            forced_df = df.asfreq(ts)
         else:
-            df = df.asfreq({
+            forced_df = df.asfreq({
                 HOURLY: "H",
                 DAILY: "D",
                 MONTHLY: "MS"
             }[eplus_frequency])
 
-        return df
+        # if timestep, hourly or daily, check did not change (only those can suffer from leap year problems)
+        if eplus_frequency in (TIMESTEP, HOURLY, DAILY):
+            try:
+                assert_index_equal(df.index, forced_df.index)
+            except AssertionError:
+                raise ValueError(
+                    f"Couldn't convert to datetime instants (frequency: {eplus_frequency}). Probable cause : "
+                    f"given start year ({start_year}) is incorrect and data can't match because of leap year issues."
+                ) from None
+
+        return forced_df
 
     # annual
     if eplus_frequency == ANNUAL:

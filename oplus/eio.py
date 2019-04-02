@@ -6,11 +6,10 @@ from oplus.configuration import CONF
 
 
 class Eio:
-    def __init__(self, path, logger_name=None):
-        assert os.path.isfile(path), "No file at given path: '%s'." % path
+    def __init__(self, path):
+        if not os.path.isfile(path):
+            raise FileNotFoundError("No file at given path: '%s'." % path)
         self._path = path
-        self._logger_name = logger_name
-        self._encoding = encoding
 
         self._tables_d = parse_eio(self._path)  # { lower_ref: EioTable(), ...
 
@@ -88,7 +87,8 @@ class EioTable:
         # check
         col_len = len(columns)
         for i, r in enumerate(data):
-            assert len(r) == col_len, "Wrong number of columns in row %i of table %s." % (i, ref)
+            if len(r) != col_len:
+                raise RuntimeError("Wrong number of columns in row %i of table %s." % (i, ref))
 
         self._ref = ref
         self._columns = columns

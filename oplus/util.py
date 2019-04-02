@@ -263,7 +263,7 @@ def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, bea
         return sub_p.returncode
 
 
-def get_string_buffer(path_or_content, expected_extension, encoding):
+def get_string_buffer(path_or_content, expected_extension):
     """
     path_or_content: path or content_str or content_bts or string_io or bytes_io
 
@@ -279,8 +279,9 @@ def get_string_buffer(path_or_content, expected_extension, encoding):
 
     if isinstance(path_or_content, str):
         if path_or_content[-len(expected_extension)-1:] == ".%s" % expected_extension:
-            assert os.path.isfile(path_or_content), "No file at given path: '%s'." % path_or_content
-            buffer, path = open(path_or_content, encoding=encoding), path_or_content
+            if not os.path.isfile(path_or_content):
+                raise FileNotFoundError("No file at given path: '%s'." % path_or_content)
+            buffer, path = open(path_or_content, encoding=CONF.encoding), path_or_content
         else:
             buffer = io.StringIO(path_or_content, )
 
@@ -290,9 +291,9 @@ def get_string_buffer(path_or_content, expected_extension, encoding):
 
     # bytes
     elif isinstance(path_or_content, bytes):
-        buffer = io.StringIO(path_or_content.decode(encoding=encoding))
+        buffer = io.StringIO(path_or_content.decode(encoding=CONF.encoding))
     elif isinstance(path_or_content, io.BufferedIOBase):
-        buffer = io.StringIO(path_or_content.read().decode(encoding=encoding))
+        buffer = io.StringIO(path_or_content.read().decode(encoding=CONF.encoding))
     else:
         raise ValueError("path_or_content type could not be identified")
 

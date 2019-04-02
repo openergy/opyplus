@@ -5,21 +5,23 @@ import pandas as pd
 
 VariableInfo = namedtuple("VariableInfo", ("code", "key_value", "name", "unit", "frequency", "info"))
 
-Environment = namedtuple("Environment", ("environment_title", "latitude", "longitude", "time_zone", "elevation"))
+Environment = namedtuple("Environment", ("title", "latitude", "longitude", "timezone_offset", "elevation"))
 
 
 comment_brackets_pattern = re.compile(r"\s\[[\w,]+\]")
 
 # frequencies
-TIMESTEP = "TimeStep"
-HOURLY = "Hourly"
-DAILY = "Daily"
-MONTHLY = "Monthly"
-ANNUAL = "Annual"
-RUN_PERIOD = "RunPeriod"
+TIMESTEP = "timestep"
+HOURLY = "hourly"
+DAILY = "daily"
+MONTHLY = "monthly"
+ANNUAL = "annual"
+RUN_PERIOD = "run_period"
+
+FREQUENCIES = TIMESTEP, HOURLY, DAILY, MONTHLY, ANNUAL, RUN_PERIOD
 
 # constants
-EACH_CALL = "Each Call"
+EACH_CALL = "each call"
 
 # instant codes
 
@@ -83,19 +85,22 @@ def parse(file_like):
 
         # parse content
         key_value, var_name = content.split(",")
+        key_value = key_value.lower()  # no retaincase
         var_name, unit = var_name.split(" [")
         unit = unit[:-1]
 
         # parse comment
         if vars_num != 1:  # remove brackets if relevant
-            comment = re.sub(comment_brackets_pattern, "", content)
+            comment = re.sub(comment_brackets_pattern, "", comment)
         timestep_and_or_info = comment.split(" ,")
 
         # frequency
-        frequency = timestep_and_or_info[0]
+        frequency = timestep_and_or_info[0].lower()  # no retaincase
         if frequency == EACH_CALL:
             frequency = TIMESTEP
             manage_timesteps = True
+        elif frequency == "runperiod":
+            frequency = RUN_PERIOD  # we add underscore
 
         # info
         try:
@@ -138,13 +143,13 @@ def parse(file_like):
 
             # create and store environment
             env = Environment(
-                other[0],
+                other[0].lower(),
                 float(other[1]),
                 float(other[2]),
                 float(other[3]),
                 float(other[4])
             )
-            environments[env.environment_title] = env
+            environments[env.title] = env
 
             # prepare and store environment data
             # data: { code: values, ...
@@ -176,7 +181,7 @@ def parse(file_like):
                         _annual_year_
                     ) +
                     tuple(variables_info)))
-            environments_data[env.environment_title] = current_data
+            environments_data[env.title] = current_data
 
         elif code == "2":  # timestep (and hourly) data
             # 0-sim_day, 1-month_num, 2-day_num, 3-dst, 4-hour_num, 5-start_minute, 6-end_minute, 7-day_type
@@ -244,275 +249,125 @@ def parse(file_like):
 
     # prepare data frames container and codes
     environments_dfs = dict((env_title, {}) for env_title in environments)  # {environment_title: {frequency: df, ...
-    timestep_codes = tuple(var.code for var in variables_info.values() if var.frequency == TIMESTEP)
-    hourly_codes = tuple(var.code for var in variables_info.values() if var.frequency == HOURLY)
-    daily_codes = tuple(var.code for var in variables_info.values() if var.frequency == DAILY)
-    monthly_codes = tuple(var.code for var in variables_info.values() if var.frequency == MONTHLY)
-    annual_codes = tuple(var.code for var in variables_info.values() if var.frequency == ANNUAL)
-    run_period_codes = tuple(var.code for var in variables_info.values() if var.frequency == RUN_PERIOD)
+    timestep_codes = tuple(sorted(var.code for var in variables_info.values() if var.frequency == TIMESTEP))
+    hourly_codes = tuple(sorted(var.code for var in variables_info.values() if var.frequency == HOURLY))
+    daily_codes = tuple(sorted(var.code for var in variables_info.values() if var.frequency == DAILY))
+    monthly_codes = tuple(sorted(var.code for var in variables_info.values() if var.frequency == MONTHLY))
+    annual_codes = tuple(sorted(var.code for var in variables_info.values() if var.frequency == ANNUAL))
+    run_period_codes = tuple(sorted(var.code for var in variables_info.values() if var.frequency == RUN_PERIOD))
     columns_rename = dict((var.code, f"{var.key_value.lower()},{var.name}") for var in variables_info.values())
 
     # create dataframes
     for env_title, env_data in environments_data.items():
+        # todo: manage columns order
         # create dataframes dict and store
         env_dfs = dict((frequency, None) for frequency in (TIMESTEP, HOURLY, DAILY, MONTHLY, ANNUAL, RUN_PERIOD))
         environments_dfs[env_title] = env_dfs
-        df = None
 
         # timestep
         if len(timestep_codes) != 0:
+            # prepare instants info
+            instants_info = OrderedDict((
+                (_timestep_month_, "month"),
+                (_timestep_day_, "day"),
+                (_timestep_hour_, "hour"),
+                (_timestep_minute_, "minute"),
+                (_timestep_dst_, "dst"),
+                (_timestep_day_type_, "day_type")
+            ))
+
             # create df
-            df = pd.DataFrame.from_dict(
-                dict((k, env_data[k]) for k in (
-                        (_timestep_month_,
-                         _timestep_day_,
-                         _timestep_hour_,
-                         _timestep_minute_,
-                         _timestep_dst_,
-                         _timestep_day_type_) +
-                        timestep_codes
-                )))
+            df = pd.DataFrame.from_dict(OrderedDict((k, env_data[k]) for k in (tuple(instants_info) + timestep_codes)))
+
             # rename instant columns
-            df.rename(inplace=True, columns={
-                _timestep_month_: "month",
-                _timestep_day_: "day",
-                _timestep_hour_: "hour",
-                _timestep_minute_: "minute",
-                _timestep_dst_: "dst",
-                _timestep_day_type_: "day_type"
-            })
-            # store
-            env_dfs[TIMESTEP] = df
+            df.rename(inplace=True, columns=instants_info)
+
+            # store if not empty (can happen, depends on environment)
+            if len(df) > 0:
+                env_dfs[TIMESTEP] = df
 
         # hourly
         if len(hourly_codes) != 0:
-            df = pd.DataFrame.from_dict(
-                dict((k, env_data[k]) for k in (
-                        (_hourly_month_,
-                         _hourly_day_,
-                         _hourly_hour_,
-                         _hourly_dst_,
-                         _hourly_day_type_) +
-                        hourly_codes
-                )))
+            # prepare instants info
+            instants_info = OrderedDict((
+                (_hourly_month_, "month"),
+                (_hourly_day_, "day"),
+                (_hourly_hour_, "hour"),
+                (_hourly_dst_, "dst"),
+                (_hourly_day_type_, "day_type")
+            ))
+
+            # create df
+            df = pd.DataFrame.from_dict(OrderedDict((k, env_data[k]) for k in (tuple(instants_info) + hourly_codes)))
+
             # rename instant columns
-            df.rename(inplace=True, columns={
-                _hourly_month_: "month",
-                _hourly_day_: "day",
-                _hourly_hour_: "hour",
-                _hourly_dst_: "dst",
-                _hourly_day_type_: "day_type"
-            })
-            # store
-            env_dfs[HOURLY] = df
+            df.rename(inplace=True, columns=instants_info)
+
+            # store if not empty (can happen, depends on environment)
+            if len(df) > 0:
+                env_dfs[HOURLY] = df
 
         # daily
         if len(daily_codes) != 0:
-            df = pd.DataFrame.from_dict(
-                dict((k, env_data[k]) for k in (
-                        (_daily_month_,
-                         _daily_day_,
-                         _daily_dst_,
-                         _daily_day_type_) +
-                        daily_codes
-                )))
+            # prepare instants info
+            instants_info = OrderedDict((
+                (_daily_month_, "month"),
+                (_daily_day_, "day"),
+                (_daily_dst_, "dst"),
+                (_daily_day_type_, "day_type")
+            ))
+
+            # create df
+            df = pd.DataFrame.from_dict(OrderedDict((k, env_data[k]) for k in (tuple(instants_info) + daily_codes)))
+
             # rename instant columns
-            df.rename(inplace=True, columns={
-                _daily_month_: "month",
-                _daily_day_: "day",
-                _daily_dst_: "dst",
-                _daily_day_type_: "day_type"
-            })
-            # store
-            env_dfs[DAILY] = df
+            df.rename(inplace=True, columns=instants_info)
+
+            # store if not empty (can happen, depends on environment)
+            if len(df) > 0:
+                env_dfs[DAILY] = df
 
         # monthly
         if len(monthly_codes) != 0:
-            df = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in ((_monthly_month_,) + monthly_codes)))
+            # instants info
+            instants_info = {_monthly_month_: "month"}
+
+            # create df
+            df = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in (tuple(instants_info) + monthly_codes)))
+
             # rename instant columns
-            df.rename(inplace=True, columns={_monthly_month_: "month"})
-            # store
-            env_dfs[MONTHLY] = df
+            df.rename(inplace=True, columns=instants_info)
+
+            # store if not empty (can happen, depends on environment)
+            if len(df) > 0:
+                env_dfs[MONTHLY] = df
 
         # annual
         if len(annual_codes) != 0:
-            df = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in ((_annual_year_,) + annual_codes)))
+            # instants info
+            instants_info = {_annual_year_: "year"}
+
+            # create df
+            df = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in (tuple(instants_info) + annual_codes)))
+
             # rename instant columns
-            df.rename(inplace=True, columns={_annual_year_: "year"})
-            # store
-            env_dfs[ANNUAL] = df
+            df.rename(inplace=True, columns=instants_info)
+
+            # store if not empty (can happen, depends on environment)
+            if len(df) > 0:
+                env_dfs[ANNUAL] = df
 
         # run period
         if len(run_period_codes) != 0:
-            env_dfs[ANNUAL] = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in run_period_codes))
+            df = pd.DataFrame.from_dict(dict((k, env_data[k]) for k in run_period_codes))
+            # store if not empty (can happen, depends on environment)
+            if len(df) > 0:
+                env_dfs[RUN_PERIOD] = df
 
         # all: rename codes to columns fullname
-        if df is not None:
+        for df in env_dfs.values():
+            if df is None:
+                continue
             df.rename(columns=columns_rename, inplace=True)
 
-    return environments, environments_dfs
-
-    #
-    #
-    # TIMESTEP = "TimeStep"
-    # HOURLY = "Hourly"
-    # DAILY = "Daily"
-    # MONTHLY = "Monthly"
-    # ANNUAL = "Annual"
-    # RUN_PERIOD = "RunPeriod"
-    #
-    #
-    # # create environments and store
-    # envs_d = {}
-    # if len(raw_envs_l) == 1:
-    #     env_names_l = ["RunPeriod"]
-    # elif len(raw_envs_l) == 2:
-    #     env_names_l = ["SummerDesignDay", "WinterDesignDay"]
-    # elif len(raw_envs_l) == 3:
-    #     env_names_l = ["SummerDesignDay", "WinterDesignDay", "RunPeriod"]
-    # else:
-    #     logger.error("More than three environments were found, unhandled situation. Only first three will be used.")
-    #     env_names_l = ["SummerDesignDay", "WinterDesignDay", "RunPeriod"]
-    # for env_name, raw_env_d in zip(env_names_l, raw_envs_l[:3]):
-    #     # find env_name
-    #     # for interval in (_detailed_, _timestep_, _hourly_, _daily_):
-    #     #     if not interval in raw_env_d:
-    #     #         continue
-    #     #     first_day_type = raw_env_d[interval][_day_types_l_][0]
-    #     #     env_name = first_day_type if first_day_type in ("SummerDesignDay", "WinterDesignDay") else "RunPeriod"
-    #     #     break
-    #     # else:  # monthly or runperiod
-    #     #     env_name = "RunPeriod"
-    #     #     logger = logging.getLogger(default_logger_name if logger_name is None else logger_name)
-    #     #     logger.error("Did not find env_name for env: '%s'. Env has been skipped." % raw_env_d[_begin_])
-    #     #     continue
-    #
-    #     # create and store dataframes
-    #     for ep_freq in (TIMESTEP, HOURLY, DAILY, MONTHLY, RUN_PERIOD):
-    #         if ep_freq not in raw_env_d:  # no data
-    #             continue
-    #
-    #         # CREATE
-    #         # index
-    #         index_l = raw_env_d[ep_freq][INDEX_L]
-    #         if len(index_l) == 0:  # no data
-    #             continue
-    #
-    #         if ep_freq in (DETAILED, TIMESTEP, HOURLY, DAILY):  # multi-index
-    #             names = {
-    #                 DETAILED: ["month", "day", "hour", "minute"],
-    #                 TIMESTEP: ["month", "day", "hour", "minute"],
-    #                 HOURLY: ["month", "day", "hour", "minute"],
-    #                 DAILY: ["month", "day"]
-    #             }[ep_freq]
-    #             index = pd.MultiIndex.from_tuples(index_l, names=names)
-    #         else:
-    #             index = pd.Index(index_l)
-    #
-    #         # dataframe
-    #         data_d = raw_env_d[ep_freq][DATA_D]
-    #         df = pd.DataFrame(data_d, index=index)
-    #         df.rename(columns=dict([(k, variables_info[ep_freq][k][0]) for k in variables_info[ep_freq]]), inplace=True)
-    #
-    #         # add dst and day_type if available
-    #         if ep_freq in (TIMESTEP, HOURLY, DAILY):
-    #             df.insert(0, "dst", raw_env_d[ep_freq]["dst_l"])
-    #             df.insert(0, "day_type", raw_env_d[ep_freq]["day_types_l"])
-    #
-    #         # STORE
-    #         if not env_name in envs_d:
-    #             envs_d[env_name] = {}
-    #         if ep_freq in envs_d[env_name]:
-    #             logger.error("Same environment has two identical time steps: '%s'." % raw_env_d[1])
-    #         envs_d[env_name][ep_freq] = df
-    #
-    # return envs_d
-
-
-def parse_out_optimized1(file_like):
-    """
-    Optimization failed...
-    Only parses hourly (or infra-hourly) data, but does not raise Exception if there is daily or monthly data.
-    Does not transform index into datetime
-    """
-    # ----------------------- LOAD METERS
-    # VERSION INFO
-    next(file_like)
-
-    # DATA DICTIONARY
-    report_codes_d = {}  # {report_code: [(var_name, var_unit), ...], ...}
-    while True:
-        line_s = next(file_like).split("!")[0].rstrip()  # we don't take comments and strip the newline character
-
-        if line_s == "End of Data Dictionary":
-            break
-        line_l = line_s.split(",", 2)
-
-        # report code
-        report_code, items_number, vars_l_s = int(line_l[0]), int(line_l[1]), line_l[2]
-
-        if report_code > 5:
-            report_codes_d[report_code] = []
-            for var_s in vars_l_s.split(",", items_number - 1):
-                try:
-                    var_name, right_s = var_s.split("[")
-                    var_unit = right_s[:-1].strip()
-                except ValueError:
-                    var_name, var_unit = var_s, None
-                report_codes_d[report_code] = (var_name.strip(), var_unit)
-
-    # ------------------------ LOAD DATA
-    # we only use hourly (or sub-hourly data)
-    data = []  # instant_id, timestep_id, meter_i, value
-    instant = []  # instant_id, timestep_id, month_num, day_num, hour_num, end_minute_num
-    # day_type_id (0 -> simulation, 1 -> SummerDesignDay, 2 -> WinterDesignDay)
-    current_instant_id = -1
-
-    day_types_d = {"SummerDesignDay": 1, "WinterDesignDay": 2}  # 0
-    for line in file_like:
-        line_l = line.split(",", 1)
-        try:
-            data.append((current_instant_id, int(line_l[0]), float(line_l[1])))
-        except ValueError:
-            try:
-                # line_l: 0-sim_day, 1-month_num, 2-day_num, 3-dst, 4-hour_num, 5-start_minute,
-                # 6-end_minute, 7-day_type
-                # we don't use sim_day nor start_minute_num
-                instant_l = line_l[1].split(",")
-                instant.append(
-                    (current_instant_id + 1,  # instant_id
-                     int(instant_l[1]),  # month_num
-                     int(instant_l[2]),  # day_num
-                     int(instant_l[4]),  # hour_num
-                     int(float(instant_l[6])),  # end_minute_num
-                     int(line_l[0]),  # timestep_id
-                     day_types_d.get(instant_l[7].strip(), 0))  # day_type_id
-                    # we didn't use instant_l[0] (sim_day), nor instant_l
-                )
-                current_instant_id += 1
-            except ValueError:
-                if int(line_l[0]) != 1:
-                    raise Exception("Did not understand line: '%s'." % line)
-            except IndexError:
-                if line.strip() == 'End of Data':
-                    break
-    # manage index
-    instant_df = pd.DataFrame(instant, columns=["instant_id", "month", "day", "hour", "minute", "timestep_id",
-                                                "day_type_id"])
-    instant_df["instant_id"] = instant_df.index
-    instant_df = instant_df[instant_df["timestep_id"] == 2]
-    instant_df = instant_df[instant_df["day_type_id"] == 0]
-
-    instant_df = instant_df.set_index(["month", "day", "hour", "minute"])
-    del instant_df["day_type_id"]
-    del instant_df["timestep_id"]
-
-    # reshape data and join
-    data_df = pd.DataFrame(data, columns=["instant_id", "meter_id", "value"])
-    data_df = data_df.pivot(index="instant_id", columns="meter_id", values="value")
-
-    df = instant_df.join(data_df, on="instant_id", how="left")
-    del df["instant_id"]
-    df.rename(columns=dict([(k, report_codes_d[k][0]) for k in report_codes_d]), inplace=True)
-
-    return df
+    return environments, variables_info, environments_dfs

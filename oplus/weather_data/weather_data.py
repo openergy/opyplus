@@ -2,6 +2,7 @@ import collections
 import datetime as dt
 
 import pandas as pd
+from pandas.util.testing import assert_index_equal
 
 from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 
@@ -223,13 +224,7 @@ class WeatherData:
 
         self._start_day_of_week = WEEK_DAYS[date.weekday()]
 
-    @classmethod
-    def from_epw(cls, buffer_or_path):
-        from .epw_parse import parse_epw
-        _, buffer = to_buffer(buffer_or_path)
-        with buffer as f:
-            return parse_epw(f)
-
+    # ------------------------------------------------ public api ------------------------------------------------------
     @property
     def has_datetime_instants(self):
         return isinstance(self._weather_series.index, pd.DatetimeIndex)
@@ -251,24 +246,61 @@ class WeatherData:
             return
 
         # create index
-        index = self._weather_series.apply(lambda x: dt.datetime(x.year, x.month, x.day, x.hour-1, x.minute))
-
-        # check and sanitize
-        _check_and_sanitize_datetime_instants(index)
-
-        # remove old start day of week
-        self._start_day_of_week = None
+        index = pd.DatetimeIndex(self._weather_series.apply(
+            lambda x: dt.datetime(x.year, x.month, x.day, x.hour-1, x.minute),
+            axis=1
+        ))
 
         # set new indew
         self._weather_series.index = index
 
+        # check and sanitize
+        self._weather_series = _check_and_sanitize_datetime_instants(self._weather_series)
+
+        # remove old start day of week
+        self._start_day_of_week = None
+
         # set new start day of week
         self._set_start_day_of_week()
 
-    @property
-    def weather_series(self):
+    def get_weather_series(self):
         return self._weather_series.copy()
 
+    def get_info(self):
+        if len(self._weather_series) == 0:
+            start, end = "no data", "no data"
+        else:
+            start, end = None, None
+            for i in (0, -1):
+                # create or find instant
+                if self.has_tuple_instants:
+                    row = self._weather_series.iloc[i, :]
+                    instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"]-1, row["minute"])
+                else:
+                    instant = self._weather_series.index[i].to_pydatetime()
+
+                # store
+                if i == 0:
+                    start = instant
+                else:
+                    end = instant
+
+        msg = "WeatherData\n"
+        msg += f"\tinstants: {'tuple' if self.has_tuple_instants else 'datetime'}\n"
+        for k in ("latitude", "longitude", "timezone_offset", "elevation"):
+            msg += f"\t{k}: {self._headers[k]}\n"
+        msg += f"\tdata period: {start.isoformat()}, {end.isoformat()}"
+        return msg
+
+    # ------------------------------------------------- load -----------------------------------------------------------
+    @classmethod
+    def from_epw(cls, buffer_or_path):
+        from .epw_parse import parse_epw
+        _, buffer = to_buffer(buffer_or_path)
+        with buffer as f:
+            return parse_epw(f)
+
+    # ----------------------------------------------- export -----------------------------------------------------------
     def to_epw(self, buffer_or_path=None):
         epw_content = self._headers_to_epw() + self._weather_series.to_csv(header=False, index=False)
         return multi_mode_write(
@@ -298,7 +330,7 @@ def _check_and_sanitize_weather_series(df):
         is_datetime_index = True
 
         # check and sanitize index
-        _check_and_sanitize_datetime_instants(df.index)
+        df = _check_and_sanitize_datetime_instants(df)
 
         # prepare instant columns
         data.update((
@@ -335,11 +367,40 @@ def _check_and_sanitize_weather_series(df):
     return sanitized_df
 
 
-def _check_and_sanitize_datetime_instants(index):
-    # check frequency
-    if index.freq != "H":
-        raise ValueError("Weather series must have an hourly frequence.")
+def _check_and_sanitize_datetime_instants(df):
+    """
+    Parameters
+    ----------
+    df
+
+    Returns
+    -------
+    sanitized df
+    """
+    # leave if not relevant
+    if df is None or len(df) == 0:
+        return df
+
+    # check datetime index
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError("df index must be a datetime index.")
+
+    # force frequency if needed
+    if df.index.freq != "H":
+        forced_df = df.asfreq("H")
+        # check no change
+        try:
+            assert_index_equal(df.index, forced_df.index)
+        except AssertionError:
+            raise ValueError(
+                f"Couldn't convert to hourly datetime instants. Probable cause : "
+                f"given start instant ({df.index[0]}) is incorrect and data can't match because of leap year issues."
+            ) from None
+        # replace old variable
+        df = forced_df
 
     # check first minute is 0
-    if index[0].minute != 0:
+    if df.index[0].minute != 0:
         raise ValueError("Minutes must be 0.")
+
+    return df

@@ -1,9 +1,6 @@
 import json
-import datetime as dt
-import textwrap
 
 from ..util import multi_mode_write
-from .. import __version__
 
 
 def table_name_to_ref(name):

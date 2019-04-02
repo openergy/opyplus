@@ -48,7 +48,8 @@ class FileInfo:
 
 
 def get_input_file_path(dir_path, file_ref):
-    assert file_ref in (FILE_REFS.idf, FILE_REFS.epw), "'%s' file ref is not an input file"
+    if file_ref not in (FILE_REFS.idf, FILE_REFS.epw):
+        raise ValueError("'%s' file ref is not an input file")
     return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
 
 
@@ -118,7 +119,6 @@ class Simulation:
             base_dir_path,
             simulation_name=None,
             start=None,
-            encoding=None,
             idd_or_path_or_key=None,
             stdout=None,
             stderr=None,
@@ -130,7 +130,8 @@ class Simulation:
         default stdout and stderr are logger.info and logger.error
         """
         # manage simulation dir path
-        assert os.path.isdir(base_dir_path), "Base dir path not found: '%s'" % base_dir_path
+        if not os.path.isdir(base_dir_path):
+            raise NotADirectoryError("Base dir path not found: '%s'" % base_dir_path)
         simulation_dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
 
         # make directory if does not exist
@@ -165,7 +166,6 @@ class Simulation:
             base_dir_path,
             simulation_name=simulation_name,
             start=start,
-            encoding=encoding,
             idd_or_path=idd_or_path_or_key
         )
 
@@ -174,18 +174,17 @@ class Simulation:
             base_dir_path,
             simulation_name=None,
             start=None,
-            encoding=None,
             idd_or_path=None
     ):
         self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
         self._start = start
-        self._encoding = encoding
         self._idd_or_path = idd_or_path
         self.__idd = None
         self._file_refs = None
 
         # check simulation directory path exists
-        assert os.path.isdir(self._dir_path), "Simulation directory does not exist: '%s'." % self._dir_path
+        if not os.path.isdir(self._dir_path):
+            raise NotADirectoryError("Simulation directory does not exist: '%s'." % self._dir_path)
 
     @property
     def file_refs(self):
@@ -195,24 +194,23 @@ class Simulation:
         if self._file_refs is None:
             self._file_refs = {
                 FILE_REFS.idf: FileInfo(
-                    constructor=lambda path: self._idf_cls(path, idd_or_path=self._idd, encoding=self._encoding),
+                    constructor=lambda path: self._idf_cls(path, idd_or_path=self._idd),
                     get_path=lambda: get_input_file_path(self.dir_path, FILE_REFS.idf)
                 ),
 
                 FILE_REFS.epw: FileInfo(
-                    constructor=lambda path: self._epw_cls(path, encoding=self._encoding, start=self._start),
+                    constructor=lambda path: self._epw_cls(path, start=self._start),
                     get_path=lambda: get_input_file_path(self.dir_path, FILE_REFS.epw)
                 ),
 
                 FILE_REFS.eio: FileInfo(
-                    constructor=lambda path: self._eio_cls(path, encoding=self._encoding),
+                    constructor=lambda path: self._eio_cls(path),
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.eio)
                 ),
 
                 FILE_REFS.eso: FileInfo(
                     constructor=lambda path: self._standard_output_file_cls(
                         path,
-                        encoding=self._encoding,
                         start=self._start
                     ),
                     get_path=lambda: get_output_file_path(
@@ -224,29 +222,28 @@ class Simulation:
                 FILE_REFS.mtr: FileInfo(
                     constructor=lambda path: self._standard_output_file_cls(
                         path,
-                        encoding=self._encoding,
                         start=self._start),
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mtr)
                 ),
 
                 FILE_REFS.mtd: FileInfo(
-                    constructor=lambda path: self._mtd_cls(path, encoding=self._encoding),
+                    constructor=lambda path: self._mtd_cls(path),
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mtd)
                 ),
 
                 FILE_REFS.mdd: FileInfo(
-                    constructor=lambda path: open(path, encoding=self._encoding).read(),
+                    constructor=lambda path: open(path).read(),
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mdd)
 
                 ),
 
                 FILE_REFS.err: FileInfo(
-                    constructor=lambda path: self._err_cls(path, encoding=self._encoding),
+                    constructor=lambda path: self._err_cls(path),
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.err)
                 ),
 
                 FILE_REFS.summary_table: FileInfo(
-                    constructor=lambda path: self._summary_table_cls(path, encoding=self._encoding),
+                    constructor=lambda path: self._summary_table_cls(path),
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.summary_table)
                 )
             }
@@ -262,22 +259,24 @@ class Simulation:
             if isinstance(self._idd_or_path, Idd):
                 self.__idd = self._idd_or_path
             else:
-                self.__idd = Idd(self._idd_or_path, encoding=self._encoding)
+                self.__idd = Idd(self._idd_or_path)
         return self.__idd
 
     def _check_file_ref(self, file_ref):
-        assert file_ref in self._file_refs, "Unknown extension: '%s'." % file_ref
+        if file_ref not in self._file_refs:
+            raise ValueError("Unknown extension: '%s'." % file_ref)
 
     def _path(self, file_ref):
         return self.file_refs[file_ref].get_path()
 
     def exists(self, file_ref):
-        assert file_ref in FILE_REFS, \
-            "Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS._fields)))
+        if file_ref not in FILE_REFS:
+            raise ValueError("Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS._fields))))
         return os.path.isfile(self._path(file_ref))
 
     def path(self, file_ref):
-        assert self.exists(file_ref), "File '%s' not found in simulation '%s'." % (file_ref, self._path(file_ref))
+        if not self.exists(file_ref):
+            raise ValueError("File '%s' not found in simulation '%s'." % (file_ref, self._path(file_ref)))
         return self._path(file_ref)
 
     def set_start(self, start):
@@ -309,7 +308,8 @@ def run_eplus(idf_or_path, epw_or_path, idd_or_path, dir_path, stdout=None, stde
     dir_path = os.path.abspath(dir_path)
 
     # check dir path
-    assert os.path.isdir(dir_path), "Simulation directory does not exist: '%s'." % dir_path
+    if not os.path.isdir(dir_path):
+        raise NotADirectoryError("Simulation directory does not exist: '%s'." % dir_path)
 
     # save files
     simulation_idf_path = os.path.join(dir_path, CONF.simulation_base_name + ".idf")
