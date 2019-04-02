@@ -197,7 +197,7 @@ class WeatherData:
                 "DATA PERIODS",
                 1,
                 1,
-                "Monday",  # todo: manage properly, should store this info while from_epw...
+                self._start_day_of_week,
                 f"{start_month}/{start_day}",
                 f"{end_month}/{end_day}"
             ]

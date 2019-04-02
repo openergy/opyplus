@@ -1,8 +1,11 @@
 import re
 import unidecode
+
+from .util import isinstance_str
 from .link import Link
 from .record_hook import RecordHook
 from .exceptions import FieldValidationError
+from .external_file import ExternalFile
 
 
 spaces_and_newlines_pattern = re.compile(r"[\n\r\s]+")
@@ -33,7 +36,6 @@ class FieldDescriptor:
 
         # used for error messages on extensible fields
         self._extensible_info = None
-
         self._detailed_type = None
 
     # construct
@@ -58,6 +60,10 @@ class FieldDescriptor:
         # manage none
         if value is None:
             return None
+
+        # transform to string if external file
+        if isinstance(value, ExternalFile):
+            value = value.path
         
         # prepare if string
         if isinstance(value, str):
@@ -81,6 +87,10 @@ class FieldDescriptor:
                     f"Field has more than 100 characters which is the limit. "
                     f"{self.get_error_location_message(value, index=index)}"
                 )
+
+            # transform to external file if relevant
+            if self.is_file_name:
+                value = ExternalFile(value)
             
         # manage numeric types
         if self.detailed_type in ("integer", "real"):
@@ -106,7 +116,7 @@ class FieldDescriptor:
         # manage simple string types
         if self.detailed_type in ("alpha", "choice", "node", "external-list"):
             # ensure it was str
-            if not isinstance(value, str):
+            if not isinstance_str(value):
                 raise FieldValidationError(
                     f"Value must be a string. {self.get_error_location_message(value, index=index)}"
                 )
@@ -129,6 +139,11 @@ class FieldDescriptor:
     @property
     def is_required(self):
         return "required-field" in self.tags
+
+    @property
+    def is_file_name(self):
+        # we don't add this to detailed_type because can be a file name and something else (for example object-list)
+        return "file_name" in self.ref
 
     def check_not_required(self):
         if self.is_required:

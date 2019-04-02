@@ -4,6 +4,7 @@ import collections
 from .link import Link
 from .record_hook import RecordHook
 from .exceptions import FieldValidationError
+from .external_file import ExternalFile
 
 TAB_LEN = 4
 COMMENT_COLUMN_START = 35
@@ -277,8 +278,8 @@ class Record:
         # compare field by field
         for i in range(common_length):
             # values
-            self_value = self.get_raw_value(i)
-            other_value = self.get_raw_value(other)
+            self_value = self.get_serialized_value(i)
+            other_value = self.get_serialized_value(other)
 
             # types
             self_type_level = get_type_level(self_value)
@@ -318,19 +319,32 @@ class Record:
         """
         return id(self) if self._table._dev_auto_pk else self[0]
 
-    def get_raw_value(self, ref_or_index):
+    def get_serialized_value(self, ref_or_index):
         index = (
             self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
             else ref_or_index
         )
+
+        # get value
         value = self._data.get(index)
-        return value.serialize() if isinstance(value, (Link, RecordHook)) else value
+
+        # serialize
+        value = value.serialize() if isinstance(value, (Link, RecordHook)) else value
+
+        # manage file names
+        if isinstance(value, ExternalFile):
+            value = value.path
+
+        return value
 
     def get_pointed_records(self):
         return self.get_epm()._dev_relations_manager.get_pointed_from(self)
 
     def get_pointing_records(self):
         return self.get_epm()._dev_relations_manager.get_pointing_on(self)
+
+    def get_external_files(self):
+        return [v for v in self._data.values() if isinstance(v, ExternalFile)]
 
     # construct
     def update(self, data=None, **or_data):
@@ -481,7 +495,7 @@ class Record:
         return collections.OrderedDict(sorted(self._data.items()))
     
     def to_json_data(self):
-        return collections.OrderedDict([(k, self.get_raw_value(k)) for k in self._data])
+        return collections.OrderedDict([(k, self.get_serialized_value(k)) for k in self._data])
     
     def to_idf(self):
         json_data = self.to_json_data()

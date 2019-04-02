@@ -68,6 +68,7 @@ class Mtd:
 
         return variables_d, meters_d
 
+    # ---------------------------------------- public api --------------------------------------------------------------
     def get_variable_refs(self, meter_ref):
         return [v.table_ref for v in self._meters_d[meter_ref].variables_l]
 

@@ -28,7 +28,7 @@ def check():
                              simulation_dir_path if DEBUG_SIMUL_DIR_PATH is None else
                              DEBUG_SIMUL_DIR_PATH)
                 if s.exists("eio"):
-                    eio = Eio(s.path("eio"))  # raise error if problem
+                    eio = Eio(s.get_file_path("eio"))  # raise error if problem
                     test_num += 1
         if test_num == MAX_TESTS_NB:
             break

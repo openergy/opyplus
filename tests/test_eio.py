@@ -20,10 +20,10 @@ class TestValues(unittest.TestCase):
             eio = s.eio
 
             self.assertEqual(
-                float(eio.df("Site:GroundReflectance:SnowModifier").loc[0, "Normal"]),
+                float(eio.get_df("Site:GroundReflectance:SnowModifier").loc[0, "Normal"]),
                 1
             )
-            df = eio.df("Material CTF Summary")
+            df = eio.get_df("Material CTF Summary")
 
             self.assertEqual(
                 float(df[df[df.columns[0]] == "R13LAYER"].iloc[0, 5]),

@@ -17,7 +17,6 @@ def parse_idf(file_like):
     copyright_list = get_multi_line_copyright_message().split("\n")
 
     for i, raw_line in enumerate(file_like):
-        # todo: manage copyright properly (should detect whole block, not by row)
         # manage if copyright
         try:
             copyright_line = copyright_list[i]

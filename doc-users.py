@@ -293,19 +293,19 @@ s = op.simulate(
 print("environments: ", s.eso.environments, "\n")
 
 # default dataframe
-df = s.eso.df()
+df = s.eso.get_df()
 print(list(df.columns), "\n")
 print("default index: ", df[["Environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
 # choose start year
-df = s.eso.df(start=2014)
+df = s.eso.get_df(start=2014)
 print("datetime index: ",  df[["Environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
 # get info
 print(s.eso.get_info())
 
 # choose time step
-df = s.eso.df(time_step="Hourly")
+df = s.eso.get_df(time_step="Hourly")
 
 
 ## -------------------------------------------------- epw --------------------------------------------------------------
@@ -316,7 +316,7 @@ epw = op.Epw(os.path.join(
     "USA_CO_Golden-NREL.724666_TMY3.epw")
 )
 
-df = epw.df()
+df = epw.get_df()
 print(list(df.columns))
 print(df[["drybulb"]].head())
 

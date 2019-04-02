@@ -8,7 +8,7 @@ from .switch_instants import switch_to_datetime_instants
 logger = logging.getLogger(__name__)
 
 
-class StandardOutputFile:
+class StandardOutput:
     def __init__(self, buffer_or_path):
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)

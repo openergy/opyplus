@@ -5,6 +5,16 @@ import pandas as pd
 from oplus.configuration import CONF
 
 
+def to_float_if_possible(s):
+    try:
+        return float(s)
+    except ValueError:
+        if s.strip() == "":
+            return None
+        else:
+            return s
+
+
 class OutputTable:
     def __init__(self, path):
         if not os.path.isfile(path):
@@ -25,15 +35,6 @@ class OutputTable:
         current_raw_tables_l = None
         current_raw_table_d = None  # {"name": "name", "columns": "columns", values: [[v1, ...], ...]}
         columns_nb = None
-
-        def to_float_if_possible(s):
-            try:
-                return float(s)
-            except ValueError:
-                if s.strip() == "":
-                    return None
-                else:
-                    return s
 
         # loop
         with open(self._path, "r", encoding=CONF.encoding) as f:
@@ -94,6 +95,7 @@ class OutputTable:
 
         return reports_d
 
+    # ---------------------------------------- public api --------------------------------------------------------------
     def get_table(self, table_name, report_name=None):
         if report_name is None:
             for rp_name, tables_d in self._reports_d.items():

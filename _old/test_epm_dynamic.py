@@ -338,7 +338,7 @@ class DynamicIdfTest(unittest.TestCase):
 
             # check pointing
             for pointing_record, pointing_index in pointing_links_l:
-                self.assertEqual(pointing_record._.get_raw_value(pointing_index), new_zone_name)
+                self.assertEqual(pointing_record._.get_serialized_value(pointing_index), new_zone_name)
 
     def test_copy_record(self):
         for _ in iter_eplus_versions(self):

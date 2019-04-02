@@ -13,12 +13,12 @@ class Eio:
 
         self._tables_d = parse_eio(self._path)  # { lower_ref: EioTable(), ...
 
-    @property
-    def table_refs(self):
+    # -------------------------------------- public api ----------------------------------------------------------------
+    def get_table_refs(self):
         return self._tables_d.keys()
 
-    def df(self, table_ref):
-        return self._tables_d[table_ref.lower()].df
+    def get_df(self, table_ref):
+        return self._tables_d[table_ref.lower()].get_df()
 
     def get_value(self, table_ref, column_name_or_i, filter_column_name_or_i, filter_criterion):
         lower_ref = table_ref.lower()
@@ -94,8 +94,14 @@ class EioTable:
         self._columns = columns
         self._data = data
 
-    @property
-    def df(self):
+    def _get_column_index(self, column_name_or_i):
+        if isinstance(column_name_or_i, int) or isinstance(column_name_or_i, float):
+            return column_name_or_i
+        if column_name_or_i not in self._columns:
+            raise KeyError("Unknown column '%s' for table '%s'." % (column_name_or_i, self._ref))
+        return self._columns.index(column_name_or_i)
+
+    def get_df(self):
         _df = pd.DataFrame(data=self._data, columns=self._columns, dtype="object")
         _df.name = self._ref
         return _df
@@ -121,10 +127,3 @@ class EioTable:
             raise ValueError("Filter did not return any values.")
 
         return self._data[row_i][column_i]
-
-    def _get_column_index(self, column_name_or_i):
-        if isinstance(column_name_or_i, int) or isinstance(column_name_or_i, float):
-            return column_name_or_i
-        if column_name_or_i not in self._columns:
-            raise KeyError("Unknown column '%s' for table '%s'." % (column_name_or_i, self._ref))
-        return self._columns.index(column_name_or_i)

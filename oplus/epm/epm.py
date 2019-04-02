@@ -22,6 +22,14 @@ class Epm:
     _dev_idd_cls = Idd  # for subclassing
 
     def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, check_required=True):
+        """
+        Parameters
+        ----------
+        idf_buffer_or_path
+        idd_or_buffer_or_path
+        comment: only used if no idf_buffer_or_path is given
+        check_required
+        """
         # set variables
         self._path = None
         self._dev_idd = (
@@ -52,6 +60,19 @@ class Epm:
             # populate
             self._dev_populate_from_json_data(json_data)
 
+    # ------------------------------------------ private ---------------------------------------------------------------
+    def _prepare_external_files_from_main_file_path(self, main_file_path):
+        # process info
+        root, ext = os.path.splitext(main_file_path)
+        chdir, file_name = os.path.split(root)
+        dir_path = file_name + CONF.linked_dir_suffix
+        if chdir == "":
+            chdir = None
+
+        # prepare external files
+        self.prepare_external_files(dir_path, chdir=chdir)
+
+    # ------------------------------------------ dev api ---------------------------------------------------------------
     def _dev_populate_from_json_data(self, json_data):
         """
         workflow
@@ -138,6 +159,41 @@ class Epm:
             for r in table:
                 r.set_defaults()
 
+    def prepare_external_files(self, dir_path, chdir=None):
+        # collect file names
+        external_files = []
+        for table in self._tables.values():
+            for r in table:
+                external_files.extend(r.get_external_files())
+
+        # leave if no external files
+        if len(external_files) == 0:
+            return
+
+        # check that all files exists
+        for ef in external_files:
+            ef.check_file_exists()
+
+        # prepare extended dir path
+        extended_dir_path = dir_path if chdir is None else os.path.join(chdir, dir_path)
+
+        # prepare directory (or check existing)
+        if not os.path.exists(extended_dir_path):
+            os.mkdir(extended_dir_path)
+        elif not os.path.isdir(extended_dir_path):
+            raise NotADirectoryError(f"given dir_path is not a directory: {dir_path}")
+
+        # copy files
+        for ef in external_files:
+            ef.copy(dir_path, chdir=chdir)
+
+    def get_external_files(self):
+        external_files = set()
+        for table in self._tables.values():
+            for r in table:
+                external_files.update([ef.get_file_path for ef in r.get_external_files()])
+        return external_files
+
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
     def from_json_data(cls, json_data, check_required=True):
@@ -161,14 +217,33 @@ class Epm:
         d.move_to_end("_comment", last=False)
         return d
 
-    def to_json(self, buffer_or_path=None, indent=2):
+    def to_json(self, buffer_or_path=None, indent=2, prepare_external_files=False):
+        # prepare external files if relevant
+        if prepare_external_files:
+            # check path is known
+            if not isinstance(buffer_or_path, str):
+                raise ValueError("must provide a file path (not a buffer or None) to prepare external files")
+
+            # prepare
+            self._prepare_external_files_from_main_file_path(buffer_or_path)
+
+        # return json
         return json_data_to_json(
             self.to_json_data(),
             buffer_or_path=buffer_or_path,
             indent=indent
         )
         
-    def to_idf(self, buffer_or_path=None):
+    def to_idf(self, buffer_or_path=None, prepare_external_files=False):
+        # prepare external files if relevant
+        if prepare_external_files:
+            # check path is known
+            if not isinstance(buffer_or_path, str):
+                raise ValueError("must provide a file path (not a buffer or None) to prepare external files")
+
+            # prepare
+            self._prepare_external_files_from_main_file_path(buffer_or_path)
+
         # prepare comment
         comment = get_multi_line_copyright_message()
         if self._comment != "":

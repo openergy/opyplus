@@ -1,9 +1,3 @@
-"""
-ERR
--------
-
-
-"""
 import os
 import pandas as pd
 
@@ -22,11 +16,11 @@ class Err:
             raise FileNotFoundError("No file at given path: '%s'." % path)
         self.path = path
 
-        self.df = None  # multi-index dataframe
+        self._df = None  # multi-index dataframe
         self.info = {}
         self._parse()
 
-        self.simulation_step_list = list(set(self.df.columns.levels[0]))
+        self._simulation_step_list = list(set(self._df.columns.levels[0]))
 
     @property
     def content(self):
@@ -34,9 +28,9 @@ class Err:
             return f.read()
 
     def _parse(self):
-        # todo: Manage information with ahead "*************"
-        # todo: Manage "error flag" :
-        # todo:  it corresponds to error type for each error_category lines_s.split("=")[0] --> MultiIndex
+        # todo: manage information with ahead "*************"
+        # todo: manage "error flag" :
+        # todo: it corresponds to error type for each error_category lines_s.split("=")[0] --> MultiIndex
 
         # first step: warmup
         simulation_step = "Warmup"
@@ -62,17 +56,17 @@ class Err:
                 # PARSE AND ..
                 elif "************* Beginning" in line_s:
                     # SET OUTPUT DATAFRAME
-                    if self.df is None:
+                    if self._df is None:
                         iterables = [(simulation_step,), step_df.columns]
                         columns = pd.MultiIndex.from_product(iterables)
-                        self.df = pd.DataFrame(index=range(0, max_nb), columns=columns)
-                        self.df[simulation_step] = step_df
+                        self._df = pd.DataFrame(index=range(0, max_nb), columns=columns)
+                        self._df[simulation_step] = step_df
                     else:
                         iterables = [(simulation_step,), list(step_df.columns)]
                         columns = pd.MultiIndex.from_product(iterables)
                         multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
                         multi_step_df[simulation_step] = step_df
-                        self.df = self.df.join(multi_step_df)
+                        self._df = self._df.join(multi_step_df)
 
                     # start new simulation step
                     simulation_step = line_s.split("Beginning ")[1]
@@ -114,34 +108,25 @@ class Err:
             columns = pd.MultiIndex.from_product(iterables)
             multi_step_df = pd.DataFrame(index=range(0, max_nb), columns=columns)
             multi_step_df[simulation_step] = step_df
-            if self.df is not None:  # can happen if never encounters "******* Beginning"
-                self.df = self.df.join(multi_step_df)
+            if self._df is not None:  # can happen if never encounters "******* Beginning"
+                self._df = self._df.join(multi_step_df)
             else:
-                self.df = multi_step_df
+                self._df = multi_step_df
 
             self.info = pd.Series(self.info, index=self.info.keys())
 
-    def get(self, simulation_step=None, error_category=None):
+    def get_data(self, simulation_step=None, error_category=None):
         """
-        Return error report dataframe.
-
-        If not argument are given --> return raw report
-        If only on argument is specify --> return swap dataframe report
-
         Parameters
         ----------
-        simulation_step, multicolumns report dataframe level 0
-        error_cat, multicolumns report dataframe level 1
-
-        Returns
-        -------
-        Specify Dataframe
+        simulation_step: if not given, returns a raw report
+        error_category: if only one argument is specified, swaps dataframe report
         """
         if simulation_step is None and error_category is None:
-            return self.df.dropna(axis="rows", how="all")
+            return self._df.dropna(axis="rows", how="all")
 
         if simulation_step is not None:
-            if simulation_step not in self.simulation_step_list:
+            if simulation_step not in self._simulation_step_list:
                 raise RuntimeError("The simulation_step '%s' is not referred in the error file." % simulation_step)
 
             if error_category is not None:
@@ -149,17 +134,17 @@ class Err:
                     raise RuntimeError("The error_cat '%s' is wrong." % error_category)
                 iterables = [simulation_step, error_category]
                 columns = pd.MultiIndex.from_product(iterables)
-                series = self.df[simulation_step][error_category].dropna(axis="rows", how="all")
+                series = self._df[simulation_step][error_category].dropna(axis="rows", how="all")
 
                 df = pd.DataFrame(index=series.index, columns=columns)
                 df[simulation_step] = series
                 return df
 
-            return self.df[simulation_step].dropna(axis="rows", how="all")
+            return self._df[simulation_step].dropna(axis="rows", how="all")
 
         if error_category is not None:
             if error_category not in self.CATEGORIES:
                 raise RuntimeError("The error_category '%s' is wrong." % error_category)
-            df = self.df.copy()
+            df = self._df.copy()
             df.columns = df.columns.swaplevel(0, 1)
             return df[error_category].dropna(axis="rows", how="all")

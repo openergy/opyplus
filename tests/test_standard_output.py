@@ -11,9 +11,6 @@ class StandardOutputTest(unittest.TestCase):
     epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "USA_CO_Golden-NREL.724666_TMY3.epw")
 
     def test_all_time_steps(self):
-        """
-        Detailed doesn't work, but not tested because not a priority. # todo: understand detailed
-        """
         for eplus_version in iter_eplus_versions(self):
             if eplus_version == (9, 0, 1):  # todo: make 9.0.1 tests !!
                 continue
@@ -24,22 +21,27 @@ class StandardOutputTest(unittest.TestCase):
                 "one_zone_uncontrolled",
                 eplus_version_str
             )
+            s = Simulation(simulation_path)
 
-            for time_step in ["TimeStep", "Hourly", "Daily", "Monthly", "RunPeriod"]:
-                s = Simulation(simulation_path)
-                df = s.eso.df(time_step=time_step)
+            for frequency in ["timestep", "hourly", "daily", "monthly", "annual", "run_period"]:
+                df = s.eso.get_data(frequency=frequency)
+                if frequency == "annual":
+                    self.assertIsNone(df)
+                    continue
+
                 # check one day of data (15 min time step)
                 self.assertEqual(
                     {
-                        "TimeStep": 96,
-                        "Hourly": 24,
-                        "Daily": 1,
-                        "Monthly": 1,
-                        "RunPeriod": 1
-                    }[time_step],
+                        "timestep": 96,
+                        "hourly": 24,
+                        "daily": 1,
+                        "monthly": 1,
+                        "run_period": 1
+                    }[frequency],
                     len(df)
                 )
 
+    @unittest.skip("not relevant")
     def test_start_dt(self):
         for eplus_version in iter_eplus_versions(self):
             if eplus_version == (9, 0, 1):  # todo: make 9.0.1 tests !!
@@ -55,5 +57,5 @@ class StandardOutputTest(unittest.TestCase):
             start_dt = dt.datetime(2000, 1, 1)
             self.assertEqual(
                 dt.datetime(2000, 1, 1, 1),
-                s.eso.df(time_step="Hourly", start=start_dt).index[0]
+                s.eso.get_df(time_step="Hourly", start=start_dt).index[0]
             )

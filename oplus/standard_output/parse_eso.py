@@ -96,7 +96,7 @@ def parse(file_like):
 
         # frequency
         frequency = timestep_and_or_info[0].lower()  # no retaincase
-        if frequency == EACH_CALL:
+        if frequency in (EACH_CALL, TIMESTEP):  # depends on eplus version (8.5.0: timestep, 9.0.1: each call)
             frequency = TIMESTEP
             manage_timesteps = True
         elif frequency == "runperiod":
@@ -259,7 +259,6 @@ def parse(file_like):
 
     # create dataframes
     for env_title, env_data in environments_data.items():
-        # todo: manage columns order
         # create dataframes dict and store
         env_dfs = dict((frequency, None) for frequency in (TIMESTEP, HOURLY, DAILY, MONTHLY, ANNUAL, RUN_PERIOD))
         environments_dfs[env_title] = env_dfs
