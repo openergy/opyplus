@@ -50,6 +50,10 @@ _monthly_month_ = "monthly_month"
 _annual_year_ = "annual_year"
 
 
+# other
+CUSTOM = "Custom"
+
+
 def parse(file_like):
     # ----------------------- LOAD METERS
     # VERSION
@@ -84,7 +88,10 @@ def parse(file_like):
         content, comment = other.split(" !")
 
         # parse content
-        key_value, var_name = content.split(",")
+        try:
+            key_value, var_name = content.split(",")
+        except ValueError:  # may only have one element (for example Custom:Meter)
+            key_value, var_name = content, CUSTOM
         key_value = key_value.lower()  # no retaincase
         var_name, unit = var_name.split(" [")
         unit = unit[:-1]

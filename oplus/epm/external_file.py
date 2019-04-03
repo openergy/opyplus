@@ -24,8 +24,10 @@ class ExternalFile:
         # manage relative initial path
         if model_file_path is None:
             raise ValueError(
-                "Model file path is unknown. You must be loading Epm directly from json_data, string or buffer "
-                "(and not from file path). You must therefore provide 'model_file_path'.")
+                "You are using external files, but model file path is unknown. "
+                "You must be loading Epm directly from json_data, string or buffer (and not from file path). "
+                "You must therefore provide 'model_file_path' to manage external files."
+            )
 
         # ensure absolute
         if not os.path.isabs(model_file_path):
@@ -44,8 +46,10 @@ class ExternalFile:
         if mode in ("relative", None):
             if model_file_path is None:
                 raise ValueError(
-                    "Model file path is unknown. You must be dumping Emp directly to json_data, string or buffer "
-                    "(and not to file path). You must therefore provide 'model_file_path'.")
+                    "You are using external files, but model file path is unknown. "
+                    "You must be dumping Emp directly to json_data, string or buffer (and not to file path). "
+                    "You must therefore provide 'model_file_path' to manage external files."
+                )
 
             # ensure absolute
             if not os.path.isabs(model_file_path):

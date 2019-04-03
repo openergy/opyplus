@@ -374,9 +374,16 @@ class Record:
             * record is stored in table (=> pk uniqueness is checked)
         2. activate hooks
         3. activate links
+
+        All methods that are directly called by users transit here (__setattr__, __setitem__, add_fields, set_defaults).
+        !! WE THEREFORE CONSIDER THAT CURRENT_MODEL_FILE IS CWD. !!
+        Don't use if this is not relevant in your situation.
         """
         data = or_data if data is None else data
-        self._update_inert(data)
+
+        with self.get_epm()._dev_set_current_model_file_path(os.getcwd()):
+            self._update_inert(data)
+
         self._dev_activate_hooks()
         self._dev_activate_links()
 
