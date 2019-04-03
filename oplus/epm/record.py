@@ -1,5 +1,6 @@
 import uuid
 import collections
+import os
 
 from .link import Link
 from .record_hook import RecordHook
@@ -109,6 +110,10 @@ class Record:
             current_record_hook = self._data.get(index)
             if current_record_hook is not None:
                 current_record_hook.unregister()
+
+        # manage if external file
+        if isinstance(value, ExternalFile):
+            value.activate(self.get_epm().get_source_file_path())
 
         # if None remove and leave
         if value is None:
@@ -278,8 +283,8 @@ class Record:
         # compare field by field
         for i in range(common_length):
             # values
-            self_value = self.get_serialized_value(i)
-            other_value = self.get_serialized_value(other)
+            self_value = self.get_serialized_value(i, external_files_mode="absolute")
+            other_value = self.get_serialized_value(other, external_files_mode="absolute")
 
             # types
             self_type_level = get_type_level(self_value)
@@ -319,7 +324,13 @@ class Record:
         """
         return id(self) if self._table._dev_auto_pk else self[0]
 
-    def get_serialized_value(self, ref_or_index):
+    def get_serialized_value(self, ref_or_index, external_files_mode=None):
+        """
+        Parameters
+        ----------
+        external_files_mode: str, default 'relative'
+            'relative', 'absolute'
+        """
         index = (
             self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
             else ref_or_index
@@ -333,7 +344,10 @@ class Record:
 
         # manage file names
         if isinstance(value, ExternalFile):
-            value = value.path
+            value = value.get_path(
+                mode=external_files_mode,
+                source_abs_dir_path=os.path.dirname(self.get_epm().get_source_file_path())
+            )
 
         return value
 
@@ -494,11 +508,19 @@ class Record:
     def to_dict(self):
         return collections.OrderedDict(sorted(self._data.items()))
     
-    def to_json_data(self):
-        return collections.OrderedDict([(k, self.get_serialized_value(k)) for k in self._data])
+    def to_json_data(self, external_files_mode=None):
+        """
+        Parameters
+        ----------
+        external_files_mode: str, default 'relative'
+            'relative', 'absolute'
+        """
+        return collections.OrderedDict([
+            (k, self.get_serialized_value(k, external_files_mode=external_files_mode)) for k in self._data
+        ])
     
-    def to_idf(self):
-        json_data = self.to_json_data()
+    def to_idf(self, external_files_mode=None):
+        json_data = self.to_json_data(external_files_mode=external_files_mode)
             
         # record descriptor ref
         s = f"{self._table._dev_descriptor.table_name},\n"

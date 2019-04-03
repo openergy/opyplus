@@ -71,7 +71,7 @@ def generate_outputs():
             # prepare idf if needed
             pre_process = simulation_case.get("pre_process")
             if pre_process is not None:
-                idf = Epm(idf_path)
+                idf = Epm.from_idf(idf_path)
                 pre_process(idf)
             else:
                 idf = idf_path

@@ -15,7 +15,7 @@ from oplus.err import Err
 from oplus.summary_table import SummaryTable
 from .epm.idd import get_idd_standard_path
 
-from .eplus_and_os import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
+from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
     get_output_files_layout, get_simulated_epw_path, get_simulation_base_command, get_simulation_input_command_style, \
     get_simulation_command_style
 
@@ -253,26 +253,23 @@ class Simulation:
 simulate = Simulation.simulate
 
 
-def run_eplus(epm_or_idf_path, weather_data_or_epw_path, dir_path, stdout=None, stderr=None, beat_freq=None):
+def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, stdout=None, stderr=None, beat_freq=None):
     """
     Parameters
     ----------
     epm_or_idf_path
     weather_data_or_epw_path
-    dir_path
+    simulation_dir_path
     stdout: default sys.stdout
     stderr: default sys.stderr
     beat_freq: if not none, stdout will be used at least every beat_freq (in seconds)
     """
     # work with absolute paths
-    dir_path = os.path.abspath(dir_path)
+    simulation_dir_path = os.path.abspath(simulation_dir_path)
 
     # check dir path
-    if not os.path.isdir(dir_path):
-        raise NotADirectoryError("Simulation directory does not exist: '%s'." % dir_path)
-
-    # save files
-    simulation_idf_path = os.path.join(dir_path, CONF.simulation_base_name + ".idf")
+    if not os.path.isdir(simulation_dir_path):
+        raise NotADirectoryError("Simulation directory does not exist: '%s'." % simulation_dir_path)
 
     # epm
     if not isinstance(epm_or_idf_path, Epm):
@@ -281,11 +278,20 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, dir_path, stdout=None, 
         epm = Epm.from_idf(epm_or_idf_path)
     else:
         epm = epm_or_idf_path
-
-    epm.to_idf(simulation_idf_path, prepare_external_files=True)
+    simulation_idf_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".idf")
+    epm_source_file_path = epm.get_source_file_path()
+    try:
+        epm.set_source_file_path(simulation_idf_path)
+        epm.gather_external_files(os.path.join(
+            simulation_dir_path,
+            CONF.simulation_base_name + CONF.external_files_suffix)
+        )
+        epm.to_idf(simulation_idf_path)
+    finally:
+        epm.set_source_file_path(epm_source_file_path)
 
     # weather data
-    simulation_epw_path = os.path.join(dir_path, CONF.simulation_base_name + ".epw")
+    simulation_epw_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".epw")
     if isinstance(weather_data_or_epw_path, WeatherData):
         weather_data_or_epw_path.to_epw(simulation_epw_path)
     else:
@@ -304,7 +310,7 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, dir_path, stdout=None, 
     # idf
     idf_command_style = get_simulation_input_command_style("idf")
     if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-        idf_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
+        idf_file_cmd = os.path.join(simulation_dir_path, CONF.simulation_base_name)
     elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
         idf_file_cmd = simulation_idf_path
     else:
@@ -313,7 +319,7 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, dir_path, stdout=None, 
     # epw
     epw_command_style = get_simulation_input_command_style("epw")
     if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-        epw_file_cmd = os.path.join(dir_path, CONF.simulation_base_name)
+        epw_file_cmd = os.path.join(simulation_dir_path, CONF.simulation_base_name)
     elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
         epw_file_cmd = simulation_epw_path
     else:
@@ -331,7 +337,7 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, dir_path, stdout=None, 
     # launch calculation
     run_subprocess(
         cmd_l,
-        cwd=dir_path,
+        cwd=simulation_dir_path,
         stdout=stdout,
         stderr=stderr,
         beat_freq=beat_freq

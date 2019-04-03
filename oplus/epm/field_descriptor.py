@@ -63,7 +63,7 @@ class FieldDescriptor:
 
         # transform to string if external file
         if isinstance(value, ExternalFile):
-            value = value.path
+            value = value.get_path(mode="absolute")
         
         # prepare if string
         if isinstance(value, str):

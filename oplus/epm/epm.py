@@ -1,6 +1,7 @@
 import os
 import collections
 import textwrap
+import json
 
 from ..configuration import CONF
 from ..util import get_multi_line_copyright_message, to_buffer
@@ -11,6 +12,7 @@ from .record import Record
 from .relations_manager import RelationsManager
 from .idf_parse import parse_idf
 from .util import json_data_to_json, multi_mode_write
+from .external_file import ensure_abs_path
 
 
 class Epm:
@@ -21,17 +23,17 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, idf_buffer_or_path=None, idd_or_buffer_or_path=None, comment=None, check_required=True):
+    def __init__(self, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
         """
         Parameters
         ----------
-        idf_buffer_or_path
         idd_or_buffer_or_path
-        comment: only used if no idf_buffer_or_path is given
         check_required
+        source_file_path
         """
         # set variables
-        self._path = None
+        self._source_file_abs_path = os.getcwd() if source_file_path is None else ensure_abs_path(source_file_path)
+
         self._dev_idd = (
             idd_or_buffer_or_path if isinstance(idd_or_buffer_or_path, Idd) else
             self._dev_idd_cls(idd_or_buffer_or_path)
@@ -47,30 +49,35 @@ class Epm:
 
         self._dev_check_required = check_required
 
-        self._comment = "" if comment is None else str(comment)
-
-        # parse if relevant
-        if idf_buffer_or_path is not None:
-            self._path, buffer = to_buffer(idf_buffer_or_path)
-
-            # raw parse and parse
-            with buffer as f:
-                json_data = parse_idf(f)
-
-            # populate
-            self._dev_populate_from_json_data(json_data)
+        self._comment = ""
 
     # ------------------------------------------ private ---------------------------------------------------------------
-    def _prepare_external_files_from_main_file_path(self, main_file_path):
-        # process info
-        root, ext = os.path.splitext(main_file_path)
-        chdir, file_name = os.path.split(root)
-        dir_path = file_name + CONF.linked_dir_suffix
-        if chdir == "":
-            chdir = None
+    @classmethod
+    def _create_from_buffer_or_path(
+            cls,
+            parse_fct,
+            buffer_or_path,
+            idd_or_buffer_or_path=None,
+            check_required=True,
+            source_file_path=None
+    ):
+        # prepare buffer
+        _source_file_path, buffer = to_buffer(buffer_or_path)
 
-        # prepare external files
-        self.prepare_external_files(dir_path, chdir=chdir)
+        # manage source file path
+        source_file_path = _source_file_path if source_file_path is None else _source_file_path
+
+        # create json data
+        with buffer as f:
+            json_data = parse_fct(f)
+
+        # create and return epm
+        return cls.from_json_data(
+            json_data,
+            idd_or_buffer_or_path=idd_or_buffer_or_path,
+            check_required=check_required,
+            source_file_path=source_file_path
+        )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
     def _dev_populate_from_json_data(self, json_data):
@@ -153,97 +160,120 @@ class Epm:
             f"  {table._dev_descriptor.table_ref}" for table in self._tables.values()
         )
 
+    def get_source_file_path(self):
+        """
+        Returns
+        -------
+        path is absolute
+        """
+        return self._source_file_abs_path
+
+    def get_external_files(self):
+        external_files = []
+        for table in self._tables.values():
+            for r in table:
+                external_files.extend([ef for ef in r.get_external_files()])
+        return external_files
+
     # construct
+    def set_source_file_path(self, path):
+        self._source_file_abs_path = ensure_abs_path(path)
+
+    def set_comment(self, comment):
+        self._comment = str(comment)
+
     def set_defaults(self):
         for table in self._tables.values():
             for r in table:
                 r.set_defaults()
 
-    def prepare_external_files(self, dir_path, chdir=None):
-        # collect file names
-        external_files = []
-        for table in self._tables.values():
-            for r in table:
-                external_files.extend(r.get_external_files())
+    def gather_external_files(self, abs_dir_path, copy=True):
+        # collect external files
+        external_files = self.get_external_files()
 
         # leave if no external files
         if len(external_files) == 0:
             return
 
-        # check that all files exists
+        # check that all external files exists
         for ef in external_files:
             ef.check_file_exists()
 
-        # prepare extended dir path
-        extended_dir_path = dir_path if chdir is None else os.path.join(chdir, dir_path)
+        # prepare absolute dir path
+        abs_dir_path = ensure_abs_path(abs_dir_path)
 
         # prepare directory (or check existing)
-        if not os.path.exists(extended_dir_path):
-            os.mkdir(extended_dir_path)
-        elif not os.path.isdir(extended_dir_path):
-            raise NotADirectoryError(f"given dir_path is not a directory: {dir_path}")
+        if not os.path.exists(abs_dir_path):
+            os.mkdir(abs_dir_path)
+        elif not os.path.isdir(abs_dir_path):
+            raise NotADirectoryError(f"given dir_path is not a directory: {abs_dir_path}")
 
-        # copy files
+        # copy or move files
+        mode = "copy" if copy else "move"
+        raise_if_not_found = True if copy else False
+        # since file may already have been moved, and since we checked that all files existed, we don't raise
+        # if file is not found
         for ef in external_files:
-            ef.copy(dir_path, chdir=chdir)
-
-    def get_external_files(self):
-        external_files = set()
-        for table in self._tables.values():
-            for r in table:
-                external_files.update([ef.get_file_path for ef in r.get_external_files()])
-        return external_files
+            ef.transfer(abs_dir_path, mode=mode, raise_if_not_found=raise_if_not_found)
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls, json_data, check_required=True):
-        idf = cls(check_required=check_required)
-        idf._dev_populate_from_json_data(json_data)
-        return idf
+    def from_json_data(cls, json_data, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
+        epm = cls(
+            idd_or_buffer_or_path=idd_or_buffer_or_path,
+            check_required=check_required,
+            source_file_path=source_file_path
+        )
+        epm._dev_populate_from_json_data(json_data)
+        return epm
 
     @classmethod
-    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, comment=None, check_required=True):
-        return cls(
-            idf_buffer_or_path=buffer_or_path,
+    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
+        return cls._create_from_buffer_or_path(
+            parse_idf,
+            buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            comment=comment,
-            check_required=check_required
+            check_required=check_required,
+            source_file_path=source_file_path
+        )
+
+    @classmethod
+    def from_json(cls, buffer_or_path, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
+        return cls._create_from_buffer_or_path(
+            json.load,
+            buffer_or_path,
+            idd_or_buffer_or_path=idd_or_buffer_or_path,
+            check_required=check_required,
+            source_file_path=source_file_path
         )
 
     # ----------------------------------------- export -----------------------------------------------------------------
-    def to_json_data(self):
-        d = collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
+    def to_json_data(self, external_files_mode=None):
+        """
+        Parameters
+        ----------
+        external_files_mode: str, default 'relative'
+            'relative', 'absolute'
+        """
+        # create data
+        d = collections.OrderedDict(
+            (t.get_ref(), t.to_json_data(external_files_mode=external_files_mode)) for t in self._tables.values()
+        )
         d["_comment"] = self._comment
         d.move_to_end("_comment", last=False)
         return d
 
-    def to_json(self, buffer_or_path=None, indent=2, prepare_external_files=False):
-        # prepare external files if relevant
-        if prepare_external_files:
-            # check path is known
-            if not isinstance(buffer_or_path, str):
-                raise ValueError("must provide a file path (not a buffer or None) to prepare external files")
-
-            # prepare
-            self._prepare_external_files_from_main_file_path(buffer_or_path)
-
+    def to_json(self, buffer_or_path=None, indent=2, external_files_mode=None):
         # return json
         return json_data_to_json(
-            self.to_json_data(),
+            self.to_json_data(
+                external_files_mode=external_files_mode
+            ),
             buffer_or_path=buffer_or_path,
             indent=indent
         )
         
-    def to_idf(self, buffer_or_path=None, prepare_external_files=False):
-        # prepare external files if relevant
-        if prepare_external_files:
-            # check path is known
-            if not isinstance(buffer_or_path, str):
-                raise ValueError("must provide a file path (not a buffer or None) to prepare external files")
-
-            # prepare
-            self._prepare_external_files_from_main_file_path(buffer_or_path)
-
+    def to_idf(self, buffer_or_path=None, external_files_mode=None):
         # prepare comment
         comment = get_multi_line_copyright_message()
         if self._comment != "":
@@ -253,7 +283,7 @@ class Epm:
         # prepare body
         formatted_records = []
         for table_ref, table in self._tables.items():  # self._tables is already sorted
-            formatted_records.extend([r.to_idf() for r in sorted(table)])
+            formatted_records.extend([r.to_idf(external_files_mode=external_files_mode) for r in sorted(table)])
         body = "\n\n".join(formatted_records)
 
         # return

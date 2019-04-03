@@ -18,3 +18,4 @@ def json_data_to_json(json_data, buffer_or_path=None, indent=2):
 
 def isinstance_str(value):
     return isinstance(value, (str, ExternalFile))
+

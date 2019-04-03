@@ -1,13 +1,13 @@
 import os
 
-from .eplus_and_os import APPS_DIR_PATH, EPLUS_DIR_PATTERN
+from .compatibility import APPS_DIR_PATH, EPLUS_DIR_PATTERN
 
 
 # ------------------------------------------------- DEFAULT VARIABLES --------------------------------------------------
 class _Conf:
     encoding = "latin-1"  # even needed for example files...
     simulation_base_name = "oplus"
-    linked_dir_suffix = "-linked"
+    external_files_suffix = "-external"
     
     def __init__(self):
         self.eplus_available_versions = {}  # {version: base_dir_path, ...

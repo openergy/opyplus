@@ -134,5 +134,12 @@ class Queryset:
         self._records = ()
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self):
-        return [r.to_json_data() for r in self._records]  # records are already sorted
+    def to_json_data(self, external_files_mode=None):
+        """
+        Parameters
+        ----------
+        external_files_mode: str, default 'relative'
+            'relative', 'absolute'
+        """
+        # records are already sorted
+        return [r.to_json_data(external_files_mode=external_files_mode) for r in self._records]

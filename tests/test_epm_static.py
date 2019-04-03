@@ -29,7 +29,7 @@ class StaticIdfTest(unittest.TestCase):
 
         for eplus_version in TESTED_EPLUS_VERSIONS:
             CONF.eplus_version = eplus_version
-            cls.epms_d[eplus_version] = Epm(os.path.join(
+            cls.epms_d[eplus_version] = Epm.from_idf(os.path.join(
                 CONF.eplus_base_dir_path,
                 "ExampleFiles",
                 "1ZoneEvapCooler.idf")

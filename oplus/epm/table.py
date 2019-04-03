@@ -162,5 +162,11 @@ class Table:
         return self._dev_descriptor.get_info()
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self):
-        return self.select().to_json_data()
+    def to_json_data(self, external_files_mode=None):
+        """
+        Parameters
+        ----------
+        external_files_mode: str, default 'relative'
+            'relative', 'absolute'
+        """
+        return self.select().to_json_data(external_files_mode=external_files_mode)
