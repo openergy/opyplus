@@ -278,17 +278,13 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
         epm = Epm.from_idf(epm_or_idf_path)
     else:
         epm = epm_or_idf_path
+    # gather external files
+    epm.gather_external_files(os.path.join(
+        simulation_dir_path,
+        CONF.simulation_base_name + CONF.external_files_suffix)
+    )
     simulation_idf_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".idf")
-    epm_source_file_path = epm.get_source_file_path()
-    try:
-        epm.set_source_file_path(simulation_idf_path)
-        epm.gather_external_files(os.path.join(
-            simulation_dir_path,
-            CONF.simulation_base_name + CONF.external_files_suffix)
-        )
-        epm.to_idf(simulation_idf_path)
-    finally:
-        epm.set_source_file_path(epm_source_file_path)
+    epm.to_idf(simulation_idf_path)
 
     # weather data
     simulation_epw_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".epw")

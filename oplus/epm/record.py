@@ -113,7 +113,7 @@ class Record:
 
         # manage if external file
         if isinstance(value, ExternalFile):
-            value.activate(self.get_epm().get_source_file_path())
+            value.activate(self.get_epm()._dev_current_model_file_path)
 
         # if None remove and leave
         if value is None:
@@ -344,9 +344,10 @@ class Record:
 
         # manage file names
         if isinstance(value, ExternalFile):
+            model_file_path = self.get_epm()._dev_current_model_file_path
             value = value.get_path(
                 mode=external_files_mode,
-                source_abs_dir_path=os.path.dirname(self.get_epm().get_source_file_path())
+                model_file_path=model_file_path
             )
 
         return value

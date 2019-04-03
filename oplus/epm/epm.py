@@ -2,8 +2,8 @@ import os
 import collections
 import textwrap
 import json
+import contextlib
 
-from ..configuration import CONF
 from ..util import get_multi_line_copyright_message, to_buffer
 
 from .idd import Idd
@@ -12,7 +12,6 @@ from .record import Record
 from .relations_manager import RelationsManager
 from .idf_parse import parse_idf
 from .util import json_data_to_json, multi_mode_write
-from .external_file import ensure_abs_path
 
 
 class Epm:
@@ -23,17 +22,13 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
+    def __init__(self, idd_or_buffer_or_path=None, check_required=True):
         """
         Parameters
         ----------
         idd_or_buffer_or_path
         check_required
-        source_file_path
         """
-        # set variables
-        self._source_file_abs_path = os.getcwd() if source_file_path is None else ensure_abs_path(source_file_path)
-
         self._dev_idd = (
             idd_or_buffer_or_path if isinstance(idd_or_buffer_or_path, Idd) else
             self._dev_idd_cls(idd_or_buffer_or_path)
@@ -48,7 +43,7 @@ class Epm:
         ]))
 
         self._dev_check_required = check_required
-
+        self._dev_current_model_file_path = None  # read only except from epm context manager
         self._comment = ""
 
     # ------------------------------------------ private ---------------------------------------------------------------
@@ -59,13 +54,13 @@ class Epm:
             buffer_or_path,
             idd_or_buffer_or_path=None,
             check_required=True,
-            source_file_path=None
+            model_file_path=None
     ):
         # prepare buffer
         _source_file_path, buffer = to_buffer(buffer_or_path)
 
         # manage source file path
-        source_file_path = _source_file_path if source_file_path is None else _source_file_path
+        model_file_path = _source_file_path if model_file_path is None else _source_file_path
 
         # create json data
         with buffer as f:
@@ -76,10 +71,20 @@ class Epm:
             json_data,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
-            source_file_path=source_file_path
+            model_file_path=model_file_path
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
+    @contextlib.contextmanager
+    def _dev_set_current_model_file_path(self, model_file_path):
+        if model_file_path is not None:
+            # ensure absolute and store
+            self._dev_current_model_file_path = model_file_path
+        try:
+            yield
+        finally:
+            self._dev_current_model_file_path = None
+
     def _dev_populate_from_json_data(self, json_data):
         """
         workflow
@@ -160,14 +165,6 @@ class Epm:
             f"  {table._dev_descriptor.table_ref}" for table in self._tables.values()
         )
 
-    def get_source_file_path(self):
-        """
-        Returns
-        -------
-        path is absolute
-        """
-        return self._source_file_abs_path
-
     def get_external_files(self):
         external_files = []
         for table in self._tables.values():
@@ -176,9 +173,6 @@ class Epm:
         return external_files
 
     # construct
-    def set_source_file_path(self, path):
-        self._source_file_abs_path = ensure_abs_path(path)
-
     def set_comment(self, comment):
         self._comment = str(comment)
 
@@ -187,7 +181,7 @@ class Epm:
             for r in table:
                 r.set_defaults()
 
-    def gather_external_files(self, abs_dir_path, copy=True):
+    def gather_external_files(self, target_dir_path, copy=True):
         # collect external files
         external_files = self.get_external_files()
 
@@ -199,14 +193,11 @@ class Epm:
         for ef in external_files:
             ef.check_file_exists()
 
-        # prepare absolute dir path
-        abs_dir_path = ensure_abs_path(abs_dir_path)
-
         # prepare directory (or check existing)
-        if not os.path.exists(abs_dir_path):
-            os.mkdir(abs_dir_path)
-        elif not os.path.isdir(abs_dir_path):
-            raise NotADirectoryError(f"given dir_path is not a directory: {abs_dir_path}")
+        if not os.path.exists(target_dir_path):
+            os.mkdir(target_dir_path)
+        elif not os.path.isdir(target_dir_path):
+            raise NotADirectoryError(f"given dir_path is not a directory: {target_dir_path}")
 
         # copy or move files
         mode = "copy" if copy else "move"
@@ -214,27 +205,28 @@ class Epm:
         # since file may already have been moved, and since we checked that all files existed, we don't raise
         # if file is not found
         for ef in external_files:
-            ef.transfer(abs_dir_path, mode=mode, raise_if_not_found=raise_if_not_found)
+            ef.transfer(target_dir_path, mode=mode, raise_if_not_found=raise_if_not_found)
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls, json_data, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
+    def from_json_data(cls, json_data, idd_or_buffer_or_path=None, check_required=True, model_file_path=None):
         epm = cls(
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required,
-            source_file_path=source_file_path
+            check_required=check_required
         )
-        epm._dev_populate_from_json_data(json_data)
+
+        with epm._dev_set_current_model_file_path(model_file_path):
+            epm._dev_populate_from_json_data(json_data)
         return epm
 
     @classmethod
-    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, check_required=True, source_file_path=None):
+    def from_idf(cls, buffer_or_path, idd_or_buffer_or_path=None, check_required=True, model_file_path=None):
         return cls._create_from_buffer_or_path(
             parse_idf,
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
-            source_file_path=source_file_path
+            model_file_path=model_file_path
         )
 
     @classmethod
@@ -244,36 +236,47 @@ class Epm:
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
-            source_file_path=source_file_path
+            model_file_path=source_file_path
         )
 
     # ----------------------------------------- export -----------------------------------------------------------------
-    def to_json_data(self, external_files_mode=None):
+    def to_json_data(self, external_files_mode=None, model_file_path=None):
         """
         Parameters
         ----------
         external_files_mode: str, default 'relative'
             'relative', 'absolute'
+        model_file_path
         """
         # create data
-        d = collections.OrderedDict(
-            (t.get_ref(), t.to_json_data(external_files_mode=external_files_mode)) for t in self._tables.values()
-        )
-        d["_comment"] = self._comment
-        d.move_to_end("_comment", last=False)
-        return d
+        with self._dev_set_current_model_file_path(model_file_path):
+            d = collections.OrderedDict(
+                (t.get_ref(), t.to_json_data(external_files_mode=external_files_mode)) for t in self._tables.values()
+            )
+            d["_comment"] = self._comment
+            d.move_to_end("_comment", last=False)
+            return d
 
-    def to_json(self, buffer_or_path=None, indent=2, external_files_mode=None):
+    def to_json(self, buffer_or_path=None, indent=2, external_files_mode=None, model_file_path=None):
+        # set model file path if not given and target path is given
+        if model_file_path is None and isinstance(buffer_or_path, str):
+            model_file_path = buffer_or_path
+
         # return json
         return json_data_to_json(
             self.to_json_data(
-                external_files_mode=external_files_mode
+                external_files_mode=external_files_mode,
+                model_file_path=model_file_path
             ),
             buffer_or_path=buffer_or_path,
             indent=indent
         )
         
-    def to_idf(self, buffer_or_path=None, external_files_mode=None):
+    def to_idf(self, buffer_or_path=None, external_files_mode=None, model_file_path=None):
+        # set model file path if not given and target path is given
+        if model_file_path is None and isinstance(buffer_or_path, str):
+            model_file_path = buffer_or_path
+
         # prepare comment
         comment = get_multi_line_copyright_message()
         if self._comment != "":
@@ -282,8 +285,9 @@ class Epm:
 
         # prepare body
         formatted_records = []
-        for table_ref, table in self._tables.items():  # self._tables is already sorted
-            formatted_records.extend([r.to_idf(external_files_mode=external_files_mode) for r in sorted(table)])
+        with self._dev_set_current_model_file_path(model_file_path):
+            for table_ref, table in self._tables.items():  # self._tables is already sorted
+                formatted_records.extend([r.to_idf(external_files_mode=external_files_mode) for r in sorted(table)])
         body = "\n\n".join(formatted_records)
 
         # return

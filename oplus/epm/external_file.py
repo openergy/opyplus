@@ -25,23 +25,27 @@ class ExternalFile:
     def __repr__(self):
         return f"<ExternalFile: {self._abs_path}>"
 
-    def activate(self, source_file_abs_path):
-        self._abs_path = ensure_abs_path(self._initial_path, os.path.dirname(source_file_abs_path))
+    def activate(self, model_file_path):
+        self._abs_path = ensure_abs_path(self._initial_path, os.path.dirname(model_file_path))
 
-    def get_path(self, mode=None, source_abs_dir_path=None):
+    def get_path(self, mode=None, model_file_path=None):
         """
         Parameters
         ----------
         mode: str, default 'relative'
             'relative', 'absolute'
+        model_file_path
         """
         if mode is None:
             mode = "relative"
 
         if mode == "relative":
-            if source_abs_dir_path is None:
-                raise TypeError("must provide a source_dir_path to calculate relative paths")
-            return os.path.relpath(self._abs_path, source_abs_dir_path)
+            if model_file_path is None:
+                model_abs_dir_path = os.getcwd()
+            else:
+                model_abs_dir_path = os.path.dirname(ensure_abs_path(model_file_path))
+            return os.path.relpath(self._abs_path, model_abs_dir_path)
+
         elif mode == "absolute":
             return self._abs_path
 

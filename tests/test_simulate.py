@@ -39,6 +39,7 @@ class SimulateTest(unittest.TestCase):
 
             # simulate
             with tempfile.TemporaryDirectory() as dir_path:
+
                 s = simulate(
                     idf,
                     epw_path,
