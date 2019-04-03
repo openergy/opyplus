@@ -24,6 +24,10 @@ def correct_idd(idd):
     fd = idd.table_descriptors["output_variable"].get_field_descriptor(1)
     fd.append_tag("retaincase")
 
+    # Meter:Custom add retain case
+    fd = idd.table_descriptors["meter_custom"].get_field_descriptor(3)
+    fd.append_tag("retaincase")
+
     if CONF.eplus_version == (9, 0, 1):  # was corrected in 9.1.0
         # Fan:SystemModel add reference
         fd = idd.table_descriptors["fan_systemmodel"].get_field_descriptor(0)

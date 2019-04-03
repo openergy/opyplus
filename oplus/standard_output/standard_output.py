@@ -135,4 +135,3 @@ class StandardOutput:
         msg += "\t\t" + "\n\t\t".join(self.get_variables())
 
         return msg
-

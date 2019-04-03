@@ -266,24 +266,31 @@ class WeatherData:
     def get_weather_series(self):
         return self._weather_series.copy()
 
-    def get_info(self):
+    def get_bounds(self):
+        start, end = None, None
         if len(self._weather_series) == 0:
-            start, end = "no data", "no data"
-        else:
-            start, end = None, None
-            for i in (0, -1):
-                # create or find instant
-                if self.has_tuple_instants:
-                    row = self._weather_series.iloc[i, :]
-                    instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"]-1, row["minute"])
-                else:
-                    instant = self._weather_series.index[i].to_pydatetime()
+            return start, end
 
-                # store
-                if i == 0:
-                    start = instant
-                else:
-                    end = instant
+        for i in (0, -1):
+            # create or find instant
+            if self.has_tuple_instants:
+                row = self._weather_series.iloc[i, :]
+                instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"] - 1, row["minute"])
+            else:
+                instant = self._weather_series.index[i].to_pydatetime()
+
+            # store
+            if i == 0:
+                start = instant
+            else:
+                end = instant
+
+        return start, end
+
+    def get_info(self):
+        start, end = self.get_bounds()
+        if start is None:
+            start, end = "no data", "no data"
 
         msg = "WeatherData\n"
         msg += f"\tinstants: {'tuple' if self.has_tuple_instants else 'datetime'}\n"
