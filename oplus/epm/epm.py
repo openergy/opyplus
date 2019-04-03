@@ -259,7 +259,7 @@ class Epm:
 
     def to_json(self, buffer_or_path=None, indent=2, external_files_mode=None, model_file_path=None):
         # set model file path if not given and target path is given
-        if model_file_path is None and isinstance(buffer_or_path, str):
+        if (model_file_path is None) and isinstance(buffer_or_path, str):
             model_file_path = buffer_or_path
 
         # return json
@@ -274,7 +274,7 @@ class Epm:
         
     def to_idf(self, buffer_or_path=None, external_files_mode=None, model_file_path=None):
         # set model file path if not given and target path is given
-        if model_file_path is None and isinstance(buffer_or_path, str):
+        if (model_file_path is None) and isinstance(buffer_or_path, str):
             model_file_path = buffer_or_path
 
         # prepare comment

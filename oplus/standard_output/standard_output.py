@@ -12,7 +12,8 @@ class StandardOutput:
     def __init__(self, buffer_or_path):
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)
-        self._raw_environments, self._raw_variables_info, self._dfs = parse(buffer)
+        with buffer as f:
+            self._raw_environments, self._raw_variables_info, self._dfs = parse(f)
         self._start_year = None
 
     @property
