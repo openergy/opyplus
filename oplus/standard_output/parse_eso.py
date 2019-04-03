@@ -90,11 +90,15 @@ def parse(file_like):
         # parse content
         try:
             key_value, var_name = content.split(",")
+            key_value = key_value.lower()  # no retaincase
+            var_name, unit = var_name.split(" [")
+            unit = unit[:-1]
         except ValueError:  # may only have one element (for example Custom:Meter)
-            key_value, var_name = content, CUSTOM
-        key_value = key_value.lower()  # no retaincase
-        var_name, unit = var_name.split(" [")
-        unit = unit[:-1]
+            key_value = content
+            var_name = CUSTOM
+            key_value, unit = key_value.split(" [")
+            unit = unit[:-1]
+            key_value = key_value.lower()  # no retaincase
 
         # parse comment
         if vars_num != 1:  # remove brackets if relevant
