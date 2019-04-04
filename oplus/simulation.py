@@ -102,7 +102,7 @@ class Simulation:
     # for subclassing
     _idd_cls = Idd
     _epm_cls = Epm
-    _weather_data_cls = WeatherData  # todo: change
+    _weather_data_cls = WeatherData
     _standard_output_cls = StandardOutput
     _mtd_cls = Mtd
     _eio_cls = Eio
@@ -121,9 +121,25 @@ class Simulation:
             beat_freq=None
     ):
         """
-        simulation will be done in os.path.join(base_dir_path, simulation_name) if simulation has a name, else in
-            base_dir_path
-        default stdout and stderr are logger.info and logger.error
+        Parameters
+        ----------
+        idf_or_path
+        epw_or_path
+        base_dir_path: simulation dir path
+        simulation_name: str, default None
+            if provided, simulation will be done in {base_dir_path}/{simulation_name}
+            else, simulation will be done in {base_dir_path}
+        stdout: stream, default logger.info
+            stream where EnergyPlus standard output is redirected
+        stderr: stream, default logger.error
+            stream where EnergyPlus standard error is redirected
+        beat_freq: float, default None
+            if provided, subprocess in which EnergyPlus is run will write at given frequency in standard output. May
+            be used to monitor subprocess state.
+
+        Returns
+        -------
+        Simulation instance
         """
         # manage simulation dir path
         if not os.path.isdir(base_dir_path):
@@ -158,11 +174,19 @@ class Simulation:
             simulation_name=None
     ):
         """
-        A simulation does is not characterized by it's input files but by it's base_dir_path. This system makes it
+        
+        Parameters
+        ----------
+        base_dir_path: simulation dir path
+        simulation_name: str, default None
+            if provided, simulation will be looked for in {base_dir_path}/{simulation_name}
+            else, simulation will be looked for in {base_dir_path}
+            
+        A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
         possible to load an already simulated directory without having to define it's idf or epw.
         """
         self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
-        self._file_refs = None
+        self._prepared_file_refs = None
         self._outputs_cache = dict()
 
         # check simulation directory path exists
@@ -170,37 +194,19 @@ class Simulation:
             raise NotADirectoryError("Simulation directory does not exist: '%s'." % self._dir_path)
 
     def _check_file_ref(self, file_ref):
-        if file_ref not in self._file_refs:
+        if file_ref not in self._prepared_file_refs:
             raise ValueError("Unknown extension: '%s'." % file_ref)
 
     def _path(self, file_ref):
-        return self.file_refs[file_ref].get_path()
-
-    # ------------------------------------ public api ------------------------------------------------------------------
-    # python magic
-    def __getattr__(self, item):
-        if item not in FILE_REFS:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
-
-        if item not in self._outputs_cache:
-            self._outputs_cache[item] = self.file_refs[item].constructor(self.get_file_path(item))
-
-        return self._outputs_cache[item]
-
-    def __dir__(self):
-        return list(_refs) + list(self.__dict__)
+        return self._file_refs[file_ref].get_path()
 
     @property
-    def dir_path(self):
-        return self._dir_path
-
-    @property
-    def file_refs(self):
+    def _file_refs(self):
         """
         Defined here so that we can use the class variables, in order to subclass in oplusplus
         """
-        if self._file_refs is None:
-            self._file_refs = {
+        if self._prepared_file_refs is None:
+            self._prepared_file_refs = {
                 FILE_REFS.idf: FileInfo(
                     constructor=lambda path: self._epm_cls.from_idf(path, idd_or_buffer_or_path=self._idd),
                     get_path=lambda: get_input_file_path(self.dir_path, FILE_REFS.idf)
@@ -242,14 +248,61 @@ class Simulation:
                     get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.summary_table)
                 )
             }
-        return self._file_refs
+        return self._prepared_file_refs
+
+    # ------------------------------------ public api ------------------------------------------------------------------
+    # python magic
+    def __getattr__(self, item):
+        if item not in FILE_REFS:
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
+
+        if item not in self._outputs_cache:
+            self._outputs_cache[item] = self._file_refs[item].constructor(self.get_file_path(item))
+
+        return self._outputs_cache[item]
+
+    def __dir__(self):
+        return list(_refs) + list(self.__dict__)
+
+    @property
+    def dir_path(self):
+        """
+        Returns
+        -------
+        simulation directory path
+        """
+        return self._dir_path
 
     def exists(self, file_ref):
+        """
+        Parameters
+        ----------
+        file_ref: str
+            reference of file.
+            Available references:  'idf', 'epw', 'eio', 'eso', 'mtr', 'mtd', 'mdd', 'err', 'summary_table'
+            See EnergyPlus documentation for more information.
+
+        Returns
+        -------
+        Boolean
+        """
         if file_ref not in FILE_REFS:
             raise ValueError("Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS._fields))))
         return os.path.isfile(self._path(file_ref))
 
     def get_file_path(self, file_ref):
+        """
+        Parameters
+        ----------
+        file_ref: str
+            reference of file.
+            Available references:  'idf', 'epw', 'eio', 'eso', 'mtr', 'mtd', 'mdd', 'err', 'summary_table'
+            See EnergyPlus documentation for more information.
+
+        Returns
+        -------
+        Instance of required output.
+        """
         if not self.exists(file_ref):
             raise FileNotFoundError("File '%s' not found in simulation '%s'." % (file_ref, self._path(file_ref)))
         return self._path(file_ref)
@@ -262,7 +315,7 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
     """
     Parameters
     ----------
-    epm_or_idf_path
+    epm_or_idf_path:
     weather_data_or_epw_path
     simulation_dir_path
     stdout: default sys.stdout
