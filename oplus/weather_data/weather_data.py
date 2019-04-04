@@ -82,6 +82,44 @@ class WeatherData:
             comments_2="",
             start_day_of_week=None
     ):
+        """
+        For more information on following concepts, see EnergyPlus documentation :
+            AuxiliaryPrograms.pdf: Weather Converter Program/EnergyPlus Weather File (EPW) Data Dictionary
+
+        Parameters
+        ----------
+        weather_series: dataframe
+            Must at least contain mandatory columns: 'drybulb', 'dewpoint', 'relhum', 'atmos_pressure', 'glohorrad',
+            'dirnorrad', 'difhorrad', 'winddir',  'windspd'.
+
+            Two instants modes are available:
+             - datetime instants mode: index must be a hourly datetime index
+             - tuple mode: index does not matter, and dataframe must have following instants columns: 'year', 'month',
+                 'day', 'hour', 'minute'. 'hour' is written in a epw fashion (from 1 to 24, not 0 to 23).
+
+            Note that it will be possible, after weather data is created, to switch from datetime to tuple instants (or
+            vice versa).
+        latitude
+        longitude
+        timezone_offset
+        elevation
+        city
+        state_province_region
+        country
+        source
+        wmo
+        design_condition_source
+        design_conditions
+        typical_extreme_periods
+        ground_temperatures
+        leap_year_observed
+        daylight_savings_start_day
+        daylight_savings_end_day
+        holidays
+        comments_1
+        comments_2
+        start_day_of_week
+        """
         # instants may be datetimes or tuples
         self._weather_series = _check_and_sanitize_weather_series(weather_series)
 
@@ -264,9 +302,22 @@ class WeatherData:
         self._set_start_day_of_week()
 
     def get_weather_series(self):
+        """
+        Returns
+        -------
+        weather series dataframe, which contains all the timeseries data. Will be a datetime series or a tuple instants
+        series depending on current mode.
+        """
         return self._weather_series.copy()
 
     def get_bounds(self):
+        """
+        Returns
+        -------
+        (start, end)
+
+        Datetime instants of beginning and end of data. If no data, will be: (None, None).
+        """
         start, end = None, None
         if len(self._weather_series) == 0:
             return start, end
@@ -302,6 +353,15 @@ class WeatherData:
     # ------------------------------------------------- load -----------------------------------------------------------
     @classmethod
     def from_epw(cls, buffer_or_path):
+        """
+        Parameters
+        ----------
+        buffer_or_path: buffer or path
+
+        Returns
+        -------
+        WeatherData instance.
+        """
         from .epw_parse import parse_epw
         _, buffer = to_buffer(buffer_or_path)
         with buffer as f:
@@ -309,6 +369,16 @@ class WeatherData:
 
     # ----------------------------------------------- export -----------------------------------------------------------
     def to_epw(self, buffer_or_path=None):
+        """
+        Parameters
+        ----------
+        buffer_or_path: buffer or path, default None
+            Buffer or path to write into. If None, will return a string containing epw info.
+
+        Returns
+        -------
+        None or a string if buffer_or_path is None.
+        """
         epw_content = self._headers_to_epw() + self._weather_series.to_csv(header=False, index=False)
         return multi_mode_write(
             lambda buffer: buffer.write(epw_content),
