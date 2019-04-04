@@ -2,7 +2,6 @@ import os
 import collections
 import textwrap
 import json
-import contextlib
 
 from ..util import get_multi_line_copyright_message, to_buffer
 
@@ -10,7 +9,7 @@ from .idd import Idd
 from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
-from .idf_parse import parse_idf
+from .parse_idf import parse_idf
 from .util import json_data_to_json, multi_mode_write
 
 
@@ -43,7 +42,6 @@ class Epm:
         ]))
 
         self._dev_check_required = check_required
-        self._dev_current_model_file_path = None  # read only except from epm context manager
         self._comment = ""
 
     # ------------------------------------------ private ---------------------------------------------------------------
@@ -75,17 +73,7 @@ class Epm:
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
-    @contextlib.contextmanager
-    def _dev_set_current_model_file_path(self, model_file_path):
-        if model_file_path is not None:
-            # ensure absolute and store
-            self._dev_current_model_file_path = model_file_path
-        try:
-            yield
-        finally:
-            self._dev_current_model_file_path = None
-
-    def _dev_populate_from_json_data(self, json_data):
+    def _dev_populate_from_json_data(self, json_data, model_file_path=None):
         """
         workflow
         --------
@@ -110,7 +98,7 @@ class Epm:
             table = getattr(self, table_ref)
 
             # create record (inert)
-            records = table._dev_add_inert(json_data_records)
+            records = table._dev_add_inert(json_data_records, model_file_path=model_file_path)
 
             # add records (inert)
             added_records.extend(records)
@@ -215,8 +203,7 @@ class Epm:
             check_required=check_required
         )
 
-        with epm._dev_set_current_model_file_path(model_file_path):
-            epm._dev_populate_from_json_data(json_data)
+        epm._dev_populate_from_json_data(json_data, model_file_path=model_file_path)
         return epm
 
     @classmethod
@@ -249,13 +236,15 @@ class Epm:
         model_file_path
         """
         # create data
-        with self._dev_set_current_model_file_path(model_file_path):
-            d = collections.OrderedDict(
-                (t.get_ref(), t.to_json_data(external_files_mode=external_files_mode)) for t in self._tables.values()
-            )
-            d["_comment"] = self._comment
-            d.move_to_end("_comment", last=False)
-            return d
+        d = collections.OrderedDict(
+            (t.get_ref(), t.to_json_data(
+                external_files_mode=external_files_mode,
+                model_file_path=model_file_path)
+             ) for t in self._tables.values()
+        )
+        d["_comment"] = self._comment
+        d.move_to_end("_comment", last=False)
+        return d
 
     def to_json(self, buffer_or_path=None, indent=2, external_files_mode=None, model_file_path=None):
         # set model file path if not given and target path is given
@@ -285,9 +274,10 @@ class Epm:
 
         # prepare body
         formatted_records = []
-        with self._dev_set_current_model_file_path(model_file_path):
-            for table_ref, table in self._tables.items():  # self._tables is already sorted
-                formatted_records.extend([r.to_idf(external_files_mode=external_files_mode) for r in sorted(table)])
+        for table_ref, table in self._tables.items():  # self._tables is already sorted
+            formatted_records.extend([r.to_idf(
+                external_files_mode=external_files_mode,
+                model_file_path=model_file_path) for r in sorted(table)])
         body = "\n\n".join(formatted_records)
 
         # return

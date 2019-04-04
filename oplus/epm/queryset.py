@@ -134,7 +134,7 @@ class Queryset:
         self._records = ()
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self, external_files_mode=None):
+    def to_json_data(self, external_files_mode=None, model_file_path=None):
         """
         Parameters
         ----------
@@ -142,4 +142,7 @@ class Queryset:
             'relative', 'absolute'
         """
         # records are already sorted
-        return [r.to_json_data(external_files_mode=external_files_mode) for r in self._records]
+        return [r.to_json_data(
+            external_files_mode=external_files_mode,
+            model_file_path=model_file_path
+        ) for r in self._records]

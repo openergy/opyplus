@@ -51,7 +51,7 @@ class Table:
         # store with new pk
         self._records[new_pk] = record
 
-    def _dev_add_inert(self, records_data):
+    def _dev_add_inert(self, records_data, model_file_path=None):
         """
         inert: hooks and links are not activated
         """
@@ -60,7 +60,8 @@ class Table:
             # create record
             record = Record(
                 self,
-                data=r_data
+                data=r_data,
+                model_file_path=model_file_path
             )
 
             # store
@@ -162,11 +163,11 @@ class Table:
         return self._dev_descriptor.get_info()
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self, external_files_mode=None):
+    def to_json_data(self, external_files_mode=None, model_file_path=None):
         """
         Parameters
         ----------
         external_files_mode: str, default 'relative'
             'relative', 'absolute'
         """
-        return self.select().to_json_data(external_files_mode=external_files_mode)
+        return self.select().to_json_data(external_files_mode=external_files_mode, model_file_path=model_file_path)

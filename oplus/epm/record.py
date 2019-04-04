@@ -1,6 +1,5 @@
 import uuid
 import collections
-import os
 
 from .link import Link
 from .record_hook import RecordHook
@@ -25,13 +24,14 @@ def get_type_level(value):
 class Record:
     _initialized = False  # used by __setattr__
 
-    def __init__(self, table, data=None):
+    def __init__(self, table, data=None, model_file_path=None):
         """
         Parameters
         ----------
         table
         data: dict, default {}
             key: index_or_ref, value: raw value or value
+        model_file_path
         """
         self._table = table  # when record is deleted, __init__ fields are set to None
         self._data = {}
@@ -41,7 +41,7 @@ class Record:
 
         # set data if any
         if data is not None:
-            self._update_inert(data)
+            self._update_inert(data, model_file_path=model_file_path)
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -52,13 +52,13 @@ class Record:
             return ref_or_index
         return self._table._dev_descriptor.get_field_index(ref_or_index)
 
-    def _update_inert(self, data):
+    def _update_inert(self, data, model_file_path=None):
         # transform keys to indexes
         data = dict([(self._field_key_to_index(k), v) for (k, v) in data.items()])
 
         # set values inert (must be ordered, otherwise some extensible values may be rejected by mistake)
         for k, v in sorted(data.items()):
-            self._update_value_inert(k, v)
+            self._update_value_inert(k, v, model_file_path=model_file_path)
 
         # leave if empty required fields are tolerated
         # check that no required fields are missing
@@ -66,15 +66,6 @@ class Record:
             return
 
         # check required
-
-        # prepare extensible checks
-        is_extensible = self.is_extensible()
-        if is_extensible:
-            cycle_start, cycle_len, patterns = self.get_extensible_info()
-        else:
-            cycle_start, cycle_len, patterns = None, None, None
-
-        # iter fields
         for i in range(len(self)):
             if i in self._data:
                 continue
@@ -88,7 +79,7 @@ class Record:
                 raise FieldValidationError(
                     f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
-    def _update_value_inert(self, index, value):
+    def _update_value_inert(self, index, value, model_file_path=None):
         """
         is only called by _update_inert
         """
@@ -113,7 +104,7 @@ class Record:
 
         # manage if external file
         if isinstance(value, ExternalFile):
-            value.activate(self.get_epm()._dev_current_model_file_path)
+            value.activate(model_file_path=model_file_path)
 
         # if None remove and leave
         if value is None:
@@ -324,7 +315,7 @@ class Record:
         """
         return id(self) if self._table._dev_auto_pk else self[0]
 
-    def get_serialized_value(self, ref_or_index, external_files_mode=None):
+    def get_serialized_value(self, ref_or_index, external_files_mode=None, model_file_path=None):
         """
         Parameters
         ----------
@@ -344,7 +335,6 @@ class Record:
 
         # manage file names
         if isinstance(value, ExternalFile):
-            model_file_path = self.get_epm()._dev_current_model_file_path
             value = value.get_path(
                 mode=external_files_mode,
                 model_file_path=model_file_path
@@ -381,8 +371,7 @@ class Record:
         """
         data = or_data if data is None else data
 
-        with self.get_epm()._dev_set_current_model_file_path(os.getcwd()):
-            self._update_inert(data)
+        self._update_inert(data)
 
         self._dev_activate_hooks()
         self._dev_activate_links()
@@ -516,7 +505,7 @@ class Record:
     def to_dict(self):
         return collections.OrderedDict(sorted(self._data.items()))
     
-    def to_json_data(self, external_files_mode=None):
+    def to_json_data(self, external_files_mode=None, model_file_path=None):
         """
         Parameters
         ----------
@@ -524,11 +513,15 @@ class Record:
             'relative', 'absolute'
         """
         return collections.OrderedDict([
-            (k, self.get_serialized_value(k, external_files_mode=external_files_mode)) for k in self._data
+            (k, self.get_serialized_value(
+                k,
+                external_files_mode=external_files_mode,
+                model_file_path=model_file_path)
+             ) for k in self._data
         ])
     
-    def to_idf(self, external_files_mode=None):
-        json_data = self.to_json_data(external_files_mode=external_files_mode)
+    def to_idf(self, external_files_mode=None, model_file_path=None):
+        json_data = self.to_json_data(external_files_mode=external_files_mode, model_file_path=model_file_path)
             
         # record descriptor ref
         s = f"{self._table._dev_descriptor.table_name},\n"
