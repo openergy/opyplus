@@ -102,7 +102,7 @@ class RelationsManager:
         # find records pointing on record hook
         for link in self._links_by_target.get(hook.target_record, set()).copy():
             # set link field to none on source record
-            link.source_record._dev_set_none_without_unregistering()
+            link.source_record._dev_set_none_without_unregistering(link.source_index)
 
             # unregister link
             link.unregister()

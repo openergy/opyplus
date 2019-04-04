@@ -3,7 +3,7 @@ import sys as __sys
 import textwrap as __textwrap
 
 
-__default_file_name = "doc"
+__default_file_name = "doc-users"
 __file_name = __default_file_name if len(__sys.argv) == 1 else __sys.argv[1]
 
 

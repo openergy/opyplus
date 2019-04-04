@@ -42,7 +42,7 @@ class Link:
             raise AssertionError("shouldn't be here")
         
     def unregister(self):
-        self.relations_manager.unregiser_link(self)
+        self.relations_manager.unregister_link(self)
 
     def serialize(self):
         if self.target_record is not None:

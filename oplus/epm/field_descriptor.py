@@ -2,6 +2,7 @@ import re
 import unidecode
 
 from .util import isinstance_str
+from .record import Record
 from .link import Link
 from .record_hook import RecordHook
 from .exceptions import FieldValidationError
@@ -64,6 +65,10 @@ class FieldDescriptor:
         # transform to string if external file
         if isinstance(value, ExternalFile):
             value = value.get_path(mode="absolute")
+
+        # transform to string if record
+        if isinstance(value, Record):
+            value = value[0]
         
         # prepare if string
         if isinstance(value, str):

@@ -130,6 +130,14 @@ class Table:
     
     def batch_add(self, records_data):
         """
+        Parameters
+        ----------
+        records_data
+
+        Returns
+        -------
+        added records queryset
+
         workflow
         --------
         (methods belonging to create/update/delete framework:
@@ -152,7 +160,7 @@ class Table:
         for r in added_records:
             r._dev_activate_links()
 
-        return added_records
+        return Queryset(self, records=added_records)
 
     # delete
     def delete(self):

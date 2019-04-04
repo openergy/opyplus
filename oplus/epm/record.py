@@ -74,7 +74,7 @@ class Record:
             field_descriptor = self._table._dev_descriptor.field_descriptors[i]
             field_descriptor.check_not_required()
 
-            # check not pk (in case idd was baddly written)
+            # check not pk (in case idd was badly written)
             if i == 0 and not self._table._dev_auto_pk:
                 raise FieldValidationError(
                     f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
@@ -113,16 +113,16 @@ class Record:
             return
 
         # if relevant, store current pk to signal table
-        old_pk = None
+        old_hook = None
         if index == 0 and not self._table._dev_auto_pk:
-            old_pk = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
+            old_hook = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
 
         # set value
         self._data[index] = value
 
         # signal pk update if relevant
-        if old_pk is not None:
-            self._table._dev_record_pk_was_updated(old_pk)
+        if old_hook is not None:
+            self._table._dev_record_pk_was_updated(old_hook.target_value)
 
     def _dev_set_none_without_unregistering(self, index, check_not_required=True):
         # get field descriptor

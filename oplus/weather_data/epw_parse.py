@@ -100,7 +100,7 @@ def parse_epw(file_like):
     weather_series.columns = EPW_COLUMNS
 
     # manage hours
-    weather_series["hours"] -= 1  # switch from [1, 24] convention to [0, 23]
+    weather_series["hour"] -= 1  # switch from [1, 24] convention to [0, 23]
 
     return WeatherData(
         weather_series,

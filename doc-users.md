@@ -6,9 +6,9 @@
 	import oplus as op
 
 
- ## idf
+ ## epm (Energy Plus Model)
 
- ### idf
+ ### epm
 
 
 	idf_path = os.path.join(
@@ -17,47 +17,97 @@
 	    "1ZoneEvapCooler.idf"
 	)
 
-	idf = op.Idf(idf_path)
-	idf.save_as(os.path.join(work_dir_path, "my_idf.idf"))
-	print(idf)
+	epm = op.Epm.from_idf(idf_path)
+	epm.to_idf(os.path.join(work_dir_path, "my_idf.idf"))
+	print(epm)
 
 
 *out:*
 
-	<Idf: Bldg>
+	Epm
+	  AirLoopHVAC: 1 record
+	  AirLoopHVAC:ControllerList: 1 record
+	  AirLoopHVAC:OutdoorAirSystem: 1 record
+	  AirLoopHVAC:OutdoorAirSystem:EquipmentList: 1 record
+	  AirLoopHVAC:ReturnPath: 1 record
+	  AirLoopHVAC:SupplyPath: 1 record
+	  AirLoopHVAC:ZoneMixer: 1 record
+	  AirLoopHVAC:ZoneSplitter: 1 record
+	  AirTerminal:SingleDuct:Uncontrolled: 1 record
+	  AvailabilityManager:HighTemperatureTurnOn: 1 record
+	  AvailabilityManager:LowTemperatureTurnOff: 1 record
+	  AvailabilityManagerAssignmentList: 1 record
+	  Branch: 1 record
+	  BranchList: 1 record
+	  Building: 1 record
+	  BuildingSurface:Detailed: 6 records
+	  Construction: 3 records
+	  Controller:OutdoorAir: 1 record
+	  EvaporativeCooler:Direct:CelDekPad: 1 record
+	  Fan:ConstantVolume: 1 record
+	  GlobalGeometryRules: 1 record
+	  HeatBalanceAlgorithm: 1 record
+	  Material: 1 record
+	  Material:NoMass: 2 records
+	  OutdoorAir:Mixer: 1 record
+	  OutdoorAir:Node: 1 record
+	  Output:Constructions: 1 record
+	  Output:Meter:MeterFileOnly: 4 records
+	  Output:Surfaces:Drawing: 1 record
+	  Output:Table:SummaryReports: 1 record
+	  Output:Variable: 8 records
+	  Output:VariableDictionary: 1 record
+	  OutputControl:Table:Style: 1 record
+	  RunPeriod: 1 record
+	  Schedule:Compact: 4 records
+	  ScheduleTypeLimits: 2 records
+	  SimulationControl: 1 record
+	  Site:GroundTemperature:BuildingSurface: 1 record
+	  Site:Location: 1 record
+	  SizingPeriod:DesignDay: 2 records
+	  SurfaceConvectionAlgorithm:Inside: 1 record
+	  SurfaceConvectionAlgorithm:Outside: 1 record
+	  ThermostatSetpoint:SingleHeating: 1 record
+	  Timestep: 1 record
+	  Version: 1 record
+	  Zone: 1 record
+	  ZoneControl:Thermostat: 1 record
+	  ZoneHVAC:Baseboard:Convective:Electric: 1 record
+	  ZoneHVAC:EquipmentConnections: 1 record
+	  ZoneHVAC:EquipmentList: 1 record
+	  ZoneInfiltration:DesignFlowRate: 1 record
+
 
  ### table
  A table is a collection of records of the same type.
 
 
-	zones = idf["Zone"]
+	zones = epm.Zone
 	print(zones)
 	print(f"\nzones: {len(zones)}\n")
 	for z in zones:
-	    print(z["name"])
+	    print(z.name)
 
 
 
 *out:*
 
-	<Table: Zone (1 records)>
+	Table Zone (Zone)
+	  main zone
 
 	zones: 1
 
 	main zone
 
  ### queryset
- A queryset is the result of a select query.
+ A queryset is the result of a select query on a table.
 
-
-	# query may be performed on an idf
-	qs = idf.select(lambda x: x.table.ref == "Zone" and x["name"] == "main zone")
 
 	# or a table
-	qs = idf["Zone"].select(lambda x: x["name"] == "main zone")
+	qs = epm.Zone.select(lambda x: x.name == "main zone")
 
 	# or another queryset
-	qs = qs.select(lambda x: x["name"] == "main zone")
+	qs = qs.select(lambda x: x.name == "main zone")
 
 	print("records: ", qs)
 	print("\niter:")
@@ -69,22 +119,22 @@
 
 *out:*
 
-	records:  <Queryset: [<Zone: main zone>]>
+	records:  <Queryset of Zone: 1 records>
 
 	iter:
 	main zone
 
 	get item:
 	Zone,
-	    main zone,                     ! - Name
-	    0,                             ! - Direction of Relative North {deg}
-	    0,                             ! - X Origin {m}
-	    0,                             ! - Y Origin {m}
-	    0,                             ! - Z Origin {m}
-	    1,                             ! - Type
-	    1,                             ! - Multiplier
-	    autocalculate,                 ! - Ceiling Height {m}
-	    autocalculate;                 ! - Volume {m3}
+	    main zone,                     ! Name
+	    0.0,                           ! Direction of Relative North
+	    0.0,                           ! X Origin
+	    0.0,                           ! Y Origin
+	    0.0,                           ! Z Origin
+	    1,                             ! Type
+	    1,                             ! Multiplier
+	    autocalculate,                 ! Ceiling Height
+	    autocalculate;                 ! Volume
 
 
  ### record
@@ -94,52 +144,47 @@
  #### get record
 
 
-	# directly from idf
-	building = idf.one(lambda x: (x.table.ref == "Building") and (x["name"] == "Bldg"))
-
-	# or from table
-	building = idf["Building"].one(lambda x: x["name"] == "Bldg")
-
+	# from a table
+	building = epm.Building.one(lambda x: x.name == "Bldg")
 	# or from queryset
-	building = idf["Building"].select(lambda x: x["name"] == "Bldg").one()
-
+	building = epm.Building.select(lambda x: x["name"] == "Bldg").one()
 
 
  #### add record
 
-
-	# add from idf
-	new_sch = idf.add(
-	    """Schedule:Compact,
-	    Heating Setpoint Schedule - new[1],  !- Name
-	    Any Number,              !- Schedule Type Limits Name
-	    Through: 12/31,          !- Field 1
-	    For: AllDays,            !- Field 2
-	    Until: 24:00,20.0;       !- Field 3
-	    """
+	print("ok")
+	# add from a table
+	new_sch = epm.Schedule_Compact.add(
+	    name="Heating Setpoint Schedule - new[1]",
+	    schedule_type_limits_name="Any Number",
+	    field_1="Through: 12/31",
+	    field_2="For: AllDays",
+	    field_3="Until: 24:00,20.0"
 	)
 
-	print("found: ", idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule - new[1]") is new_sch)
+	print("found: ", epm.Schedule_Compact.one(lambda x: x.name == "heating setpoint schedule - new[1]") is new_sch)
 
-	# or add from table
-	new_sch = idf["Schedule:Compact"].add(
-	    """Heating Setpoint Schedule - new[2],  !- Name
-	    Any Number,              !- Schedule Type Limits Name
-	    Through: 12/31,          !- Field 1
-	    For: AllDays,            !- Field 2
-	    Until: 24:00,20.0;       !- Field 3
-	    """
+	# may also add extensible fields in afterwards add from table (only for extensible records)
+	new_sch = epm.Schedule_Compact.add(
+	    name="Heating Setpoint Schedule - new[2]",
+	    schedule_type_limits_name="Any Number"
+	)
+	new_sch.add_fields(
+	    "Through: 12/31",
+	    "For: AllDays",
+	    "Until: 24:00,20.0"
 	)
 
 
 *out:*
 
+	ok
 	found:  True
 
  #### remove record
 
-	idf.remove(new_sch)
-	print("found: ", len(idf["Schedule:Compact"].select(lambda x: x["name"] == "heating setpoint schedule - new[2]")) == 1)
+	new_sch.delete()
+	print("found: ", len(epm.Schedule_Compact.select(lambda x: x.name == "heating setpoint schedule - new[2]")) == 1)
 
 
 *out:*
@@ -149,41 +194,36 @@
  #### batch add (and remove)
 
 	schedules = [
-	    """Schedule:Compact,
-	        Heating Setpoint Schedule - 0,  !- Name
-	        Any Number,              !- Schedule Type Limits Name
-	        Through: 12/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,20.0;       !- Field 3
-	    """,
-	    """Schedule:Compact,
-	        Heating Setpoint Schedule - 1,  !- Name
-	        Any Number,              !- Schedule Type Limits Name
-	        Through: 12/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,20.0;       !- Field 3
-	    """,
-	    """Schedule:Compact,
-	        Heating Setpoint Schedule - 2,  !- Name
-	        Any Number,              !- Schedule Type Limits Name
-	        Through: 12/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,20.0;       !- Field 3
-	    """
+	    dict(
+	        name="Heating Setpoint Schedule - 0",
+	        schedule_type_limits_name="Any Number",
+	        field_1="Through: 12/31",
+	        field_2="For: AllDays",
+	        field_3="Until: 24:00,20.0"
+	    ),
+	    dict(
+	        name="Heating Setpoint Schedule - 1",
+	        schedule_type_limits_name="Any Number",
+	        field_1="Through: 12/31",
+	        field_2="For: AllDays",
+	        field_3="Until: 24:00,20.0"
+	    ),
+	    dict(
+	        name="Heating Setpoint Schedule - 2",
+	        schedule_type_limits_name="Any Number",
+	        field_1="Through: 12/31",
+	        field_2="For: AllDays",
+	        field_3="Until: 24:00,20.0"
+	    ),
 	]
 
 	# idf syntax
-	added = idf.add(schedules)
+	added = epm.Schedule_Compact.batch_add(schedules)
 	print("added:")
 	for a in added:
 	    print(a["name"])
 
-	idf.remove(added)
-
-	# or table syntax
-	truncated_schedules = ["\n".join(s.split("\n")[1:]) for s in schedules]
-	added = idf["Schedule:Compact"].add(truncated_schedules)
-	idf["Schedule:Compact"].remove(added)
+	added.delete()
 
 
 *out:*
@@ -195,72 +235,71 @@
 
  #### display info
 
-	print(building.info())
+	print(building.get_info())
 	print("")
 	print(building)
 
 
 *out:*
 
-	--------
-	Building
-	--------
-	0: Name
-		* default: ['NONE']
-		* retaincase: []
-	1: North Axis
-		* default: ['0.0']
-		* note: degrees from true North
-		* type: ['real']
-		* units: ['deg']
-	2: Terrain
-		* default: ['Suburbs']
-		* key: ['Country', 'Suburbs', 'City', 'Ocean', 'Urban']
-		* note: Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest
-		* type: ['choice']
-	3: Loads Convergence Tolerance Value
-		* default: ['.04']
-		* maximum: ['.5']
-		* minimum>: ['0.0']
-		* note: Loads Convergence Tolerance Value is a fraction of load
-		* type: ['real']
-	4: Temperature Convergence Tolerance Value
-		* default: ['.4']
-		* maximum: ['.5']
-		* minimum>: ['0.0']
-		* type: ['real']
-		* units: ['deltaC']
-	5: Solar Distribution
-		* default: ['FullExterior']
-		* key: ['MinimalShadowing', 'FullExterior', 'FullInteriorAndExterior', 'FullExteriorWithReflections', 'FullInteriorAndExteriorWithReflections']
-		* note: MinimalShadowing | FullExterior | FullInteriorAndExterior | FullExteriorWithReflections | FullInteriorAndExteriorWithReflections
-		* type: ['choice']
-	6: Maximum Number of Warmup Days
-		* default: ['25']
-		* minimum>: ['0']
-		* note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance. This field's value should NOT be set less than 25.
-		* type: ['integer']
-	7: Minimum Number of Warmup Days
-		* default: ['6']
-		* minimum>: ['0']
-		* note: The minimum number of warmup days that produce enough temperature and flux history to start EnergyPlus simulation for all reference buildings was suggested to be 6. When this field is greater than the maximum warmup days defined previous field the maximum number of warmup days will be reset to the minimum value entered here. Warmup days will be set to be the value you entered when it is less than the default 6.
-		* type: ['integer']
+	Building (Building)
+	 0: Name (name)
+	    * default: NONE
+	    * retaincase: 
+	 1: North Axis (north_axis)
+	    * default: 0.0
+	    * note: degrees from true North
+	    * type: real
+	    * units: deg
+	 2: Terrain (terrain)
+	    * default: Suburbs
+	    * key: Country; Suburbs; City; Ocean; Urban
+	    * note: Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest
+	    * type: choice
+	 3: Loads Convergence Tolerance Value (loads_convergence_tolerance_value)
+	    * default: .04
+	    * maximum: .5
+	    * minimum>: 0.0
+	    * note: Loads Convergence Tolerance Value is a fraction of load
+	    * type: real
+	 4: Temperature Convergence Tolerance Value (temperature_convergence_tolerance_value)
+	    * default: .4
+	    * maximum: .5
+	    * minimum>: 0.0
+	    * type: real
+	    * units: deltaC
+	 5: Solar Distribution (solar_distribution)
+	    * default: FullExterior
+	    * key: MinimalShadowing; FullExterior; FullInteriorAndExterior; FullExteriorWithReflections; FullInteriorAndExteriorWithReflections
+	    * note: MinimalShadowing | FullExterior | FullInteriorAndExterior | FullExteriorWithReflections | FullInteriorAndExteriorWithReflections
+	    * type: choice
+	 6: Maximum Number of Warmup Days (maximum_number_of_warmup_days)
+	    * default: 25
+	    * minimum>: 0
+	    * note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.; This field's value should NOT be set less than 25.
+	    * type: integer
+	 7: Minimum Number of Warmup Days (minimum_number_of_warmup_days)
+	    * default: 6
+	    * minimum>: 0
+	    * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered when it is less than the default 6.
+	    * type: integer
+
 
 	Building,
-	    Bldg,                          ! - Name
-	    0.0,                           ! - North Axis {deg}
-	    suburbs,                       ! - Terrain
-	    0.05,                          ! - Loads Convergence Tolerance Value
-	    0.05,                          ! - Temperature Convergence Tolerance Value {deltaC}
-	    minimalshadowing,              ! - Solar Distribution
-	    30,                            ! - Maximum Number of Warmup Days
-	    6;                             ! - Minimum Number of Warmup Days
+	    Bldg,                          ! Name
+	    0.0,                           ! North Axis
+	    suburbs,                       ! Terrain
+	    0.05,                          ! Loads Convergence Tolerance Value
+	    0.05,                          ! Temperature Convergence Tolerance Value
+	    minimalshadowing,              ! Solar Distribution
+	    30,                            ! Maximum Number of Warmup Days
+	    6;                             ! Minimum Number of Warmup Days
 
 
  #### get field value
 
+	print("name: ", building.name)
 	print("name: ", building["name"])
-	print("name: ", building["nAmE"])
 	print("name: ", building[0])
 
 
@@ -272,13 +311,13 @@
 
  #### set basic field
 
-	old_name = building["TeRRain"]
+	old_name = building.terrain
 	print(f"old name: {old_name}")
 
-	building["terrain"] = "Downtown"
-	print(f"new name: {building['terrain']}")
+	building.terrain = "Downtown"
+	print(f"new name: {building.terrain}")
 
-	building["terrain"] = old_name
+	building.terrain = old_name
 
 
 
@@ -289,33 +328,15 @@
 
  #### replace basic fields
 
-	sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "heating setpoint schedule")
-	sch.replace_values(
-	    """Schedule:Compact,
-	        Heating Setpoint Schedule,  !- Name
-	        Any Number,              !- Schedule Type Limits Name
-	        Through: 1/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,20.0,       !- Field 3
-	        Through: 12/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,20.0;
-	        """
-	)
+	sch = epm.Schedule_Compact.one(lambda x: x.name == "heating setpoint schedule")
+
+	sch.name = "Heating Setpoint Schedule"
+	sch.field_1 = "Through: 12/31"
+	sch[3] = "For: AllDays"  # index syntax
+
 	print(sch)
 
-	sch.replace_values(
-	    """Schedule:Compact,
-	        Heating Setpoint Schedule qsofjqsd ,  !- Name
-	        Any Number,              !- Schedule Type Limits Name
-	        Through: 1/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,30.0,       !- Field 3
-	        Through: 12/31,          !- Field 1
-	        For: AllDays,            !- Field 2
-	        Until: 24:00,20.0;
-	        """
-	)
+	sch.name = "Heating Setpoint Schedule new_name"
 
 	print(sch)
 
@@ -324,125 +345,97 @@
 *out:*
 
 	Schedule:Compact,
-	    heating setpoint schedule,     ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 1/31,                 ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    20.0,                          ! - Field 3
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,
-	    20.0;
+	    heating setpoint schedule,     ! Name
+	    any number,                    ! Schedule Type Limits Name
+	    through: 12/31,                ! Field 0
+	    for: alldays,                  ! Field 1
+	    until: 24:00,                  ! Field 2
+	    20.0;                          ! Field 3
 
 	Schedule:Compact,
-	    heating setpoint schedule,     ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 1/31,                 ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    30.0,                          ! - Field 3
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,
-	    20.0;
+	    heating setpoint schedule new_name,    ! Name
+	    any number,                    ! Schedule Type Limits Name
+	    through: 12/31,                ! Field 0
+	    for: alldays,                  ! Field 1
+	    until: 24:00,                  ! Field 2
+	    20.0;                          ! Field 3
 
 
  #### set record fields
 
 	# work with setpoint record
-	setpoint = idf["ThermostatSetpoint:SingleHeating"].one(lambda x: x["name"] == "heating setpoint")
+	setpoint = epm.ThermostatSetpoint_SingleHeating.one(lambda x: x.name == "heating setpoint")
 	print(setpoint)
 
-	# can't set directly by name
-	try:
-	    setpoint["Setpoint Temperature Schedule Name"] = "zone control type sched"
-	except KeyError:
-	    print("!! doesn't work !!\n")
+	# can set directly by name
+	setpoint.setpoint_temperature_schedule_name = "zone control type sched"
+	print(setpoint)
 
-	# must set record
-	new_sch = idf["Schedule:Compact"].one(lambda x: x["name"] == "zone control type sched")
-	setpoint["Setpoint Temperature Schedule Name"] = new_sch
+	# or set record
+	new_sch = epm.Schedule_Compact.one(lambda x: x["name"] == "heating setpoint schedule new_name")
+	setpoint.setpoint_temperature_schedule_name = new_sch
 	print(setpoint)
 
 	# reset old value
-	setpoint["Setpoint Temperature Schedule Name"] = sch
+	setpoint.setpoint_temperature_schedule_name = sch
 
 
 *out:*
 
 	ThermostatSetpoint:SingleHeating,
-	    heating setpoint,              ! - Name
-	    heating setpoint schedule;     ! - Setpoint Temperature Schedule Name
-
-	!! doesn't work !!
+	    heating setpoint;              ! Name
 
 	ThermostatSetpoint:SingleHeating,
-	    heating setpoint,              ! - Name
-	    zone control type sched;       ! - Setpoint Temperature Schedule Name
+	    heating setpoint,              ! Name
+	    zone control type sched;       ! Setpoint Temperature Schedule Name
+
+	ThermostatSetpoint:SingleHeating,
+	    heating setpoint,              ! Name
+	    heating setpoint schedule new_name;    ! Setpoint Temperature Schedule Name
 
 
- #### add fields
+ #### add fields (only for extensibles)
 
-	sch.add_field("Until: 24:00", comment="added 1")
-	sch.add_field("25")
+	sch.add_fields(
+	    "Until: 24:00",
+	    "25"
+	)
 	print(sch)
-
 
 
 *out:*
 
 	Schedule:Compact,
-	    heating setpoint schedule,     ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 1/31,                 ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    30.0,                          ! - Field 3
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,
-	    20.0,
-	    until: 24:00,                  ! added 1
-	    25;
+	    heating setpoint schedule new_name,    ! Name
+	    any number,                    ! Schedule Type Limits Name
+	    through: 12/31,                ! Field 0
+	    for: alldays,                  ! Field 1
+	    until: 24:00,                  ! Field 2
+	    20.0,                          ! Field 3
+	    until: 24:00,                  ! Field 4
+	    25;                            ! Field 5
 
 
  #### explore links
 
-	pointing = sch.pointing_records
+	pointing = sch.get_pointing_records()
 	print("pointing on sch:")
-	for _pointing in sch.pointing_records:
+	for _pointing in sch.get_pointing_records():
 	    print(_pointing)
-
-	setpoint = pointing[0]
+	# todo: explore by table
+	setpoint = pointing.ThermostatSetpoint_SingleHeating[0]
 	print("pointed by setpoint:")
-	for _pointed in setpoint.pointed_records:
+	for _pointed in setpoint.get_pointed_records():
 	    print(_pointed)
-
+	# todo: explore by table
 
 
 *out:*
 
 	pointing on sch:
-	ThermostatSetpoint:SingleHeating,
-	    heating setpoint,              ! - Name
-	    heating setpoint schedule;     ! - Setpoint Temperature Schedule Name
-
+	<Queryset of ThermostatSetpoint_SingleHeating: 1 records>
 	pointed by setpoint:
-	Schedule:Compact,
-	    heating setpoint schedule,     ! - Name
-	    any number,                    ! - Schedule Type Limits Name
-	    through: 1/31,                 ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,                  ! - Field 3
-	    30.0,                          ! - Field 3
-	    through: 12/31,                ! - Field 1
-	    for: alldays,                  ! - Field 2
-	    until: 24:00,
-	    20.0,
-	    until: 24:00,                  ! added 1
-	    25;
-
+	<Queryset of Schedule_Compact: 1 records>
 
  ### case management
 
@@ -452,22 +445,24 @@
 
 	# table refs have a case, but getitem on idf is case insensitive
 	print("tables:")
-	print(idf["Zone"])
-	print(idf["zOnE"])
+	print(epm.Zone)
+	print(epm.zOnE)
 
 
 *out:*
 
 	tables:
-	<Table: Zone (1 records)>
-	<Table: Zone (1 records)>
+	Table Zone (Zone)
+	  main zone
+	Table Zone (Zone)
+	  main zone
 
  #### record field keys
 
-	# record field keys have a case, but getitem on a key is case insensitive
+	# record field keys are lower case with underscores instead of spaces
 	print("\nbuilding name:")
+	print(building.name)
 	print(building["name"])
-	print(building["nAmE"])
 
 
 *out:*
@@ -480,15 +475,53 @@
  #### record field values
 
 	# some record field values retain case (are case sensitive) others not
-	info = building.info(how="dict")
-	print("Name: ", info["Name"])
-	print("Terrain: ", info["Terrain"])
+	print(building.get_info())
 
 
 *out:*
 
-	Name:  {'default': ['NONE'], 'retaincase': []}
-	Terrain:  {'default': ['Suburbs'], 'key': ['Country', 'Suburbs', 'City', 'Ocean', 'Urban'], 'note': 'Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest', 'type': ['choice']}
+	Building (Building)
+	 0: Name (name)
+	    * default: NONE
+	    * retaincase: 
+	 1: North Axis (north_axis)
+	    * default: 0.0
+	    * note: degrees from true North
+	    * type: real
+	    * units: deg
+	 2: Terrain (terrain)
+	    * default: Suburbs
+	    * key: Country; Suburbs; City; Ocean; Urban
+	    * note: Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest
+	    * type: choice
+	 3: Loads Convergence Tolerance Value (loads_convergence_tolerance_value)
+	    * default: .04
+	    * maximum: .5
+	    * minimum>: 0.0
+	    * note: Loads Convergence Tolerance Value is a fraction of load
+	    * type: real
+	 4: Temperature Convergence Tolerance Value (temperature_convergence_tolerance_value)
+	    * default: .4
+	    * maximum: .5
+	    * minimum>: 0.0
+	    * type: real
+	    * units: deltaC
+	 5: Solar Distribution (solar_distribution)
+	    * default: FullExterior
+	    * key: MinimalShadowing; FullExterior; FullInteriorAndExterior; FullExteriorWithReflections; FullInteriorAndExteriorWithReflections
+	    * note: MinimalShadowing | FullExterior | FullInteriorAndExterior | FullExteriorWithReflections | FullInteriorAndExteriorWithReflections
+	    * type: choice
+	 6: Maximum Number of Warmup Days (maximum_number_of_warmup_days)
+	    * default: 25
+	    * minimum>: 0
+	    * note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.; This field's value should NOT be set less than 25.
+	    * type: integer
+	 7: Minimum Number of Warmup Days (minimum_number_of_warmup_days)
+	    * default: 6
+	    * minimum>: 0
+	    * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered when it is less than the default 6.
+	    * type: integer
+
 
  => building name retains case, terrain doesn't
 
@@ -496,31 +529,31 @@
  case sensitive value.**
 
 
-	building["name"] = "StaysCamelCase"
-	building["terrain"] = "Suburbs"  # will be set to lowercase
+	building.name = "StaysCamelCase"
+	building.terrain = "Suburbs"  # will be set to lowercase
 	print(building)
 
 
 *out:*
 
 	Building,
-	    StaysCamelCase,                ! - Name
-	    0.0,                           ! - North Axis {deg}
-	    suburbs,                       ! - Terrain
-	    0.05,                          ! - Loads Convergence Tolerance Value
-	    0.05,                          ! - Temperature Convergence Tolerance Value {deltaC}
-	    minimalshadowing,              ! - Solar Distribution
-	    30,                            ! - Maximum Number of Warmup Days
-	    6;                             ! - Minimum Number of Warmup Days
+	    StaysCamelCase,                ! Name
+	    0.0,                           ! North Axis
+	    suburbs,                       ! Terrain
+	    0.05,                          ! Loads Convergence Tolerance Value
+	    0.05,                          ! Temperature Convergence Tolerance Value
+	    minimalshadowing,              ! Solar Distribution
+	    30,                            ! Maximum Number of Warmup Days
+	    6;                             ! Minimum Number of Warmup Days
 
 
  don't forget these rules when filtering
 
 
-	print("retains, case not respected:", len(idf["Building"].select(lambda x: x["name"] == "stayscamelcase")))  # not ok
-	print("retains, case respected:", len(idf["Building"].select(lambda x: x["name"] == "StaysCamelCase")))  # ok
-	print("doesn't retain, uppercase: ", len(idf["Building"].select(lambda x: x["terrain"] == "Suburbs")))  # not ok
-	print("doesn't retain, lowercase: ", len(idf["Building"].select(lambda x: x["terrain"] == "suburbs")))  # ok
+	print("retains, case not respected:", len(epm.Building.select(lambda x: x.name == "stayscamelcase")))  # not ok
+	print("retains, case respected:", len(epm.Building.select(lambda x: x.name == "StaysCamelCase")))  # ok
+	print("doesn't retain, uppercase: ", len(epm.Building.select(lambda x: x.terrain == "Suburbs")))  # not ok
+	print("doesn't retain, lowercase: ", len(epm.Building.select(lambda x: x.terrain == "suburbs")))  # ok
 
 
 *out:*
@@ -535,9 +568,10 @@
  ### simulate
 
 	simulation_dir = os.path.join(work_dir_path, "simulation")
-	os.mkdir(simulation_dir)
+	if not os.path.isdir(simulation_dir):
+	    os.mkdir(simulation_dir)
 	s = op.simulate(
-	    idf,
+	    epm,
 	    os.path.join(
 	        op.CONF.eplus_base_dir_path,
 	        "WeatherData",
@@ -549,61 +583,123 @@
 
  ### standard output
 
-	# explore environements
-	print("environments: ", s.eso.environments, "\n")
+	# explore output
+	print("info: \n", s.eso.get_info(), "\n")
 
-	# default dataframe
-	df = s.eso.df()
+	# explore environements
+	print("environments: ", s.eso.get_environments(), "\n")
+
+	# explore variables
+	print(f"variables: {s.eso.get_variables()}\n")
+
+	# tuple instants dataframe
+	df = s.eso.get_data()
 	print(list(df.columns), "\n")
-	print("default index: ", df[["Environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
+	print("default index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
+
+
+	# switch to datetime instants
+	s.eso.switch_to_datetime_instants(2014)
 
 	# choose start year
-	df = s.eso.df(start=2014)
-	print("datetime index: ",  df[["Environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
-
-	# get info
-	print(s.eso.info())
+	df = s.eso.get_data()
+	print("datetime index: ",  df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
 	# choose time step
-	df = s.eso.df(time_step="Hourly")
+	df = s.eso.get_data(frequency="hourly")
 
 
 
 *out:*
 
-	environments:  dict_keys(['SummerDesignDay', 'WinterDesignDay', 'RunPeriod']) 
+	info: 
+	 Standard output
+		instants: tuple
+		environments:
+			'denver centennial ann htg 99.6% condns db'
+				latitude: 39.74
+				longitude: -105.18
+				timezone_offset: -7.0
+				elevation: 1829.0
+				nb_values_timestep: 0
+				nb_values_hourly: 24
+				nb_values_daily: 0
+				nb_values_monthly: 0
+				nb_values_annual: 0
+				nb_values_run_period: 0
+			'denver centennial ann clg 1% condns db=>mwb'
+				latitude: 39.74
+				longitude: -105.18
+				timezone_offset: -7.0
+				elevation: 1829.0
+				nb_values_timestep: 0
+				nb_values_hourly: 24
+				nb_values_daily: 0
+				nb_values_monthly: 0
+				nb_values_annual: 0
+				nb_values_run_period: 0
+			'runperiod 1'
+				latitude: 39.74
+				longitude: -105.18
+				timezone_offset: -7.0
+				elevation: 1829.0
+				nb_values_timestep: 0
+				nb_values_hourly: 8760
+				nb_values_daily: 0
+				nb_values_monthly: 0
+				nb_values_annual: 0
+				nb_values_run_period: 0
+		variables:
+			hourly,environment,Site Outdoor Air Drybulb Temperature
+			hourly,environment,Site Outdoor Air Humidity Ratio
+			hourly,environment,Site Outdoor Air Relative Humidity
+			hourly,environment,Site Outdoor Air Wetbulb Temperature
+			hourly,evap cooler inlet node,System Node Temperature
+			hourly,fan inlet node,System Node Temperature
+			hourly,main zone baseboard,Baseboard Electric Power
+			hourly,main zone inlet node,System Node Temperature
+			hourly,main zone node,System Node Temperature
+			hourly,main zone outlet node,System Node Temperature
+			hourly,main zone,Zone Mean Air Temperature
+			hourly,outside air inlet node,System Node Temperature
+			hourly,relief air outlet node,System Node Temperature
+			hourly,supply inlet node,System Node Temperature
+			hourly,supply outlet node,System Node Mass Flow Rate
+			hourly,supply outlet node,System Node Temperature
+			hourly,zone equipment inlet node,System Node Temperature
+			hourly,zone equipment outlet node,System Node Temperature 
 
-	['day_type', 'dst', 'Environment,Site Outdoor Air Drybulb Temperature', 'Environment,Site Outdoor Air Wetbulb Temperature', 'Environment,Site Outdoor Air Humidity Ratio', 'Environment,Site Outdoor Air Relative Humidity', 'MAIN ZONE,Zone Mean Air Temperature', 'MAIN ZONE BASEBOARD,Baseboard Electric Power', 'SUPPLY INLET NODE,System Node Temperature', 'FAN INLET NODE,System Node Temperature', 'EVAP COOLER INLET NODE,System Node Temperature', 'SUPPLY OUTLET NODE,System Node Temperature', 'SUPPLY OUTLET NODE,System Node Mass Flow Rate', 'OUTSIDE AIR INLET NODE,System Node Temperature', 'MAIN ZONE OUTLET NODE,System Node Temperature', 'MAIN ZONE NODE,System Node Temperature', 'MAIN ZONE INLET NODE,System Node Temperature', 'ZONE EQUIPMENT INLET NODE,System Node Temperature', 'ZONE EQUIPMENT OUTLET NODE,System Node Temperature', 'RELIEF AIR OUTLET NODE,System Node Temperature'] 
+	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', OrderedDict([('latitude', 39.74), ('longitude', -105.18), ('timezone_offset', -7.0), ('elevation', 1829.0), ('nb_values_timestep', 0), ('nb_values_hourly', 24), ('nb_values_daily', 0), ('nb_values_monthly', 0), ('nb_values_annual', 0), ('nb_values_run_period', 0)])), ('denver centennial ann clg 1% condns db=>mwb', OrderedDict([('latitude', 39.74), ('longitude', -105.18), ('timezone_offset', -7.0), ('elevation', 1829.0), ('nb_values_timestep', 0), ('nb_values_hourly', 24), ('nb_values_daily', 0), ('nb_values_monthly', 0), ('nb_values_annual', 0), ('nb_values_run_period', 0)])), ('runperiod 1', OrderedDict([('latitude', 39.74), ('longitude', -105.18), ('timezone_offset', -7.0), ('elevation', 1829.0), ('nb_values_timestep', 0), ('nb_values_hourly', 8760), ('nb_values_daily', 0), ('nb_values_monthly', 0), ('nb_values_annual', 0), ('nb_values_run_period', 0)]))]) 
 
-	default index:                         Environment,Site Outdoor Air Drybulb Temperature
-	month day hour minute                                                  
-	1     1   1    60                                             -4.666667
-	          2    60                                             -3.000000
-	          3    60                                             -3.583333
-	          4    60                                             -2.833333
-	          5    60                                             -2.000000 
+	variables: OrderedDict([('hourly,environment,Site Outdoor Air Drybulb Temperature', OrderedDict([('code', '7'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Drybulb Temperature'), ('ref', 'environment,Site Outdoor Air Drybulb Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,environment,Site Outdoor Air Humidity Ratio', OrderedDict([('code', '9'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Humidity Ratio'), ('ref', 'environment,Site Outdoor Air Humidity Ratio'), ('unit', 'kgWater/kgDryAir'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,environment,Site Outdoor Air Relative Humidity', OrderedDict([('code', '10'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Relative Humidity'), ('ref', 'environment,Site Outdoor Air Relative Humidity'), ('unit', '%'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,environment,Site Outdoor Air Wetbulb Temperature', OrderedDict([('code', '8'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Wetbulb Temperature'), ('ref', 'environment,Site Outdoor Air Wetbulb Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,evap cooler inlet node,System Node Temperature', OrderedDict([('code', '386'), ('key_value', 'evap cooler inlet node'), ('name', 'System Node Temperature'), ('ref', 'evap cooler inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,fan inlet node,System Node Temperature', OrderedDict([('code', '385'), ('key_value', 'fan inlet node'), ('name', 'System Node Temperature'), ('ref', 'fan inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone baseboard,Baseboard Electric Power', OrderedDict([('code', '160'), ('key_value', 'main zone baseboard'), ('name', 'Baseboard Electric Power'), ('ref', 'main zone baseboard,Baseboard Electric Power'), ('unit', 'W'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone inlet node,System Node Temperature', OrderedDict([('code', '392'), ('key_value', 'main zone inlet node'), ('name', 'System Node Temperature'), ('ref', 'main zone inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone node,System Node Temperature', OrderedDict([('code', '391'), ('key_value', 'main zone node'), ('name', 'System Node Temperature'), ('ref', 'main zone node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone outlet node,System Node Temperature', OrderedDict([('code', '390'), ('key_value', 'main zone outlet node'), ('name', 'System Node Temperature'), ('ref', 'main zone outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone,Zone Mean Air Temperature', OrderedDict([('code', '11'), ('key_value', 'main zone'), ('name', 'Zone Mean Air Temperature'), ('ref', 'main zone,Zone Mean Air Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,outside air inlet node,System Node Temperature', OrderedDict([('code', '389'), ('key_value', 'outside air inlet node'), ('name', 'System Node Temperature'), ('ref', 'outside air inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,relief air outlet node,System Node Temperature', OrderedDict([('code', '395'), ('key_value', 'relief air outlet node'), ('name', 'System Node Temperature'), ('ref', 'relief air outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,supply inlet node,System Node Temperature', OrderedDict([('code', '384'), ('key_value', 'supply inlet node'), ('name', 'System Node Temperature'), ('ref', 'supply inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,supply outlet node,System Node Mass Flow Rate', OrderedDict([('code', '388'), ('key_value', 'supply outlet node'), ('name', 'System Node Mass Flow Rate'), ('ref', 'supply outlet node,System Node Mass Flow Rate'), ('unit', 'kg/s'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,supply outlet node,System Node Temperature', OrderedDict([('code', '387'), ('key_value', 'supply outlet node'), ('name', 'System Node Temperature'), ('ref', 'supply outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,zone equipment inlet node,System Node Temperature', OrderedDict([('code', '393'), ('key_value', 'zone equipment inlet node'), ('name', 'System Node Temperature'), ('ref', 'zone equipment inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,zone equipment outlet node,System Node Temperature', OrderedDict([('code', '394'), ('key_value', 'zone equipment outlet node'), ('name', 'System Node Temperature'), ('ref', 'zone equipment outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])]))])
 
-	datetime index:                       Environment,Site Outdoor Air Drybulb Temperature
-	2014-01-01 01:00:00                                         -4.666667
-	2014-01-01 02:00:00                                         -3.000000
-	2014-01-01 03:00:00                                         -3.583333
-	2014-01-01 04:00:00                                         -2.833333
-	2014-01-01 05:00:00                                         -2.000000 
+	['month', 'day', 'hour', 'dst', 'day_type', 'environment,Site Outdoor Air Relative Humidity', 'main zone,Zone Mean Air Temperature', 'main zone baseboard,Baseboard Electric Power', 'supply inlet node,System Node Temperature', 'fan inlet node,System Node Temperature', 'evap cooler inlet node,System Node Temperature', 'supply outlet node,System Node Temperature', 'supply outlet node,System Node Mass Flow Rate', 'outside air inlet node,System Node Temperature', 'main zone outlet node,System Node Temperature', 'main zone node,System Node Temperature', 'main zone inlet node,System Node Temperature', 'zone equipment inlet node,System Node Temperature', 'zone equipment outlet node,System Node Temperature', 'relief air outlet node,System Node Temperature', 'environment,Site Outdoor Air Drybulb Temperature', 'environment,Site Outdoor Air Wetbulb Temperature', 'environment,Site Outdoor Air Humidity Ratio'] 
 
-	Available data:
-		SummerDesignDay: Hourly
-		WinterDesignDay: Hourly
-		RunPeriod: Hourly
+	default index:     environment,Site Outdoor Air Drybulb Temperature
+	0                                         -4.666667
+	1                                         -3.000000
+	2                                         -3.583333
+	3                                         -2.833333
+	4                                         -2.000000 
 
- ### standard output
+	datetime index:                       environment,Site Outdoor Air Drybulb Temperature
+	2014-01-01 00:00:00                                         -4.666667
+	2014-01-01 01:00:00                                         -3.000000
+	2014-01-01 02:00:00                                         -3.583333
+	2014-01-01 03:00:00                                         -2.833333
+	2014-01-01 04:00:00                                         -2.000000 
 
-	epw = op.Epw(os.path.join(
+
+ ### weather data
+
+	epw = op.WeatherData.from_epw(os.path.join(
 	    op.configuration.CONF.eplus_base_dir_path,
 	    "WeatherData",
 	    "USA_CO_Golden-NREL.724666_TMY3.epw")
 	)
 
-	df = epw.df()
+	# tuple index
+	df = epw.get_weather_series()
 	print(list(df.columns))
 	print(df[["drybulb"]].head())
 
@@ -611,13 +707,12 @@
 
 *out:*
 
-	['datasource', 'drybulb', 'dewpoint', 'relhum', 'atmos_pressure', 'exthorrad', 'extdirrad', 'horirsky', 'glohorrad', 'dirnorrad', 'difhorrad', 'glohorillum', 'dirnorillum', 'difhorillum', 'zenlum', 'winddir', 'windspd', 'totskycvr', 'opaqskycvr', 'visibility', 'ceiling_hgt', 'presweathobs', 'presweathcodes', 'precip_wtr', 'aerosol_opt_depth', 'snowdepth', 'days_last_snow', 'albedo', 'liq_precip_depth', 'liq_precip_rate']
-	                            drybulb
-	year month day hour minute         
-	1999 1     1   1    0          -3.0
-	               2    0          -3.0
-	               3    0          -4.0
-	               4    0          -2.0
-	               5    0          -2.0
+	['year', 'month', 'day', 'hour', 'minute', 'datasource', 'drybulb', 'dewpoint', 'relhum', 'atmos_pressure', 'exthorrad', 'extdirrad', 'horirsky', 'glohorrad', 'dirnorrad', 'difhorrad', 'glohorillum', 'dirnorillum', 'difhorillum', 'zenlum', 'winddir', 'windspd', 'totskycvr', 'opaqskycvr', 'visibility', 'ceiling_hgt', 'presweathobs', 'presweathcodes', 'precip_wtr', 'aerosol_opt_depth', 'snowdepth', 'days_last_snow', 'Albedo', 'liq_precip_depth', 'liq_precip_rate']
+	   drybulb
+	0     -3.0
+	1     -3.0
+	2     -4.0
+	3     -2.0
+	4     -2.0
 
 
