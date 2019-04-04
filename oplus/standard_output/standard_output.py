@@ -2,7 +2,7 @@ import logging
 import collections
 
 from ..util import to_buffer
-from .parse_eso import parse, FREQUENCIES
+from .parse_eso import parse_eso, FREQUENCIES
 from .switch_instants import switch_to_datetime_instants
 
 logger = logging.getLogger(__name__)
@@ -10,10 +10,18 @@ logger = logging.getLogger(__name__)
 
 class StandardOutput:
     def __init__(self, buffer_or_path):
+        """
+        Parameters
+        ----------
+        buffer_or_path
+
+        Initially, standard_output will have tuple instants (using 'year', 'month', 'day', 'hour', 'minute' columns,
+            depending on given frequency). It is possible to change to datetime mode later.
+        """
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)
         with buffer as f:
-            self._raw_environments, self._raw_variables_info, self._dfs = parse(f)
+            self._raw_environments, self._raw_variables_info, self._dfs = parse_eso(f)
         self._start_year = None
 
     @property

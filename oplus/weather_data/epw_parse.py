@@ -99,6 +99,9 @@ def parse_epw(file_like):
     weather_series = pd.read_csv(file_like, header=None, encoding=CONF.encoding)
     weather_series.columns = EPW_COLUMNS
 
+    # manage hours
+    weather_series["hours"] -= 1  # switch from [1, 24] convention to [0, 23]
+
     return WeatherData(
         weather_series,
         latitude,

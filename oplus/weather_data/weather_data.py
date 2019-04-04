@@ -95,7 +95,7 @@ class WeatherData:
             Two instants modes are available:
              - datetime instants mode: index must be a hourly datetime index
              - tuple mode: index does not matter, and dataframe must have following instants columns: 'year', 'month',
-                 'day', 'hour', 'minute'. 'hour' is written in a epw fashion (from 1 to 24, not 0 to 23).
+                 'day', 'hour', 'minute'. 'hour' is not written in a epw fashion ([0, 23], not [1, 24] as epw).
 
             Note that it will be possible, after weather data is created, to switch from datetime to tuple instants (or
             vice versa).
@@ -285,11 +285,11 @@ class WeatherData:
 
         # create index
         index = pd.DatetimeIndex(self._weather_series.apply(
-            lambda x: dt.datetime(x.year, x.month, x.day, x.hour-1, x.minute),
+            lambda x: dt.datetime(x.year, x.month, x.day, x.hour, x.minute),
             axis=1
         ))
 
-        # set new indew
+        # set new index
         self._weather_series.index = index
 
         # check and sanitize
@@ -326,7 +326,7 @@ class WeatherData:
             # create or find instant
             if self.has_tuple_instants:
                 row = self._weather_series.iloc[i, :]
-                instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"] - 1, row["minute"])
+                instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"], row["minute"])
             else:
                 instant = self._weather_series.index[i].to_pydatetime()
 
@@ -356,7 +356,7 @@ class WeatherData:
         """
         Parameters
         ----------
-        buffer_or_path: buffer or path
+        buffer_or_path: buffer or path containing epw format.
 
         Returns
         -------
@@ -379,7 +379,10 @@ class WeatherData:
         -------
         None or a string if buffer_or_path is None.
         """
-        epw_content = self._headers_to_epw() + self._weather_series.to_csv(header=False, index=False)
+        # copy and change hours convention [0, 23] -> [1, 24]
+        df = self._weather_series.copy()
+        df["hour"] += 1
+        epw_content = self._headers_to_epw() + df.to_csv(header=False, index=False)
         return multi_mode_write(
             lambda buffer: buffer.write(epw_content),
             lambda: epw_content,
@@ -414,7 +417,7 @@ def _check_and_sanitize_weather_series(df):
             ("year", df.index.year),
             ("month", df.index.month),
             ("day", df.index.day),
-            ("hour", df.index.hour + 1),
+            ("hour", df.index.hour),
             ("minute", 0)
         ))
 

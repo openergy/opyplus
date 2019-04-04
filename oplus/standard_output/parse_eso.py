@@ -54,7 +54,7 @@ _annual_year_ = "annual_year"
 METER = "Meter"
 
 
-def parse(file_like):
+def parse_eso(file_like):
     # ----------------------- LOAD METERS
     # VERSION
     row_l = next(file_like).split(",")
