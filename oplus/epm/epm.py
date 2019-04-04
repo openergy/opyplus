@@ -169,7 +169,15 @@ class Epm:
             for r in table:
                 r.set_defaults()
 
-    def gather_external_files(self, target_dir_path, copy=True):
+    def gather_external_files(self, target_dir_path, mode="copy", check_files_exist=True):
+        """
+        Parameters
+        ----------
+        target_dir_path
+        mode: str, default 'copy'
+            'copy', 'move', 'set_back'
+        check_files_exist: boolean, default True
+        """
         # collect external files
         external_files = self.get_external_files()
 
@@ -178,18 +186,19 @@ class Epm:
             return
 
         # check that all external files exists
-        for ef in external_files:
-            ef.check_file_exists()
+        if check_files_exist or mode in ("copy", "move"):
+            for ef in external_files:
+                ef.check_file_exists()
 
-        # prepare directory (or check existing)
-        if not os.path.exists(target_dir_path):
-            os.mkdir(target_dir_path)
-        elif not os.path.isdir(target_dir_path):
-            raise NotADirectoryError(f"given dir_path is not a directory: {target_dir_path}")
+        # prepare directory (or check existing) if copy or move
+        if mode != "set_back":
+            if not os.path.exists(target_dir_path):
+                os.mkdir(target_dir_path)
+            elif not os.path.isdir(target_dir_path):
+                raise NotADirectoryError(f"given dir_path is not a directory: {target_dir_path}")
 
         # copy or move files
-        mode = "copy" if copy else "move"
-        raise_if_not_found = True if copy else False
+        raise_if_not_found = True if mode == "copy" else False
         # since file may already have been moved, and since we checked that all files existed, we don't raise
         # if file is not found
         for ef in external_files:

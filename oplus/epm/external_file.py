@@ -58,7 +58,14 @@ class ExternalFile:
             raise FileNotFoundError(f"external file not found at given path: {self._abs_path}")
 
     def transfer(self, dir_path, mode="copy", raise_if_not_found=True):
-        # todo: check is good philosophy
+        """
+        Parameters
+        ----------
+        dir_path: target dir path
+        mode: str, default "copy"
+            "copy", "move", "hold_back"
+        raise_if_not_found
+        """
         # manage if file does not exist
         exists = os.path.isfile(self._abs_path)
         if not exists:
@@ -78,6 +85,10 @@ class ExternalFile:
             shutil.copy2(self._abs_path, target_file_path)
         elif mode == "move":
             shutil.move(self._abs_path, target_file_path)
+        elif mode == "hold_back":
+            pass
+        else:
+            raise ValueError("unknown mode")
 
         # register new path
         self._abs_path = target_file_path

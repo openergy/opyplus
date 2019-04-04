@@ -3,7 +3,7 @@ import os
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
-from oplus.epm.idf_parse import parse_idf
+from oplus.epm.parse_idf import parse_idf
 from oplus import CONF
 
 

@@ -163,6 +163,7 @@ class Simulation:
         """
         self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
         self._file_refs = None
+        self._outputs_cache = dict()
 
         # check simulation directory path exists
         if not os.path.isdir(self._dir_path):
@@ -180,7 +181,11 @@ class Simulation:
     def __getattr__(self, item):
         if item not in FILE_REFS:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
-        return self.file_refs[item].constructor(self.get_file_path(item))
+
+        if item not in self._outputs_cache:
+            self._outputs_cache[item] = self.file_refs[item].constructor(self.get_file_path(item))
+
+        return self._outputs_cache[item]
 
     def __dir__(self):
         return list(_refs) + list(self.__dict__)
