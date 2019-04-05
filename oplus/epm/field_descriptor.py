@@ -68,7 +68,10 @@ class FieldDescriptor:
 
         # transform to string if record
         if isinstance(value, Record):
-            value = value[0]
+            try:
+                value = value[0]
+            except IndexError:
+                raise ValueError("can't set given record because it does not have a name field")
         
         # prepare if string
         if isinstance(value, str):
