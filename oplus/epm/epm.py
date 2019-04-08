@@ -382,6 +382,7 @@ class Epm:
         ----------
         buffer_or_path: buffer or path, default None
             output to write into. If None, will return a json string.
+        external_files_mode: str, default 'relative'
             'relative', 'absolute'
             The external files paths will be written in an absolute or a relative fashion.
         model_file_path: str, default current directory

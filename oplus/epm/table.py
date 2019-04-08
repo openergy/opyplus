@@ -10,6 +10,42 @@ def get_documented_add(self, record_descriptors):
     we therefore create a function (who's __doc__ attribute is read/write), and will bind it to Table in __init__
     """
     def add(data=None, **or_data):
+        """
+        Parameters
+        ----------
+        data: dictionary containing field lowercase names or index as keys, and field values as values (dict syntax)
+        or_data: keyword arguments containing field names as keys (kwargs syntax)
+
+        A lowercase name is the lowercase EnergyPlus name, for which all non alpha-numeric characters have been replaced
+        by underscores. All multiple consecutive underscores are then replaced by one unique underscore.
+
+        The two syntaxes are not meant to cohabit. The kwargs syntax is nicer, but does not enable to use indexes
+        instead of names.
+
+        Examples
+        --------
+        for Schedule:Compact table:
+
+        schedule = table.add(  # kwarg syntax
+            name="Heating Setpoint Schedule - new[1]",
+            schedule_type_limits_name="Any Number",
+            field_1="Through: 12/31",
+            field_2="For: AllDays",
+            field_3="Until: 24:00,20.0"
+        )
+
+        schedule = table.add({  # dict syntax, mixing names and index keys
+            name="Heating Setpoint Schedule - new[1]",
+            schedule_type_limits_name="Any Number",
+            2="Through: 12/31",
+            3="For: AllDays",
+            4="Until: 24:00,20.0"
+        })
+
+        Returns
+        -------
+        Created Record instance
+        """
         return self.batch_add([or_data if data is None else data])[0]
 
     add.__doc__ = "\n".join([fd.ref.lower() for fd in record_descriptors if fd.ref is not None])
@@ -87,6 +123,17 @@ class Table:
         return header + "\n" + "\n".join(f"  {pk}" for pk in sorted(self._records))
 
     def __getitem__(self, item):
+        """
+        Parameters
+        ----------
+        item: str or int
+            if str: value of record name. If table does not have a name field, raises a KeyError
+            if int: record position (records are ordered by their content, not by creation order)
+
+        Returns
+        -------
+        Record instance
+        """
         if isinstance(item, str):
             if self._dev_auto_pk:
                 raise KeyError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
@@ -107,9 +154,19 @@ class Table:
 
     # get context
     def get_ref(self):
+        """
+        The table ref is the converted name, in order to be compatible with Python variable rules (so we can access
+        table from Epm using __getattr__.
+        Conversion rule: all non alphanumeric characters are transformed to underscores.
+        Example: 'Schedule_Compact'
+        """
         return self._dev_descriptor.table_ref
     
     def get_name(self):
+        """
+        The table name is the name given by EnergyPlus.
+        Example: 'Schedule:Compact'
+        """
         return self._dev_descriptor.table_name
 
     def get_epm(self):
@@ -117,10 +174,39 @@ class Table:
 
     # explore
     def select(self, filter_by=None):
+        """
+        Parameters
+        ----------
+        filter_by: callable, default None
+            Callable must take one argument (a record of table), and return True to keep record, or False to skip it.
+            Example : .select(lambda x: x.name == "my_name").
+            If None, records are not filtered.
+
+        Returns
+        -------
+        Queryset instance, containing all selected records.
+        """
         records = self._records.values() if filter_by is None else filter(filter_by, self._records.values())
         return Queryset(self, records=records)
 
     def one(self, filter_by=None):
+        """
+        Parameters
+        ----------
+        filter_by: callable, default None
+            Callable must take one argument (a record of table), and return True to keep record, or False to skip it.
+            Example : .one(lambda x: x.name == "my_name").
+            If None, records are not filtered.
+
+        Returns
+        -------
+        Record instance if one and only one record is found. Else raises.
+
+        Raises
+        ------
+        RecordDoesNotExistError if no record is found
+        MultipleRecordsReturnedError if multiple records are found
+        """
         return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
 
     # construct
@@ -132,23 +218,25 @@ class Table:
         """
         Parameters
         ----------
-        records_data
+        records_data: list of dictionaries containing records data. Keys of dictionary may be field names and/or field
+            indexes
 
         Returns
         -------
-        added records queryset
-
-        workflow
-        --------
-        (methods belonging to create/update/delete framework:
-            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        1. add inert
-            * data is checked
-            * old links are unregistered
-            * record is stored in table (=> pk uniqueness is checked)
-        2. activate hooks
-        3. activate links
+        Queryset instance of added records
         """
+
+        # workflow
+        # --------
+        # (methods belonging to create/update/delete framework:
+        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        # 1. add inert
+        #     * data is checked
+        #     * old links are unregistered
+        #     * record is stored in table (=> pk uniqueness is checked)
+        # 2. activate hooks
+        # 3. activate links
+
         # add inert
         added_records = self._dev_add_inert(records_data)
         
@@ -164,6 +252,9 @@ class Table:
 
     # delete
     def delete(self):
+        """
+        Deletes all records of table.
+        """
         self.select().delete()
 
     # get idd info
@@ -177,5 +268,13 @@ class Table:
         ----------
         external_files_mode: str, default 'relative'
             'relative', 'absolute'
+            The external files paths will be written in an absolute or a relative fashion.
+        model_file_path: str, default current directory
+            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
+            the reference used for this conversion. If not given, current directory will be used.
+
+        Returns
+        -------
+        A dictionary of serialized data.
         """
         return self.select().to_json_data(external_files_mode=external_files_mode, model_file_path=model_file_path)

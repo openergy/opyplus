@@ -1,6 +1,5 @@
 import logging
 import re
-import collections
 
 from .field_descriptor import FieldDescriptor
 from .util import table_name_to_ref

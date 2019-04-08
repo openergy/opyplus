@@ -71,7 +71,7 @@ class Record:
                 continue
 
             # see if required field
-            field_descriptor = self._table._dev_descriptor.field_descriptors[i]
+            field_descriptor = self.get_field_descriptor(i)
             field_descriptor.check_not_required()
 
             # check not pk (in case idd was badly written)
@@ -203,6 +203,15 @@ class Record:
         return self.to_idf()
 
     def __getitem__(self, item):
+        """
+        Parameters
+        ----------
+        item: field lowercase name or index
+
+        Returns
+        -------
+        Field value
+        """
         # prepare item
         item = self._field_key_to_index(item)
 
@@ -223,13 +232,30 @@ class Record:
         return value
 
     def __setitem__(self, key, value):
+        """
+        Parameters
+        ----------
+        key: field lowercase name or index
+        value: value to set
+        """
         self.update({key: value})
 
     def __getattr__(self, item):
+        """
+        Parameters
+        ----------
+        item: field name
+        """
         index = self._table._dev_descriptor.get_field_index(item)
         return self[index]
 
     def __setattr__(self, name, value):
+        """
+        Parameters
+        ----------
+        name: field lowercase name
+        value: value to set
+        """
         if name in self.__dict__ or not self._initialized:
             super().__setattr__(name, value)
             return
@@ -311,7 +337,7 @@ class Record:
         """
         Returns
         -------
-        python id if auto pk, else pk
+        If record has a name, returns its name, else returns record's python id.
         """
         return id(self) if self._table._dev_auto_pk else self[0]
 
@@ -319,8 +345,16 @@ class Record:
         """
         Parameters
         ----------
+        ref_or_index
         external_files_mode: str, default 'relative'
             'relative', 'absolute'
+        model_file_path: str, default None
+            if external files are asked in a relative fashion, relative path will be calculated relatively to
+            model_file_path if given, else current directory
+
+        Returns
+        -------
+        serialized value (only basic types: string, int, float, None, ...)
         """
         index = (
             self._table._dev_descriptor.get_field_index(ref_or_index) if isinstance(ref_or_index, str)
@@ -343,32 +377,55 @@ class Record:
         return value
 
     def get_pointed_records(self):
+        """
+        Returns
+        -------
+        MultiTableQueryset of all records pointing on record.
+        """
         return self.get_epm()._dev_relations_manager.get_pointed_from(self)
 
     def get_pointing_records(self):
+        """
+        Returns
+        -------
+        MultiTableQueryset of all records pointed by record.
+        """
         return self.get_epm()._dev_relations_manager.get_pointing_on(self)
 
     def get_external_files(self):
+        """
+        Returns
+        -------
+        List of ExternalFiles instances contained by record.
+        """
         return [v for v in self._data.values() if isinstance(v, ExternalFile)]
 
     # construct
     def update(self, data=None, **or_data):
         """
-        workflow
-        --------
-        (methods belonging to create/update/delete framework:
-            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        1. add inert
-            * data is checked
-            * old links are unregistered
-            * record is stored in table (=> pk uniqueness is checked)
-        2. activate hooks
-        3. activate links
+        Updates simultaneously all given fields.
 
-        All methods that are directly called by users transit here (__setattr__, __setitem__, add_fields, set_defaults).
-        !! WE THEREFORE CONSIDER THAT CURRENT_MODEL_FILE IS CWD. !!
-        Don't use if this is not relevant in your situation.
+        Parameters
+        ----------
+        data: dictionary containing field lowercase names or index as keys, and field values as values (dict syntax)
+        or_data: keyword arguments containing field names as keys (kwargs syntax)
         """
+
+        # workflow
+        # --------
+        # (methods belonging to create/update/delete framework:
+        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        # 1. add inert
+        #     * data is checked
+        #     * old links are unregistered
+        #     * record is stored in table (=> pk uniqueness is checked)
+        # 2. activate hooks
+        # 3. activate links
+        #
+        # All methods that are directly called by users transit here (__setattr__, __setitem__, add_fields, set_defaults).
+        # !! WE THEREFORE CONSIDER THAT CURRENT_MODEL_FILE IS CWD. !!
+        # Don't use if this is not relevant in your situation.
+
         data = or_data if data is None else data
 
         self._update_inert(data)
@@ -377,6 +434,17 @@ class Record:
         self._dev_activate_links()
 
     def copy(self, new_name=None):
+        """
+        Parameters
+        ----------
+        new_name: str, default None
+            record's new name (if table has a name). If None although record has a name, a random uuid will be given.
+
+        Returns
+        -------
+        Copied record.
+        """
+        # todo: check this really works, !! must not use same link, hook, external_file, ... for different records !!
         # auto pk tables can just be copied
         if self._table._dev_auto_pk:
             return self._table.add(self._data)
@@ -388,7 +456,7 @@ class Record:
 
     def set_defaults(self):
         """
-        sets all empty fields with default value to default value
+        sets all empty fields for which a default value is defined to default value
         """
         defaults = {}
         for i in range(len(self)):
@@ -402,6 +470,14 @@ class Record:
 
     # construct extensible fields
     def add_fields(self, *args):
+        """
+        This method only works for extensible fields. It allows to add values without precising their fields' names
+        or indexes.
+
+        Parameters
+        ----------
+        args: field values
+        """
         if not self.is_extensible():
             raise TypeError("Can't use add_fields on a non extensible record.")
 
@@ -413,6 +489,19 @@ class Record:
         self.update(data)
 
     def pop(self, index=None):
+        """
+        This method only works for extensible fields. It allows to remove a value and shift all other values to fill
+        the gap.
+
+        Parameters
+        ----------
+        index: int, default None
+            index of field to remove.
+
+        Returns
+        -------
+        serialize value of popped field
+        """
         # prepare index (will check for extensible)
         index = self._prepare_pop_insert_index(index=index)
 
@@ -421,19 +510,27 @@ class Record:
         
         # remove extensible fields
         fields = self.clear_extensible_fields()
-        
+
         # pop
-        fields.pop(cycle_start-index)
+        serialized_value = fields.pop(index-cycle_start)
         
         # add remaining
         self.add_fields(*fields)
 
+        return serialized_value
+
     def insert(self, index, value):
+        """
+        This method only works for extensible fields. It allows to insert a value, and shifts all other following
+        values.
+
+        Parameters
+        ----------
+        index: position of insertion
+        value: value to insert
+        """
         # prepare index (will check for extensible)
         index = self._prepare_pop_insert_index(index=index)
-
-        # get extensible info
-        cycle_start, cycle_len, patterns = self.get_extensible_info()
 
         # remove extensible fields
         fields = self.clear_extensible_fields()
@@ -448,24 +545,25 @@ class Record:
         """
         Returns
         -------
-        list of cleared fields
+        list of cleared fields (serialized)
         """
         if not self.is_extensible():
             raise TypeError("Can't use add_fields on a non extensible record.")
         cycle_start, cycle_len, patterns = self.get_extensible_info()
-        return [self._data.pop(i) for i in range(cycle_start, len(self))]
+        return [self.get_serialized_value(i, external_files_mode="absolute") for i in range(cycle_start, len(self))]
 
     # delete
     def delete(self):
         """
-        workflow
-        --------
-        (methods belonging to create/update/delete framework:
-            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        1. unregister links
-        2. unregister hooks
-        3. remove from table without unregistering
+        Deletes record, and removes it from database.
         """
+        # workflow
+        # --------
+        # (methods belonging to create/update/delete framework:
+        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        # 1. unregister links
+        # 2. unregister hooks
+        # 3. remove from table without unregistering
         # unregister links
         self._unregister_links()
 
@@ -481,6 +579,16 @@ class Record:
 
     # get idd info
     def get_field_descriptor(self, ref_or_index):
+        """
+        Parameters
+        ----------
+        ref_or_index: str or int
+            field lowercase name, or field position
+
+        Returns
+        -------
+        Field descriptor (info contained in Idd)
+        """
         if isinstance(ref_or_index, int):
             index = ref_or_index
         else:
@@ -511,6 +619,14 @@ class Record:
         ----------
         external_files_mode: str, default 'relative'
             'relative', 'absolute'
+            The external files paths will be written in an absolute or a relative fashion.
+        model_file_path: str, default current directory
+            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
+            the reference used for this conversion. If not given, current directory will be used.
+
+        Returns
+        -------
+        A dictionary of serialized data.
         """
         return collections.OrderedDict([
             (k, self.get_serialized_value(
@@ -521,6 +637,20 @@ class Record:
         ])
     
     def to_idf(self, external_files_mode=None, model_file_path=None):
+        """
+        Parameters
+        ----------
+        external_files_mode: str, default 'relative'
+            'relative', 'absolute'
+            The external files paths will be written in an absolute or a relative fashion.
+        model_file_path: str, default current directory
+            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
+            the reference used for this conversion. If not given, current directory will be used.
+
+        Returns
+        -------
+        idf string
+        """
         json_data = self.to_json_data(external_files_mode=external_files_mode, model_file_path=model_file_path)
             
         # record descriptor ref

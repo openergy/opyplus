@@ -32,6 +32,8 @@ class EPlusWeatherData(unittest.TestCase):
             generated_df.columns = range(len(generated_df.columns))  # remove columns (for comparison)
 
             # check
+            # correct year convention
+            expected_df[3] -= 1
             assert_frame_equal(expected_df, generated_df)
 
 

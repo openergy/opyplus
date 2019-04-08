@@ -1,28 +1,32 @@
 import os
 
 from oplus import CONF, simulate, Epm
-from oplus.tests.util import TESTED_EPLUS_VERSIONS
+from tests.util import TESTED_EPLUS_VERSIONS
 
 
-def one_zone_pre_process(idf):
+def one_zone_pre_process(epm):
     # set simulation control
-    sc = idf["SimulationControl"].one()
-    sc["Do Zone Sizing Calculation"] = "Yes"
-    sc["Do System Sizing Calculation"] = "Yes"
-    sc["Do Plant Sizing Calculation"] = "Yes"
-    sc["Run Simulation for Sizing Periods"] = "No"
-    sc["Run Simulation for Weather File Run Periods"] = "Yes"
+    sc = epm.SimulationControl.one()
+    sc.do_zone_sizing_calculation = "Yes"
+    sc.do_system_sizing_calculation = "Yes"
+    sc.do_plant_sizing_calculation = "Yes"
+    sc.run_simulation_for_sizing_periods = "No"
+    sc.run_simulation_for_weather_file_run_periods = "Yes"
 
     # set run period
-    rp = idf["RunPeriod"].one()
-    rp["Begin Month"] = 1
-    rp["Begin Day of Month"] = 1
-    rp["End Month"] = 1
-    rp["End Day of Month"] = 1
+    rp = epm.RunPeriod.one()
+    rp.begin_month = 1
+    rp.begin_day_of_month = 1
+    rp.end_month = 1
+    rp.end_day_of_month = 1
 
     # set all time steps
     for time_step in ["TimeStep", "Hourly", "Daily", "Monthly", "RunPeriod"]:
-        idf.add_records("Output:Variable,*,Site Outdoor Air Drybulb Temperature,%s;" % time_step)
+        epm.Output_Variable.add({
+            0: "*",
+            1: "Site Outdoor Air Drybulb Temperature",
+            2: time_step
+        })
 
 
 to_simulate = [

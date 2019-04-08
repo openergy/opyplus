@@ -94,14 +94,37 @@ class Queryset:
 
     def select(self, filter_by=None):
         """
-        select a sub queryset
+        Parameters
+        ----------
+        filter_by: callable, default None
+            Callable must take one argument (a record of queryset), and return True to keep record, or False to skip it.
+            Example : .select(lambda x: x.name == "my_name").
+            If None, records are not filtered.
+
+        Returns
+        -------
+        Queryset instance, containing all selected records.
         """
         iterator = self._records if filter_by is None else filter(filter_by, self._records)
         return Queryset(self._table, iterator)
 
     def one(self, filter_by=None):
         """
-        Checks that query set only contains one record and returns it.
+        Parameters
+        ----------
+        filter_by: callable, default None
+            Callable must take one argument (a record of table), and return True to keep record, or False to skip it.
+            Example : .one(lambda x: x.name == "my_name").
+            If None, records are not filtered.
+
+        Returns
+        -------
+        Record instance if one and only one record is found. Else raises.
+
+        Raises
+        ------
+        RecordDoesNotExistError if no record is found
+        MultipleRecordsReturnedError if multiple records are found
         """
         # filter if needed
         qs = self if filter_by is None else self.select(filter_by=filter_by)
@@ -118,14 +141,16 @@ class Queryset:
     # delete
     def delete(self):
         """
-        workflow
-        --------
-        (methods belonging to create/update/delete framework:
-            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        1. unregister links
-        2. unregister hooks
-        3. remove from table without unregistering
+        Deletes all records of queryset.
         """
+        # workflow
+        # --------
+        # (methods belonging to create/update/delete framework:
+        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        # 1. unregister links
+        # 2. unregister hooks
+        # 3. remove from table without unregistering
+
         # delete each record
         for r in self:
             r.delete()
@@ -140,6 +165,14 @@ class Queryset:
         ----------
         external_files_mode: str, default 'relative'
             'relative', 'absolute'
+            The external files paths will be written in an absolute or a relative fashion.
+        model_file_path: str, default current directory
+            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
+            the reference used for this conversion. If not given, current directory will be used.
+
+        Returns
+        -------
+        A dictionary of serialized data.
         """
         # records are already sorted
         return [r.to_json_data(
