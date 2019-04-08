@@ -3,7 +3,6 @@ import tempfile
 
 temp_dir = tempfile.TemporaryDirectory()
 work_dir_path = temp_dir.name
-work_dir_path = r"C:\Users\geoffroy.destaintot\Downloads\simu_doc"
 
 #@ # oplus
 #@
