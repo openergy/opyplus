@@ -16,10 +16,10 @@ else:
 if OS_NAME == "windows":
     APPS_DIR_PATH, EPLUS_DIR_PATTERN = r"C:\\", re.compile("EnergyPlusV(\d*)-(\d*)-(\d*)")
 elif OS_NAME == "osx":  # mac osx
-    APPS_DIR_PATH, EPLUS_DIR_PATTERN = "/Applications", re.compile("EnergyPlus-(\d*)-(\d*)-(\d*)")
+    APPS_DIR_PATH, EPLUS_DIR_PATTERN = "/Applications", re.compile("[eE]nergy[pP]lus-(\d*)[-\.](\d*)[-\.](\d*)")
 elif OS_NAME == "linux":  # linux
-    # became lowercase for >= 9.0.1
-    APPS_DIR_PATH, EPLUS_DIR_PATTERN = "/usr/local", re.compile("[eE]nergy[pP]lus-(\d*)-(\d*)-(\d*)")
+    # became lowercase and dots for >= 9.0.1
+    APPS_DIR_PATH, EPLUS_DIR_PATTERN = "/usr/local", re.compile("[eE]nergy[pP]lus-(\d*)[-\.](\d*)[-\.](\d*)")
 else:
     raise RuntimeError("Unknown os_name: '%s'" % OS_NAME)
 
