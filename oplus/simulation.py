@@ -8,12 +8,13 @@ from oplus.configuration import CONF
 from oplus.util import run_subprocess, LoggerStreamWriter
 from oplus import Epm, WeatherData
 from oplus.epm.idd import Idd
+from oplus.epm.epm import get_external_files_dir_path
 from oplus.standard_output.standard_output import StandardOutput
 from oplus.mtd import Mtd
 from oplus.eio import Eio
 from oplus.err import Err
 from oplus.summary_table import SummaryTable
-from .epm.idd import get_idd_standard_path
+
 
 from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
     get_output_files_layout, get_simulated_epw_path, get_simulation_base_command, get_simulation_input_command_style, \
@@ -337,11 +338,8 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
     else:
         epm = epm_or_idf_path
     # gather external files
-    epm.gather_external_files(os.path.join(
-        simulation_dir_path,
-        CONF.simulation_base_name + CONF.external_files_suffix)
-    )
     simulation_idf_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".idf")
+    epm.gather_external_files(get_external_files_dir_path(simulation_idf_path))
     epm.to_idf(simulation_idf_path)
 
     # weather data

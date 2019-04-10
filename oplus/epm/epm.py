@@ -3,14 +3,19 @@ import collections
 import textwrap
 import json
 
+from .. import CONF
 from ..util import get_multi_line_copyright_message, to_buffer
-
 from .idd import Idd
 from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
 from .parse_idf import parse_idf
 from .util import json_data_to_json, multi_mode_write
+
+
+def get_external_files_dir_path(model_path):
+    model_root_path, ext = os.path.splitext(model_path)
+    return os.path.join(model_root_path + CONF.external_files_suffix)
 
 
 class Epm:

@@ -14,7 +14,7 @@ Oplus is supposed to work with multiple versions of Energy Plus.
 Currently, it is tested with the following versions (listed in TESTED_EPLUS_VERSIONS : oplus.tests.util):
 * 8.5.0
 * 8.6.0
-* 9.1.0
+* 9.0.1
 
 Each test is therefore run multiple times : once per tested version. To automatically run a test on all versions, use
 eplus_tester function (oplus.tests.util).
