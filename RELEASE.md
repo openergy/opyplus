@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev001
 * p: hook error messages debug
 * M: new weather data management
