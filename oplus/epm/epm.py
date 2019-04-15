@@ -13,9 +13,14 @@ from .parse_idf import parse_idf
 from .util import json_data_to_json, multi_mode_write
 
 
-def get_external_files_dir_path(model_path):
-    model_root_path, ext = os.path.splitext(model_path)
-    return os.path.join(model_root_path + CONF.external_files_suffix)
+def default_external_files_dir_name(model_name):
+    """
+    Parameters
+    ----------
+    model_name: with or without extension
+    """
+    name, ext = os.path.splitext(model_name)
+    return name + CONF.external_files_suffix
 
 
 class Epm:

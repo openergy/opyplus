@@ -3,6 +3,7 @@
 **M: major, m: minor, p: patch**
 
 ## next
+* external files debug
 
 ## 7.0.1.dev001
 * p: hook error messages debug

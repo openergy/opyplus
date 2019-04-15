@@ -8,7 +8,7 @@ from oplus.configuration import CONF
 from oplus.util import run_subprocess, LoggerStreamWriter
 from oplus import Epm, WeatherData
 from oplus.epm.idd import Idd
-from oplus.epm.epm import get_external_files_dir_path
+from oplus.epm.epm import default_external_files_dir_name
 from oplus.standard_output.standard_output import StandardOutput
 from oplus.mtd import Mtd
 from oplus.eio import Eio
@@ -23,7 +23,7 @@ from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES
 
 DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
-
+# todo: !!!!! CLEAR SIMULATION FOLDER BEFORE RUNNING A SIMULATION (understand why eplanch does it well and not us) !!!!
 _refs = (
     "idf",
     "epw",
@@ -339,7 +339,10 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
         epm = epm_or_idf_path
     # gather external files
     simulation_idf_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".idf")
-    epm.gather_external_files(get_external_files_dir_path(simulation_idf_path))
+    epm.gather_external_files(os.path.join(
+        simulation_dir_path,
+        default_external_files_dir_name(CONF.simulation_base_name))
+    )
     epm.to_idf(simulation_idf_path)
 
     # weather data

@@ -20,6 +20,8 @@ def get_type_level(value):
     if isinstance(value, (int, float)):  # highest type
         return 2
 
+    raise AssertionError(f"type not managed: {type(value)} ({value})")
+
 
 class Record:
     _initialized = False  # used by __setattr__

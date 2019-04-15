@@ -4,9 +4,9 @@ import shutil
 
 def to_abs_model_file_path(model_file_path):
     if model_file_path is None:
-        model_file_path = os.curdir()
-    elif not os.path.isabs(model_file_path):
-        model_file_path = os.path.join(os.curdir(), model_file_path)
+        return os.path.abspath(os.curdir)
+    if not os.path.isabs(model_file_path):
+        return os.path.join(os.path.abspath(os.curdir), model_file_path)
     return model_file_path
 
 
@@ -31,7 +31,7 @@ class ExternalFile:
 
         # manage model file path
         model_file_path = to_abs_model_file_path(model_file_path)
-        self._abs_path = os.path.normpath(os.path.join(model_file_path, self._initial_path))
+        self._abs_path = os.path.normpath(os.path.join(os.path.dirname(model_file_path), self._initial_path))
 
     def get_path(self, mode=None, model_file_path=None):
         """
