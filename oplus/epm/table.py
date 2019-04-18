@@ -87,7 +87,7 @@ class Table:
         # store with new pk
         self._records[new_pk] = record
 
-    def _dev_add_inert(self, records_data, model_file_path=None):
+    def _dev_add_inert(self, records_data):
         """
         inert: hooks and links are not activated
         """
@@ -96,8 +96,7 @@ class Table:
             # create record
             record = Record(
                 self,
-                data=r_data,
-                model_file_path=model_file_path
+                data=r_data
             )
 
             # store
@@ -234,8 +233,7 @@ class Table:
         #     * data is checked
         #     * old links are unregistered
         #     * record is stored in table (=> pk uniqueness is checked)
-        # 2. activate hooks
-        # 3. activate links
+        # 2. activate: hooks, links, external files
 
         # add inert
         added_records = self._dev_add_inert(records_data)
@@ -244,9 +242,10 @@ class Table:
         for r in added_records:
             r._dev_activate_hooks()
 
-        # activate links
+        # activate links and external files
         for r in added_records:
             r._dev_activate_links()
+            r._dev_activate_external_files()
 
         return Queryset(self, records=added_records)
 
@@ -262,19 +261,10 @@ class Table:
         return self._dev_descriptor.get_info()
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self, external_files_mode=None, model_file_path=None):
+    def to_json_data(self):
         """
-        Parameters
-        ----------
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
-
         Returns
         -------
         A dictionary of serialized data.
         """
-        return self.select().to_json_data(external_files_mode=external_files_mode, model_file_path=model_file_path)
+        return self.select().to_json_data()

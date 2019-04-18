@@ -52,3 +52,4 @@ class Link:
         raise AssertionError("shouldn't be here")
     
 
+NONE_LINK = Link(None, None, None)

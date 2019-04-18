@@ -1,3 +1,12 @@
+"""
+create/update/delete framework methods (see methods documentation):
+ - epm._dev_populate_from_json_data
+ - table.batch_add
+ - record.update
+ - queryset.delete
+ - record.delete
+"""
+
 import os
 import collections
 import textwrap
@@ -9,6 +18,8 @@ from .idd import Idd
 from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
+from .external_files_manager import ExternalFilesManager
+from .external_file import get_external_files_dir_name
 from .parse_idf import parse_idf
 from .util import json_data_to_json, multi_mode_write
 
@@ -51,6 +62,9 @@ class Epm:
         # hook registering
         self._dev_relations_manager = RelationsManager(self)
 
+        # external files manager
+        self._dev_external_files_manager = ExternalFilesManager(self)
+
         self._tables = collections.OrderedDict(sorted([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
             for table_descriptor in self._dev_idd.table_descriptors.values()
@@ -66,14 +80,10 @@ class Epm:
             parse_fct,
             buffer_or_path,
             idd_or_buffer_or_path=None,
-            check_required=True,
-            model_file_path=None
+            check_required=True
     ):
         # prepare buffer
         _source_file_path, buffer = to_buffer(buffer_or_path)
-
-        # manage source file path
-        model_file_path = _source_file_path if model_file_path is None else _source_file_path
 
         # create json data
         with buffer as f:
@@ -83,28 +93,33 @@ class Epm:
         return cls.from_json_data(
             json_data,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required,
-            model_file_path=model_file_path
+            check_required=check_required
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
-    def _dev_populate_from_json_data(self, json_data, model_file_path=None):
+    def _dev_populate_from_json_data(self, json_data):
         """
-        workflow
-        --------
-        (methods belonging to create/update/delete framework:
-            epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        1. add inert
-            * data is checked
-            * old links are unregistered
-            * record is stored in table (=> pk uniqueness is checked)
-        2. activate hooks
-        3. activate links
+        !! Must only be called once, when empty !!
         """
+
+        # workflow
+        # --------
+        # (methods belonging to create/update/delete framework:
+        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        # 1. add inert
+        #     * data is checked
+        #     * old links are unregistered
+        #     * record is stored in table (=> pk uniqueness is checked)
+        # 2. activate: hooks, links, external files
+
         # manage comment if any
         comment = json_data.pop("_comment", None)
         if comment is not None:
             self._comment = comment
+
+        # populate external files
+        external_files_data = json_data.pop("_external_files", dict())
+        self._dev_external_files_manager.populate_from_json_data(external_files_data)
 
         # manage records
         added_records = []
@@ -113,7 +128,7 @@ class Epm:
             table = getattr(self, table_ref)
 
             # create record (inert)
-            records = table._dev_add_inert(json_data_records, model_file_path=model_file_path)
+            records = table._dev_add_inert(json_data_records)
 
             # add records (inert)
             added_records.extend(records)
@@ -122,9 +137,10 @@ class Epm:
         for r in added_records:
             r._dev_activate_hooks()
 
-        # activate links
+        # activate links and external files
         for r in added_records:
             r._dev_activate_links()
+            r._dev_activate_external_files()
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
@@ -190,61 +206,17 @@ class Epm:
             for r in table:
                 r.set_defaults()
 
-    def gather_external_files(self, target_dir_path, mode="copy", check_files_exist=True):
+    def dump_external_files(self, target_dir_path=None):
         """
         Parameters
         ----------
         target_dir_path
-        mode: str, default 'copy'
-            'copy', 'move', 'set_back'
-        check_files_exist: boolean, default True
-
-        This will move all of the external files towards a given directory (target_dir_path).
-
-        Three different modes exist:
-          - 'copy': files will be copied
-          - 'move': files will be cut/pasted
-          - 'set_back': files will not be impacted, but ExternalFiles path will be changed to new target path
-
-        If 'copy' or 'move':
-         - files of the os will be impacted
-         - they therefore must exist (even if check_files_exist if False)
-         - ExternalFiles path will be changed to new target path
-
-        If 'set_back':
-         - files of the os will not be impacted
-         - they therefore don't have to exist (except if check_files_exist is True)
-         - ExternalFiles path will be changed to new target path
         """
-        # collect external files
-        external_files = self.get_external_files()
-
-        # leave if no external files
-        if len(external_files) == 0:
-            return
-
-        # check that all external files exists
-        if check_files_exist or mode in ("copy", "move"):
-            for ef in external_files:
-                ef.check_file_exists()
-
-        # prepare directory (or check existing) if copy or move
-        if mode != "set_back":
-            if not os.path.exists(target_dir_path):
-                os.mkdir(target_dir_path)
-            elif not os.path.isdir(target_dir_path):
-                raise NotADirectoryError(f"given dir_path is not a directory: {target_dir_path}")
-
-        # copy or move files
-        raise_if_not_found = True if mode == "copy" else False
-        # since file may already have been moved, and since we checked that all files existed, we don't raise
-        # if file is not found
-        for ef in external_files:
-            ef.transfer(target_dir_path, mode=mode, raise_if_not_found=raise_if_not_found)
+        self._dev_external_files_manager.dump_external_files(target_dir_path=target_dir_path)
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls, json_data, check_required=True, model_file_path=None, idd_or_buffer_or_path=None):
+    def from_json_data(cls, json_data, check_required=True, idd_or_buffer_or_path=None):
         """
         Parameters
         ----------
@@ -253,9 +225,6 @@ class Epm:
             Epm and use to_json_data or to_json.
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        model_file_path: str, default current directory
-            If json data contains external files, which are defined by a relative path (and not absolute), oplus needs
-            to convert them to an absolute path. model_file_path defines the reference used for this conversion.
         idd_or_buffer_or_path: (expert) to load using a custom idd
 
         Returns
@@ -267,51 +236,39 @@ class Epm:
             check_required=check_required
         )
 
-        epm._dev_populate_from_json_data(json_data, model_file_path=model_file_path)
+        epm._dev_populate_from_json_data(json_data)
         return epm
 
     @classmethod
-    def from_idf(cls, buffer_or_path, check_required=True, model_file_path=None, idd_or_buffer_or_path=None):
+    def from_idf(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None):
         """
         Parameters
         ----------
         buffer_or_path: idf buffer or path
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        model_file_path: str, default idf path or current directory
-            If json data contains external files, which are defined by a relative path (and not absolute), oplus needs
-            to convert them to an absolute path. model_file_path defines the reference used for this conversion.
-            If model_file_path is not given:
-                - if idf is given through a path (not a buffer): the idf path will be used
-                - else: the current directory will be used
         idd_or_buffer_or_path: (expert) to load using a custom idd
 
         Returns
         -------
         An Epm instance.
         """
+        # todo: add geometry only (or equivalent)
         return cls._create_from_buffer_or_path(
             parse_idf,
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required,
-            model_file_path=model_file_path
+            check_required=check_required
         )
 
     @classmethod
-    def from_json(cls, buffer_or_path, check_required=True, model_file_path=None, idd_or_buffer_or_path=None):
+    def from_json(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None):
         """
         Parameters
         ----------
         buffer_or_path: json buffer or path
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        model_file_path: str, default json path or current directory
-            If json data contains external files, which are defined by a relative path (and not absolute), oplus needs
-            to convert them to an absolute path. model_file_path defines the reference used for this conversion.
-            If model_file_path is not given:
-                - if json is given through a path (not a buffer): the json path will be used
-                - else: the current directory will be used
         idd_or_buffer_or_path: (expert) to load using a custom idd
 
         Returns
@@ -322,38 +279,24 @@ class Epm:
             json.load,
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required,
-            model_file_path=model_file_path
+            check_required=check_required
         )
 
     # ----------------------------------------- export -----------------------------------------------------------------
-    def to_json_data(self, external_files_mode=None, model_file_path=None):
+    def to_json_data(self):
         """
-        Parameters
-        ----------
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
-
         Returns
         -------
         A dictionary of serialized data.
         """
         # create data
-        d = collections.OrderedDict(
-            (t.get_ref(), t.to_json_data(
-                external_files_mode=external_files_mode,
-                model_file_path=model_file_path)
-             ) for t in self._tables.values()
-        )
+        d = collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
         d["_comment"] = self._comment
         d.move_to_end("_comment", last=False)
+        d["_external_files"] = self._dev_external_files_manager
         return d
 
-    def to_json(self, buffer_or_path=None, indent=2, external_files_mode=None, model_file_path=None):
+    def to_json(self, buffer_or_path=None, indent=2):
         """
         Parameters
         ----------
@@ -361,64 +304,54 @@ class Epm:
             output to write into. If None, will return a json string.
         indent: int, default 2
             Defines the indentation of the json
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
 
         Returns
         -------
         None, or a json string (if buffer_or_path is None).
         """
-        # set model file path if not given and target path is given
-        if (model_file_path is None) and isinstance(buffer_or_path, str):
-            model_file_path = buffer_or_path
-
         # return json
         return json_data_to_json(
-            self.to_json_data(
-                external_files_mode=external_files_mode,
-                model_file_path=model_file_path
-            ),
+            self.to_json_data(),
             buffer_or_path=buffer_or_path,
             indent=indent
         )
         
-    def to_idf(self, buffer_or_path=None, external_files_mode=None, model_file_path=None):
+    def to_idf(self, buffer_or_path=None, dump_external_files=True):
         """
         Parameters
         ----------
         buffer_or_path: buffer or path, default None
             output to write into. If None, will return a json string.
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
+        dump_external_files: boolean, default True
+            if True, external files will be dumped in external files directory
 
         Returns
         -------
         None, or an idf string (if buffer_or_path is None).
         """
-        # set model file path if not given and target path is given
-        if (model_file_path is None) and isinstance(buffer_or_path, str):
-            model_file_path = buffer_or_path
-
         # prepare comment
         comment = get_multi_line_copyright_message()
         if self._comment != "":
             comment += textwrap.indent(self._comment, "! ", lambda line: True)
         comment += "\n\n"
 
+        # prepare external files dir path if file path
+        if isinstance(buffer_or_path, str):
+            dir_path, file_name = os.path.split(buffer_or_path)
+            model_name, _ = os.path.splitext(file_name)
+        else:
+            model_name, dir_path = None, os.path.curdir
+
+        # dump files if asked
+        if dump_external_files:
+            self.dump_external_files(
+                target_dir_path=os.path.join(dir_path, get_external_files_dir_name(model_name=model_name))
+            )
+
         # prepare body
         formatted_records = []
         for table_ref, table in self._tables.items():  # self._tables is already sorted
-            formatted_records.extend([r.to_idf(
-                external_files_mode=external_files_mode,
-                model_file_path=model_file_path) for r in sorted(table)])
+            formatted_records.extend([r.to_idf(model_name=model_name) for r in sorted(table)])
         body = "\n\n".join(formatted_records)
 
         # return

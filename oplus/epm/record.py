@@ -1,10 +1,12 @@
 import uuid
+import os
 import collections
 
-from .link import Link
-from .record_hook import RecordHook
+from .link import Link, NONE_LINK
+from .record_hook import RecordHook, NONE_RECORD_HOOK
+from .external_file import ExternalFile, NONE_EXTERNAL_FILE, get_external_files_dir_name
 from .exceptions import FieldValidationError
-from .external_file import ExternalFile
+
 
 TAB_LEN = 4
 COMMENT_COLUMN_START = 35
@@ -26,14 +28,13 @@ def get_type_level(value):
 class Record:
     _initialized = False  # used by __setattr__
 
-    def __init__(self, table, data=None, model_file_path=None):
+    def __init__(self, table, data=None):
         """
         Parameters
         ----------
         table
         data: dict, default {}
             key: index_or_ref, value: raw value or value
-        model_file_path
         """
         self._table = table  # when record is deleted, __init__ fields are set to None
         self._data = {}
@@ -43,7 +44,7 @@ class Record:
 
         # set data if any
         if data is not None:
-            self._update_inert(data, model_file_path=model_file_path)
+            self._update_inert(data)
 
     def _field_key_to_index(self, ref_or_index):
         if isinstance(ref_or_index, int):
@@ -54,13 +55,13 @@ class Record:
             return ref_or_index
         return self._table._dev_descriptor.get_field_index(ref_or_index)
 
-    def _update_inert(self, data, model_file_path=None):
+    def _update_inert(self, data):
         # transform keys to indexes
         data = dict([(self._field_key_to_index(k), v) for (k, v) in data.items()])
 
         # set values inert (must be ordered, otherwise some extensible values may be rejected by mistake)
         for k, v in sorted(data.items()):
-            self._update_value_inert(k, v, model_file_path=model_file_path)
+            self._update_value_inert(k, v)
 
         # leave if empty required fields are tolerated
         # check that no required fields are missing
@@ -81,7 +82,7 @@ class Record:
                 raise FieldValidationError(
                     f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
-    def _update_value_inert(self, index, value, model_file_path=None):
+    def _update_value_inert(self, index, value):
         """
         is only called by _update_inert
         """
@@ -91,25 +92,27 @@ class Record:
         # prepare value
         value = field_descriptor.deserialize(value, index)
 
-        # manage if link
+        # unregister previous link if relevant
         if isinstance(value, Link):
             # de-activate current link if any
             current_link = self._data.get(index)
             if current_link is not None:
                 current_link.unregister()
 
-        # manage if hook
+        # unregister previous hook if relevant
         if isinstance(value, RecordHook):
             current_record_hook = self._data.get(index)
             if current_record_hook is not None:
                 current_record_hook.unregister()
 
-        # manage if external file
+        # unregister previous external file if relevant
         if isinstance(value, ExternalFile):
-            value.activate(model_file_path=model_file_path)
+            current_external_file = self._data.get(index)
+            if current_external_file is not None:
+                current_external_file._dev_unregister()
 
         # if None remove and leave
-        if value is None:
+        if value in (None, NONE_RECORD_HOOK, NONE_LINK, NONE_EXTERNAL_FILE):
             # we don't check required, because this method is called by _update_inert which does the job
             self._dev_set_none_without_unregistering(index, check_not_required=False)
             return
@@ -165,27 +168,33 @@ class Record:
 
     def _unregister_hooks(self):
         for v in self._data.values():
-            if not isinstance(v, RecordHook):
-                continue
-            v.unregister()
+            if isinstance(v, RecordHook):
+                v.unregister()
 
     def _unregister_links(self):
         for v in self._data.values():
-            if not isinstance(v, Link):
-                continue
-            v.unregister()
+            if isinstance(v, Link):
+                v.unregister()
+
+    def _unregister_external_files(self):
+        for v in self._data.values():
+            if isinstance(v, ExternalFile):
+                v._dev_unregister()
 
     def _dev_activate_hooks(self):
         for v in self._data.values():
-            if not isinstance(v, RecordHook):
-                continue
-            v.activate(self)
+            if isinstance(v, RecordHook):
+                v.activate(self)
 
     def _dev_activate_links(self):
         for v in self._data.values():
-            if not isinstance(v, Link):
-                continue
-            v.activate(self)
+            if isinstance(v, Link):
+                v.activate(self)
+
+    def _dev_activate_external_files(self):
+        for v in self._data.values():
+            if isinstance(v, ExternalFile):
+                v._dev_activate(self.get_epm()._dev_external_files_manager)
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
@@ -302,8 +311,8 @@ class Record:
         # compare field by field
         for i in range(common_length):
             # values
-            self_value = self.get_serialized_value(i, external_files_mode="absolute")
-            other_value = self.get_serialized_value(other, external_files_mode="absolute")
+            self_value = self.get_serialized_value(i)
+            other_value = self.get_serialized_value(other)
 
             # types
             self_type_level = get_type_level(self_value)
@@ -343,13 +352,13 @@ class Record:
         """
         return id(self) if self._table._dev_auto_pk else self[0]
 
-    def get_serialized_value(self, ref_or_index, external_files_mode=None, model_file_path=None):
+    def get_serialized_value(self, ref_or_index, model_name=None):
         """
         Parameters
         ----------
         ref_or_index
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
+        external_files_mode: str, default 'path'
+            'path', 'pointer'
         model_file_path: str, default None
             if external files are asked in a relative fashion, relative path will be calculated relatively to
             model_file_path if given, else current directory
@@ -371,10 +380,7 @@ class Record:
 
         # manage file names
         if isinstance(value, ExternalFile):
-            value = value.get_path(
-                mode=external_files_mode,
-                model_file_path=model_file_path
-            )
+            value = os.path.join(get_external_files_dir_name(model_name=model_name), value.naive_short_ref)
 
         return value
 
@@ -421,12 +427,7 @@ class Record:
         #     * data is checked
         #     * old links are unregistered
         #     * record is stored in table (=> pk uniqueness is checked)
-        # 2. activate hooks
-        # 3. activate links
-        #
-        # All methods that are directly called by users transit here (__setattr__, __setitem__, add_fields, set_defaults).
-        # !! WE THEREFORE CONSIDER THAT CURRENT_MODEL_FILE IS CWD. !!
-        # Don't use if this is not relevant in your situation.
+        # 2. activate: hooks, links, external files
 
         data = or_data if data is None else data
 
@@ -434,6 +435,7 @@ class Record:
 
         self._dev_activate_hooks()
         self._dev_activate_links()
+        self._dev_activate_external_files()
 
     def copy(self, new_name=None):
         """
@@ -552,7 +554,7 @@ class Record:
         if not self.is_extensible():
             raise TypeError("Can't use add_fields on a non extensible record.")
         cycle_start, cycle_len, patterns = self.get_extensible_info()
-        return [self.get_serialized_value(i, external_files_mode="absolute") for i in range(cycle_start, len(self))]
+        return [self.get_serialized_value(i) for i in range(cycle_start, len(self))]
 
     # delete
     def delete(self):
@@ -563,14 +565,17 @@ class Record:
         # --------
         # (methods belonging to create/update/delete framework:
         #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        # 1. unregister links
-        # 2. unregister hooks
+        # 1. unregister: links, hooks and external files
         # 3. remove from table without unregistering
+
         # unregister links
         self._unregister_links()
 
         # unregister hooks
         self._unregister_hooks()
+
+        # unregister external files
+        self._unregister_external_files()
 
         # tell table to remove without unregistering
         self.get_table()._dev_remove_record_without_unregistering(self)
@@ -615,45 +620,32 @@ class Record:
     def to_dict(self):
         return collections.OrderedDict(sorted(self._data.items()))
     
-    def to_json_data(self, external_files_mode=None, model_file_path=None):
+    def to_json_data(self, model_name=None):
         """
         Parameters
         ----------
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
+        model_name: str, default None
+            if given, will be used as external file directory base name
 
         Returns
         -------
         A dictionary of serialized data.
         """
-        return collections.OrderedDict([
-            (k, self.get_serialized_value(
-                k,
-                external_files_mode=external_files_mode,
-                model_file_path=model_file_path)
-             ) for k in self._data
-        ])
+        return collections.OrderedDict([(k, self.get_serialized_value(k, model_name=model_name )) for k in self._data])
     
-    def to_idf(self, external_files_mode=None, model_file_path=None):
+    def to_idf(self, model_name=None):
         """
         Parameters
         ----------
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
+         model_name: str, default None
+            if given, will be used as external file directory base name
 
         Returns
         -------
         idf string
         """
-        json_data = self.to_json_data(external_files_mode=external_files_mode, model_file_path=model_file_path)
+
+        json_data = self.to_json_data(model_name=model_name)
             
         # record descriptor ref
         s = f"{self._table._dev_descriptor.table_name},\n"

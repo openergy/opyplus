@@ -3,8 +3,8 @@ import unidecode
 
 from .util import isinstance_str
 from .record import Record
-from .link import Link
-from .record_hook import RecordHook
+from .link import Link, NONE_LINK
+from .record_hook import RecordHook, NONE_RECORD_HOOK
 from .exceptions import FieldValidationError
 from .external_file import ExternalFile
 
@@ -58,13 +58,10 @@ class FieldDescriptor:
         """
         index is used for extensible fields error messages (if given)
         """
-        # manage none
-        if value is None:
-            return None
-
+        # -- serialize if not raw type
         # transform to string if external file
         if isinstance(value, ExternalFile):
-            value = value.get_path(mode="absolute")
+            value = value.pointer
 
         # transform to string if record
         if isinstance(value, Record):
@@ -73,7 +70,7 @@ class FieldDescriptor:
             except IndexError:
                 raise ValueError("can't set given record because it does not have a name field")
         
-        # prepare if string
+        # -- prepare if string
         if isinstance(value, str):
             # change multiple spaces to mono spaces
             value = re.sub(spaces_and_newlines_pattern, lambda x: " ", value.strip())
@@ -96,12 +93,18 @@ class FieldDescriptor:
                     f"{self.get_error_location_message(value, index=index)}"
                 )
 
-            # transform to external file if relevant
-            if self.is_file_name:
-                value = ExternalFile(value)
-            
-        # manage numeric types
+        # transform to external file if relevant
+        if self.is_file_name:
+            value = ExternalFile.deserialize(value)
+
+        # -- deserialize
+
+        # numeric types
         if self.detailed_type in ("integer", "real"):
+            # manage none
+            if value is None:
+                return None
+
             # special values: auto-calculate, auto-size, use-weather-file
             if value in ("autocalculate", "autosize", "useweatherfile"):
                 return value
@@ -121,8 +124,12 @@ class FieldDescriptor:
                     f"Couldn't parse to float. {self.get_error_location_message(value, index=index)}"
                 )
 
-        # manage simple string types
+        # simple string types
         if self.detailed_type in ("alpha", "choice", "node", "external-list"):
+            # manage none
+            if value is None:
+                return None
+
             # ensure it was str
             if not isinstance_str(value):
                 raise FieldValidationError(
@@ -132,6 +139,10 @@ class FieldDescriptor:
 
         # manage hooks (eplus reference)
         if self.detailed_type == "reference":
+            # manage None
+            if value is None:
+                return NONE_RECORD_HOOK
+
             # reference class name appears in v9.0.1
             references = self.tags.get("reference", [])
             # table_name, index, value, references, class_references
@@ -139,6 +150,10 @@ class FieldDescriptor:
 
         # manage links (eplus object-list)
         if self.detailed_type == "object-list":
+            # manage None
+            if value is None:
+                return NONE_LINK
+
             return Link(self.tags["object-list"], value, index)
 
         raise RuntimeError("should not be here")

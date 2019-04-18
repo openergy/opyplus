@@ -8,13 +8,11 @@ from oplus.configuration import CONF
 from oplus.util import run_subprocess, LoggerStreamWriter
 from oplus import Epm, WeatherData
 from oplus.epm.idd import Idd
-from oplus.epm.epm import default_external_files_dir_name
 from oplus.standard_output.standard_output import StandardOutput
 from oplus.mtd import Mtd
 from oplus.eio import Eio
 from oplus.err import Err
 from oplus.summary_table import SummaryTable
-
 
 from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
     get_output_files_layout, get_simulated_epw_path, get_simulation_base_command, get_simulation_input_command_style, \
@@ -23,7 +21,7 @@ from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES
 
 DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
-# todo: !!!!! CLEAR SIMULATION FOLDER BEFORE RUNNING A SIMULATION (understand why eplanch does it well and not us) !!!!
+
 _refs = (
     "idf",
     "epw",
@@ -49,7 +47,7 @@ class FileInfo:
 def get_input_file_path(dir_path, file_ref):
     if file_ref not in (FILE_REFS.idf, FILE_REFS.epw):
         raise ValueError("'%s' file ref is not an input file")
-    return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
+    return os.path.join(dir_path, "%s.%s" % (CONF.default_model_name, file_ref))
 
 
 def get_output_file_path(dir_path, file_ref):
@@ -76,16 +74,16 @@ def get_output_file_path(dir_path, file_ref):
         return os.path.join(dir_path, "eplusout.%s" % file_ref)
 
     if layout == OUTPUT_FILES_LAYOUTS.simu:
-        return os.path.join(dir_path, "%s.%s" % (CONF.simulation_base_name, file_ref))
+        return os.path.join(dir_path, "%s.%s" % (CONF.default_model_name, file_ref))
 
     if layout == OUTPUT_FILES_LAYOUTS.output_simu:
-        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.simulation_base_name, file_ref))
+        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.default_model_name, file_ref))
 
     if layout == OUTPUT_FILES_LAYOUTS.simu_table:
-        return os.path.join(dir_path, "%sTable.csv" % CONF.simulation_base_name)
+        return os.path.join(dir_path, "%sTable.csv" % CONF.default_model_name)
 
     if layout == OUTPUT_FILES_LAYOUTS.output_simu_table:
-        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.simulation_base_name)
+        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.default_model_name)
 
     if layout == OUTPUT_FILES_LAYOUTS.eplustbl:
         return os.path.join(dir_path, "eplustbl.csv")
@@ -337,16 +335,13 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
         epm = Epm.from_idf(epm_or_idf_path)
     else:
         epm = epm_or_idf_path
-    # gather external files
-    simulation_idf_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".idf")
-    epm.gather_external_files(os.path.join(
-        simulation_dir_path,
-        default_external_files_dir_name(CONF.simulation_base_name))
-    )
+
+    # create idf
+    simulation_idf_path = os.path.join(simulation_dir_path, CONF.default_model_name + ".idf")
     epm.to_idf(simulation_idf_path)
 
     # weather data
-    simulation_epw_path = os.path.join(simulation_dir_path, CONF.simulation_base_name + ".epw")
+    simulation_epw_path = os.path.join(simulation_dir_path, CONF.default_model_name + ".epw")
     if isinstance(weather_data_or_epw_path, WeatherData):
         weather_data_or_epw_path.to_epw(simulation_epw_path)
     else:
@@ -365,7 +360,7 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
     # idf
     idf_command_style = get_simulation_input_command_style("idf")
     if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-        idf_file_cmd = os.path.join(simulation_dir_path, CONF.simulation_base_name)
+        idf_file_cmd = os.path.join(simulation_dir_path, CONF.default_model_name)
     elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
         idf_file_cmd = simulation_idf_path
     else:
@@ -374,7 +369,7 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
     # epw
     epw_command_style = get_simulation_input_command_style("epw")
     if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-        epw_file_cmd = os.path.join(simulation_dir_path, CONF.simulation_base_name)
+        epw_file_cmd = os.path.join(simulation_dir_path, CONF.default_model_name)
     elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
         epw_file_cmd = simulation_epw_path
     else:
