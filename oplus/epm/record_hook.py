@@ -31,3 +31,5 @@ class RecordHook:
     def serialize(self):
         return self.target_value
 
+
+NONE_RECORD_HOOK = RecordHook(None, None, None)

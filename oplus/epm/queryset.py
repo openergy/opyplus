@@ -1,6 +1,5 @@
 from itertools import filterfalse
 
-from .util import json_data_to_json
 from .exceptions import RecordDoesNotExistError, MultipleRecordsReturnedError
 
 
@@ -145,11 +144,7 @@ class Queryset:
         """
         # workflow
         # --------
-        # (methods belonging to create/update/delete framework:
-        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
-        # 1. unregister links
-        # 2. unregister hooks
-        # 3. remove from table without unregistering
+        # delete each record and remove from queryset
 
         # delete each record
         for r in self:
@@ -159,23 +154,11 @@ class Queryset:
         self._records = ()
 
     # ------------------------------------------- export ---------------------------------------------------------------
-    def to_json_data(self, external_files_mode=None, model_file_path=None):
+    def to_json_data(self):
         """
-        Parameters
-        ----------
-        external_files_mode: str, default 'relative'
-            'relative', 'absolute'
-            The external files paths will be written in an absolute or a relative fashion.
-        model_file_path: str, default current directory
-            If 'relative' file paths, oplus needs to convert absolute paths to relative paths. model_file_path defines
-            the reference used for this conversion. If not given, current directory will be used.
-
         Returns
         -------
         A dictionary of serialized data.
         """
         # records are already sorted
-        return [r.to_json_data(
-            external_files_mode=external_files_mode,
-            model_file_path=model_file_path
-        ) for r in self._records]
+        return [r.to_json_data() for r in self._records]
