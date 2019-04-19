@@ -244,6 +244,7 @@ class WeatherData:
             location,
             design_conditions,
             typical_extreme_periods,
+            ground_temperatures,
             holidays_daylight_savings,
             comments_1,
             comments_2,
@@ -382,7 +383,7 @@ class WeatherData:
         # copy and change hours convention [0, 23] -> [1, 24]
         df = self._weather_series.copy()
         df["hour"] += 1
-        epw_content = self._headers_to_epw() + df.to_csv(header=False, index=False)
+        epw_content = self._headers_to_epw() + df.to_csv(header=False, index=False, line_terminator="\n")
         return multi_mode_write(
             lambda buffer: buffer.write(epw_content),
             lambda: epw_content,

@@ -33,7 +33,10 @@ def parse_epw(file_like):
 
     # design conditions
     design_conditions_row_l = _get_row_l(next(file_like))
-    design_condition_source = design_conditions_row_l[2]
+    try:
+        design_condition_source = design_conditions_row_l[2]
+    except IndexError:
+        design_condition_source = ""
     design_conditions = []
     current_dc = None
     for cell in design_conditions_row_l[3:]:
@@ -101,6 +104,9 @@ def parse_epw(file_like):
 
     # manage hours
     weather_series["hour"] -= 1  # switch from [1, 24] convention to [0, 23]
+
+    # manage minutes
+    weather_series["minute"] = 0  # todo: check that we understood meaning
 
     return WeatherData(
         weather_series,

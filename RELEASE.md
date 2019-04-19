@@ -4,6 +4,8 @@
 
 ## next
 * external files system was modified
+* weather data debug
+* api fixes
 
 ## 7.0.1.dev001
 * p: hook error messages debug

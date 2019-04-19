@@ -111,8 +111,8 @@ class Simulation:
     @classmethod
     def simulate(
             cls,
-            idf_or_path,
-            epw_or_path,
+            epm_or_path,
+            weather_data_or_path,
             base_dir_path,
             simulation_name=None,
             stdout=None,
@@ -122,8 +122,8 @@ class Simulation:
         """
         Parameters
         ----------
-        idf_or_path
-        epw_or_path
+        epm_or_path
+        weather_data_or_path
         base_dir_path: simulation dir path
         simulation_name: str, default None
             if provided, simulation will be done in {base_dir_path}/{simulation_name}
@@ -153,8 +153,8 @@ class Simulation:
         stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
         stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
         run_eplus(
-            idf_or_path,
-            epw_or_path,
+            epm_or_path,
+            weather_data_or_path,
             simulation_dir_path,
             stdout=stdout,
             stderr=stderr,
