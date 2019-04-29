@@ -62,3 +62,5 @@ target/
 _check/
 doc/
 /_notgit/
+
+gitignore/

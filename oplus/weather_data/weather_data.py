@@ -224,9 +224,10 @@ class WeatherData:
                 "DATA PERIODS",
                 1,
                 1,
+                "",
                 WEEK_DAYS[start_timestamp.weekday()],
-                f"{start_timestamp.month}/{start_timestamp.day}",
-                f"{end_timestamp.month}/{end_timestamp.day}"
+                f"{start_timestamp.month}/{start_timestamp.day}/{start_timestamp.year}",
+                f"{end_timestamp.month}/{end_timestamp.day}/{end_timestamp.year}"
             ]
         else:
             start_month, start_day = self._weather_series["month"].iloc[0], self._weather_series["day"].iloc[0]
