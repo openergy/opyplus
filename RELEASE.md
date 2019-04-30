@@ -2,12 +2,13 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 7.0.1.dev010
+* m: can load specific tables only while creating an epm
 
 ## 7.0.1.dev002
-* external files system was modified
-* weather data debug
-* api fixes
+* p: external files system was modified/debuged
+* p: weather data debug
+* p: api fixes
 
 ## 7.0.1.dev001
 * p: hook error messages debug

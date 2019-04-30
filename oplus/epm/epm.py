@@ -21,7 +21,7 @@ from .relations_manager import RelationsManager
 from .external_files_manager import ExternalFilesManager
 from .external_file import get_external_files_dir_name
 from .parse_idf import parse_idf
-from .util import json_data_to_json, multi_mode_write
+from .util import json_data_to_json, multi_mode_write, table_name_to_ref
 
 
 def default_external_files_dir_name(model_name):
@@ -80,7 +80,8 @@ class Epm:
             parse_fct,
             buffer_or_path,
             idd_or_buffer_or_path=None,
-            check_required=True
+            check_required=True,
+            load_only=None
     ):
         # prepare buffer
         _source_file_path, buffer = to_buffer(buffer_or_path)
@@ -93,7 +94,8 @@ class Epm:
         return cls.from_json_data(
             json_data,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required
+            check_required=check_required,
+            load_only=load_only
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
@@ -216,7 +218,7 @@ class Epm:
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls, json_data, check_required=True, idd_or_buffer_or_path=None):
+    def from_json_data(cls, json_data, check_required=True, idd_or_buffer_or_path=None, load_only=None):
         """
         Parameters
         ----------
@@ -226,11 +228,18 @@ class Epm:
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
         idd_or_buffer_or_path: (expert) to load using a custom idd
+        load_only: iterable, default None
+            iterable of table names or refs which you want to load. All other tables will be skipped.
 
         Returns
         -------
         An Epm instance.
         """
+        # remove skipped tables if relevant
+        if load_only is not None:
+            load_only = set(table_name_to_ref(t) for t in load_only)
+            json_data = {k: v for (k, v) in json_data.items() if (k in load_only or k[0] == "_")}
+
         epm = cls(
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required
@@ -240,7 +249,7 @@ class Epm:
         return epm
 
     @classmethod
-    def from_idf(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None):
+    def from_idf(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None, load_only=None):
         """
         Parameters
         ----------
@@ -248,6 +257,8 @@ class Epm:
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
         idd_or_buffer_or_path: (expert) to load using a custom idd
+        load_only: iterable, default None
+            iterable of table names or refs which you want to load. All other tables will be skipped.
 
         Returns
         -------
@@ -258,11 +269,12 @@ class Epm:
             parse_idf,
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required
+            check_required=check_required,
+            load_only=load_only
         )
 
     @classmethod
-    def from_json(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None):
+    def from_json(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None, load_only=None):
         """
         Parameters
         ----------
@@ -270,6 +282,8 @@ class Epm:
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
         idd_or_buffer_or_path: (expert) to load using a custom idd
+        load_only: iterable, default None
+            iterable of table names or refs which you want to load. All other tables will be skipped.
 
         Returns
         -------
@@ -279,7 +293,8 @@ class Epm:
             json.load,
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required
+            check_required=check_required,
+            load_only=load_only
         )
 
     # ----------------------------------------- export -----------------------------------------------------------------
