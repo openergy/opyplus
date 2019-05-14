@@ -21,8 +21,11 @@ class StandardOutput:
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)
         with buffer as f:
-            self._raw_environments, self._raw_variables_info, self._dfs = parse_eso(f)
-        self._start_year = None
+            self._environments_by_title, self._variables_by_freq, self._dfs = parse_eso(f)
+
+    def create_datetime_index(self, start_year):
+        for env in self._environments_by_title.values():
+            env.create_datetime_index(start_year)
 
     @property
     def has_tuple_instants(self):
@@ -62,7 +65,7 @@ class StandardOutput:
 
         # manage environment num
         if isinstance(environment_title_or_num, int):
-            environment_title = tuple(self._raw_environments.keys())[environment_title_or_num]
+            environment_title = tuple(self._environments_by_title.keys())[environment_title_or_num]
         else:
             environment_title = environment_title_or_num
 
@@ -86,7 +89,7 @@ class StandardOutput:
 
     def get_environments(self):
         environments = collections.OrderedDict()
-        for e in self._raw_environments.values():
+        for e in self._environments_by_title.values():
             # base info
             env = collections.OrderedDict((
                 ("latitude", e.latitude),
@@ -107,7 +110,7 @@ class StandardOutput:
 
     def get_variables(self):
         _variables = []
-        for v in self._raw_variables_info.values():
+        for v in self._variables_by_freq.values():
             # base info
             var = collections.OrderedDict((
                 ("code", v.code),
@@ -121,7 +124,7 @@ class StandardOutput:
 
             # add environments info
             var["environments"] = [
-                env_title for env_title in self._raw_environments if self._dfs[env_title] is not None]
+                env_title for env_title in self._environments_by_title if self._dfs[env_title] is not None]
 
             # store
             _variables.append(var)

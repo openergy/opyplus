@@ -13,7 +13,6 @@ def switch_to_datetime_instants(df, start_year, eplus_frequency):
     if eplus_frequency in (TIMESTEP, DAILY, HOURLY, MONTHLY):
         # prepare year switch
         if eplus_frequency in (TIMESTEP, HOURLY, DAILY):
-            # print((df[["month", "day"]] - df[["month", "day"]].shift()) == pd.Series([-12, -31]))
             year_counter = (
                     (df[["month", "day"]] - df[["month", "day"]].shift()) ==
                     pd.Series(dict(month=12, day=-31))
