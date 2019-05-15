@@ -266,11 +266,10 @@ print(f"variables: {s.eso.get_variables()}\n")
 # tuple instants dataframe
 df = s.eso.get_data()
 print(list(df.columns), "\n")
-print("default index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
+print("index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
-
-# switch to datetime instants
-s.eso.switch_to_datetime_instants(2014)
+# create datetime index
+s.eso.create_datetime_index(2014)
 
 # choose start year
 df = s.eso.get_data()
@@ -279,6 +278,12 @@ print("datetime index: ",  df[["environment,Site Outdoor Air Drybulb Temperature
 # choose time step
 df = s.eso.get_data(frequency="hourly")
 
+# dump to csv for debug
+csv_dir_path = os.path.join(work_dir_path, "standard-output")
+s.eso.to_csv(csv_dir_path)
+print("standard-output content:")
+for name in os.listdir(csv_dir_path):
+    print(f"  {name}")
 
 ## -------------------------------------------- weather data -----------------------------------------------------------
 #@ ### weather data

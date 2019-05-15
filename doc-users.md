@@ -595,11 +595,10 @@
 	# tuple instants dataframe
 	df = s.eso.get_data()
 	print(list(df.columns), "\n")
-	print("default index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
+	print("index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
-
-	# switch to datetime instants
-	s.eso.switch_to_datetime_instants(2014)
+	# create datetime index
+	s.eso.create_datetime_index(2014)
 
 	# choose start year
 	df = s.eso.get_data()
@@ -608,74 +607,63 @@
 	# choose time step
 	df = s.eso.get_data(frequency="hourly")
 
+	# dump to csv for debug
+	csv_dir_path = os.path.join(work_dir_path, "standard-output")
+	s.eso.to_csv(csv_dir_path)
+	print("standard-output content:")
+	for name in os.listdir(csv_dir_path):
+	    print(f"  {name}")
 
 
 *out:*
 
 	info: 
 	 Standard output
-		instants: tuple
-		environments:
-			'denver centennial ann htg 99.6% condns db'
-				latitude: 39.74
-				longitude: -105.18
-				timezone_offset: -7.0
-				elevation: 1829.0
-				nb_values_timestep: 0
-				nb_values_hourly: 24
-				nb_values_daily: 0
-				nb_values_monthly: 0
-				nb_values_annual: 0
-				nb_values_run_period: 0
-			'denver centennial ann clg 1% condns db=>mwb'
-				latitude: 39.74
-				longitude: -105.18
-				timezone_offset: -7.0
-				elevation: 1829.0
-				nb_values_timestep: 0
-				nb_values_hourly: 24
-				nb_values_daily: 0
-				nb_values_monthly: 0
-				nb_values_annual: 0
-				nb_values_run_period: 0
-			'runperiod 1'
-				latitude: 39.74
-				longitude: -105.18
-				timezone_offset: -7.0
-				elevation: 1829.0
-				nb_values_timestep: 0
-				nb_values_hourly: 8760
-				nb_values_daily: 0
-				nb_values_monthly: 0
-				nb_values_annual: 0
-				nb_values_run_period: 0
-		variables:
-			hourly,environment,Site Outdoor Air Drybulb Temperature
-			hourly,environment,Site Outdoor Air Humidity Ratio
-			hourly,environment,Site Outdoor Air Relative Humidity
-			hourly,environment,Site Outdoor Air Wetbulb Temperature
-			hourly,evap cooler inlet node,System Node Temperature
-			hourly,fan inlet node,System Node Temperature
-			hourly,main zone baseboard,Baseboard Electric Power
-			hourly,main zone inlet node,System Node Temperature
-			hourly,main zone node,System Node Temperature
-			hourly,main zone outlet node,System Node Temperature
-			hourly,main zone,Zone Mean Air Temperature
-			hourly,outside air inlet node,System Node Temperature
-			hourly,relief air outlet node,System Node Temperature
-			hourly,supply inlet node,System Node Temperature
-			hourly,supply outlet node,System Node Mass Flow Rate
-			hourly,supply outlet node,System Node Temperature
-			hourly,zone equipment inlet node,System Node Temperature
-			hourly,zone equipment outlet node,System Node Temperature 
+	  environments
+	    denver centennial ann htg 99.6% condns db (0)
+	      latitude: 39.74
+	      longitude: -105.18
+	      timezone_offset: -7.0
+	      elevation: 1829.0
+	    denver centennial ann clg 1% condns db=>mwb (1)
+	      latitude: 39.74
+	      longitude: -105.18
+	      timezone_offset: -7.0
+	      elevation: 1829.0
+	    runperiod 1 (2)
+	      latitude: 39.74
+	      longitude: -105.18
+	      timezone_offset: -7.0
+	      elevation: 1829.0
+	  variables
+	    hourly
+	      environment,Site Outdoor Air Drybulb Temperature (7)
+	      environment,Site Outdoor Air Wetbulb Temperature (8)
+	      environment,Site Outdoor Air Humidity Ratio (9)
+	      environment,Site Outdoor Air Relative Humidity (10)
+	      main zone,Zone Mean Air Temperature (11)
+	      main zone baseboard,Baseboard Electric Power (160)
+	      supply inlet node,System Node Temperature (384)
+	      fan inlet node,System Node Temperature (385)
+	      evap cooler inlet node,System Node Temperature (386)
+	      supply outlet node,System Node Temperature (387)
+	      supply outlet node,System Node Mass Flow Rate (388)
+	      outside air inlet node,System Node Temperature (389)
+	      main zone outlet node,System Node Temperature (390)
+	      main zone node,System Node Temperature (391)
+	      main zone inlet node,System Node Temperature (392)
+	      zone equipment inlet node,System Node Temperature (393)
+	      zone equipment outlet node,System Node Temperature (394)
+	      relief air outlet node,System Node Temperature (395)
+ 
 
-	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', OrderedDict([('latitude', 39.74), ('longitude', -105.18), ('timezone_offset', -7.0), ('elevation', 1829.0), ('nb_values_timestep', 0), ('nb_values_hourly', 24), ('nb_values_daily', 0), ('nb_values_monthly', 0), ('nb_values_annual', 0), ('nb_values_run_period', 0)])), ('denver centennial ann clg 1% condns db=>mwb', OrderedDict([('latitude', 39.74), ('longitude', -105.18), ('timezone_offset', -7.0), ('elevation', 1829.0), ('nb_values_timestep', 0), ('nb_values_hourly', 24), ('nb_values_daily', 0), ('nb_values_monthly', 0), ('nb_values_annual', 0), ('nb_values_run_period', 0)])), ('runperiod 1', OrderedDict([('latitude', 39.74), ('longitude', -105.18), ('timezone_offset', -7.0), ('elevation', 1829.0), ('nb_values_timestep', 0), ('nb_values_hourly', 8760), ('nb_values_daily', 0), ('nb_values_monthly', 0), ('nb_values_annual', 0), ('nb_values_run_period', 0)]))]) 
+	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000019E21341668>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000019E21086A58>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000019E20FB7080>)]) 
 
-	variables: OrderedDict([('hourly,environment,Site Outdoor Air Drybulb Temperature', OrderedDict([('code', '7'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Drybulb Temperature'), ('ref', 'environment,Site Outdoor Air Drybulb Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,environment,Site Outdoor Air Humidity Ratio', OrderedDict([('code', '9'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Humidity Ratio'), ('ref', 'environment,Site Outdoor Air Humidity Ratio'), ('unit', 'kgWater/kgDryAir'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,environment,Site Outdoor Air Relative Humidity', OrderedDict([('code', '10'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Relative Humidity'), ('ref', 'environment,Site Outdoor Air Relative Humidity'), ('unit', '%'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,environment,Site Outdoor Air Wetbulb Temperature', OrderedDict([('code', '8'), ('key_value', 'environment'), ('name', 'Site Outdoor Air Wetbulb Temperature'), ('ref', 'environment,Site Outdoor Air Wetbulb Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,evap cooler inlet node,System Node Temperature', OrderedDict([('code', '386'), ('key_value', 'evap cooler inlet node'), ('name', 'System Node Temperature'), ('ref', 'evap cooler inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,fan inlet node,System Node Temperature', OrderedDict([('code', '385'), ('key_value', 'fan inlet node'), ('name', 'System Node Temperature'), ('ref', 'fan inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone baseboard,Baseboard Electric Power', OrderedDict([('code', '160'), ('key_value', 'main zone baseboard'), ('name', 'Baseboard Electric Power'), ('ref', 'main zone baseboard,Baseboard Electric Power'), ('unit', 'W'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone inlet node,System Node Temperature', OrderedDict([('code', '392'), ('key_value', 'main zone inlet node'), ('name', 'System Node Temperature'), ('ref', 'main zone inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone node,System Node Temperature', OrderedDict([('code', '391'), ('key_value', 'main zone node'), ('name', 'System Node Temperature'), ('ref', 'main zone node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone outlet node,System Node Temperature', OrderedDict([('code', '390'), ('key_value', 'main zone outlet node'), ('name', 'System Node Temperature'), ('ref', 'main zone outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,main zone,Zone Mean Air Temperature', OrderedDict([('code', '11'), ('key_value', 'main zone'), ('name', 'Zone Mean Air Temperature'), ('ref', 'main zone,Zone Mean Air Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,outside air inlet node,System Node Temperature', OrderedDict([('code', '389'), ('key_value', 'outside air inlet node'), ('name', 'System Node Temperature'), ('ref', 'outside air inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,relief air outlet node,System Node Temperature', OrderedDict([('code', '395'), ('key_value', 'relief air outlet node'), ('name', 'System Node Temperature'), ('ref', 'relief air outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,supply inlet node,System Node Temperature', OrderedDict([('code', '384'), ('key_value', 'supply inlet node'), ('name', 'System Node Temperature'), ('ref', 'supply inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,supply outlet node,System Node Mass Flow Rate', OrderedDict([('code', '388'), ('key_value', 'supply outlet node'), ('name', 'System Node Mass Flow Rate'), ('ref', 'supply outlet node,System Node Mass Flow Rate'), ('unit', 'kg/s'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,supply outlet node,System Node Temperature', OrderedDict([('code', '387'), ('key_value', 'supply outlet node'), ('name', 'System Node Temperature'), ('ref', 'supply outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,zone equipment inlet node,System Node Temperature', OrderedDict([('code', '393'), ('key_value', 'zone equipment inlet node'), ('name', 'System Node Temperature'), ('ref', 'zone equipment inlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])])), ('hourly,zone equipment outlet node,System Node Temperature', OrderedDict([('code', '394'), ('key_value', 'zone equipment outlet node'), ('name', 'System Node Temperature'), ('ref', 'zone equipment outlet node,System Node Temperature'), ('unit', 'C'), ('frequency', 'hourly'), ('info', ''), ('environments', ['denver centennial ann htg 99.6% condns db', 'denver centennial ann clg 1% condns db=>mwb', 'runperiod 1'])]))])
+	variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
 
-	['month', 'day', 'hour', 'dst', 'day_type', 'environment,Site Outdoor Air Relative Humidity', 'main zone,Zone Mean Air Temperature', 'main zone baseboard,Baseboard Electric Power', 'supply inlet node,System Node Temperature', 'fan inlet node,System Node Temperature', 'evap cooler inlet node,System Node Temperature', 'supply outlet node,System Node Temperature', 'supply outlet node,System Node Mass Flow Rate', 'outside air inlet node,System Node Temperature', 'main zone outlet node,System Node Temperature', 'main zone node,System Node Temperature', 'main zone inlet node,System Node Temperature', 'zone equipment inlet node,System Node Temperature', 'zone equipment outlet node,System Node Temperature', 'relief air outlet node,System Node Temperature', 'environment,Site Outdoor Air Drybulb Temperature', 'environment,Site Outdoor Air Wetbulb Temperature', 'environment,Site Outdoor Air Humidity Ratio'] 
+	['month', 'day', 'hour', 'minute', 'end_minute', 'dst', 'day_type', 'environment,Site Outdoor Air Drybulb Temperature', 'environment,Site Outdoor Air Wetbulb Temperature', 'environment,Site Outdoor Air Humidity Ratio', 'environment,Site Outdoor Air Relative Humidity', 'main zone,Zone Mean Air Temperature', 'main zone baseboard,Baseboard Electric Power', 'supply inlet node,System Node Temperature', 'fan inlet node,System Node Temperature', 'evap cooler inlet node,System Node Temperature', 'supply outlet node,System Node Temperature', 'supply outlet node,System Node Mass Flow Rate', 'outside air inlet node,System Node Temperature', 'main zone outlet node,System Node Temperature', 'main zone node,System Node Temperature', 'main zone inlet node,System Node Temperature', 'zone equipment inlet node,System Node Temperature', 'zone equipment outlet node,System Node Temperature', 'relief air outlet node,System Node Temperature'] 
 
-	default index:     environment,Site Outdoor Air Drybulb Temperature
+	index:     environment,Site Outdoor Air Drybulb Temperature
 	0                                         -4.666667
 	1                                         -3.000000
 	2                                         -3.583333
@@ -689,6 +677,10 @@
 	2014-01-01 03:00:00                                         -2.833333
 	2014-01-01 04:00:00                                         -2.000000 
 
+	standard-output content:
+	  0#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
+	  1#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
+	  2#runperiod-1#hourly.csv
 
  ### weather data
 

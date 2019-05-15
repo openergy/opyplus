@@ -1,23 +1,11 @@
 import collections
 import re
 
-from .output_environment import OutputEnvironment
+from .output_environment import OutputEnvironment, EACH_CALL, DAILY, MONTHLY, ANNUAL, RUN_PERIOD, SUB_HOURLY, \
+    FREQUENCIES
 from .output_variable import OutputVariable
 
 comment_brackets_pattern = re.compile(r"\s\[[\w,]+\]")
-
-# frequencies
-EACH_CALL = "each_call"
-TIMESTEP = "timestep"
-HOURLY = "hourly"
-DAILY = "daily"
-MONTHLY = "monthly"
-ANNUAL = "annual"
-RUN_PERIOD = "run_period"
-
-FREQUENCIES = TIMESTEP, HOURLY, DAILY, MONTHLY, ANNUAL, RUN_PERIOD, EACH_CALL
-
-SUB_HOURLY = "sub_hourly"
 
 # other
 METER = "Meter"
@@ -74,7 +62,7 @@ def parse_eso(file_like):
         timestep_and_or_info = comment.split(" ,")
 
         # frequency
-        frequency = timestep_and_or_info[0].lower()  # no retaincase, we replace with _ for each_call
+        frequency = timestep_and_or_info[0].lower().strip()  # no retaincase, we replace with _ for each_call
         if frequency == "each call":
             frequency = EACH_CALL  # we add an underscore
         elif frequency == "runperiod":
@@ -99,6 +87,12 @@ def parse_eso(file_like):
             frequency,
             info
         ))
+
+    # sort variables by freq
+    variables_by_freq = collections.OrderedDict(
+        (freq, variables_by_freq[freq]) for freq in
+        sorted(variables_by_freq, key=lambda freq: FREQUENCIES.index(freq))
+    )
 
     # ------------------------ LOAD DATA
     # global variables
@@ -147,7 +141,7 @@ def parse_eso(file_like):
             dst = int(other[3])
             day_type = other[7]
 
-            env.register_instant(
+            env._dev_register_instant(
                 SUB_HOURLY,
                 month,
                 day,
@@ -161,7 +155,7 @@ def parse_eso(file_like):
         elif code == "3":  # daily
             # 0-sim_day, 1-month_num, 2-day_num, 3-dst, 4-day_type
             other = other.split(",")
-            env.register_instant(
+            env._dev_register_instant(
                 DAILY,
                 int(other[1]),
                 int(other[2]),
@@ -171,14 +165,14 @@ def parse_eso(file_like):
 
         elif code == "4":  # monthly
             other = other.split(",")
-            env.register_instant(MONTHLY, int(other[1]))
+            env._dev_register_instant(MONTHLY, int(other[1]))
 
         elif code == "5":  # run period data
             # nothing to do
-            env.register_instant(RUN_PERIOD)
+            env._dev_register_instant(RUN_PERIOD)
 
         elif code == annual_code:  # will only be used for >= 9.0.1
-            env.register_instant(ANNUAL, int(other))
+            env._dev_register_instant(ANNUAL, int(other))
 
         else:  # value to store
             # parse
@@ -188,12 +182,11 @@ def parse_eso(file_like):
                 val = float(other.split(",")[0])  # we don't parse min and max
 
             # store
-            env.register_value(code, val)
+            env._dev_register_value(code, val)
 
     # build dataframes
     for env in environments_by_title.values():
-        for freq, container in env.data_containers_by_freq.items():
-            container.build_df()
+        env._dev_build_dfs()
 
     # return
     return environments_by_title, variables_by_freq

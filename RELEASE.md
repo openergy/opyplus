@@ -2,7 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 7.0.1.dev100
+* M: standard output was refactored, api changed
 
 ## 7.0.1.dev010
 * m: can load specific tables only while creating an epm

@@ -1,56 +1,37 @@
 import logging
-import collections
+import os
+import textwrap
+
+from slugify import slugify
 
 from ..util import to_buffer
-from .parse_eso import parse_eso, FREQUENCIES
-from .switch_instants import switch_to_datetime_instants
+from .parse_eso import parse_eso
 
 logger = logging.getLogger(__name__)
 
 
 class StandardOutput:
-    def __init__(self, buffer_or_path):
+    def __init__(self, buffer_or_path, start_year=None):
         """
         Parameters
         ----------
         buffer_or_path
 
-        Initially, standard_output will have tuple instants (using 'year', 'month', 'day', 'hour', 'minute' columns,
-            depending on given frequency). It is possible to change to datetime mode later.
+        Initially, standard_output will have tuple instants (using 'year', 'month', 'day', 'hour', 'minute' columns),
+            depending on given frequency). It is possible to create a datetime index afterwards.
         """
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)
+        self._start_year = None
         with buffer as f:
-            self._environments_by_title, self._variables_by_freq, self._dfs = parse_eso(f)
+            self._environments_by_title, self._variables_by_freq = parse_eso(f)
+        if start_year is not None:
+            self.create_datetime_index(start_year)
 
+    # --------------------------------------------- public api ---------------------------------------------------------
     def create_datetime_index(self, start_year):
         for env in self._environments_by_title.values():
-            env.create_datetime_index(start_year)
-
-    @property
-    def has_tuple_instants(self):
-        return self._start_year is None
-
-    def switch_to_datetime_instants(self, start_year):
-        # leave if not relevant
-        if self._start_year == start_year:
-            return
-
-        # check not a year switch
-        if (self._start_year is not None) and (self._start_year != start_year):
-            raise ValueError("Can't change start_year when already datetime instants, switch to tuple instants first.")
-
-        # switch all dataframes
-        new_dfs = {}
-        for env_title, env_data in self._dfs.items():
-            env_dfs = {}
-            new_dfs[env_title] = env_dfs
-            for eplus_frequency, df in env_data.items():
-                env_dfs[eplus_frequency] = None if df is None else switch_to_datetime_instants(
-                    df, start_year, eplus_frequency)
-
-        # store result and start year
-        self._dfs = new_dfs
+            env._dev_create_datetime_index(start_year)
         self._start_year = start_year
 
     def get_data(self, environment_title_or_num=-1, frequency=None):
@@ -65,85 +46,54 @@ class StandardOutput:
 
         # manage environment num
         if isinstance(environment_title_or_num, int):
-            environment_title = tuple(self._environments_by_title.keys())[environment_title_or_num]
+            if len(self._environments_by_title) < (environment_title_or_num + 1):
+                raise ValueError(
+                    f"Environment number {environment_title_or_num} does not exist. "
+                    f"Last environment: {len(self._environments_by_title - 1)}"
+                )
+            environment_title = tuple(self._environments_by_title)[environment_title_or_num]
         else:
             environment_title = environment_title_or_num
 
-        if environment_title not in self._dfs:
-            raise ValueError(f"No environment named {environment_title}. Available environments: {tuple(self._dfs)}.")
+        if environment_title not in self._environments_by_title:
+            raise ValueError(
+                f"No environment named {environment_title}. "
+                f"Available environments: {tuple(self._environments_by_title)}."
+            )
 
-        # get environment dataframes
-        environment_dfs = self._dfs[environment_title]
-
-        # find first non null frequency if not given
-        if frequency is None:
-            for frequency in FREQUENCIES:
-                if environment_dfs[frequency] is not None:
-                    break
-
-        # check frequency
-        if frequency not in FREQUENCIES:
-            raise ValueError(f"Unknown frequency: {frequency}. Available frequencies: {FREQUENCIES}")
-
-        return self._dfs[environment_title][frequency]
+        return self._environments_by_title[environment_title].get_data(frequency=frequency)
 
     def get_environments(self):
-        environments = collections.OrderedDict()
-        for e in self._environments_by_title.values():
-            # base info
-            env = collections.OrderedDict((
-                ("latitude", e.latitude),
-                ("longitude", e.longitude),
-                ("timezone_offset", e.timezone_offset),
-                ("elevation", e.elevation)
-            ))
-
-            # add count info
-            for freq in FREQUENCIES:
-                df = self.get_data(environment_title_or_num=e.title, frequency=freq)
-                env[f"nb_values_{freq}"] = 0 if df is None else len(df)
-
-            # store
-            environments[e.title] = env
-
-        return environments
+        return self._environments_by_title.copy()
 
     def get_variables(self):
-        _variables = []
-        for v in self._variables_by_freq.values():
-            # base info
-            var = collections.OrderedDict((
-                ("code", v.code),
-                ("key_value", v.key_value),
-                ("name", v.name),
-                ("ref", f"{v.key_value},{v.name}"),
-                ("unit", v.unit),
-                ("frequency", v.frequency),
-                ("info", v.info)
-            ))
-
-            # add environments info
-            var["environments"] = [
-                env_title for env_title in self._environments_by_title if self._dfs[env_title] is not None]
-
-            # store
-            _variables.append(var)
-
-        # sort, create dict and return
-        return collections.OrderedDict(
-            (f"{var['frequency']},{var['ref']}", var) for var in
-            sorted(_variables, key=lambda x: (x["frequency"], x["ref"]))
-        )
+        return self._variables_by_freq.copy()
 
     def get_info(self):
         msg = "Standard output\n"
-        msg += f"\tinstants: {'tuple' if self.has_tuple_instants else 'datetime'}\n"
-        msg += "\tenvironments:\n"
-        for env_title, env_info in self.get_environments().items():
-            msg += f"\t\t'{env_title}'\n"
-            for k, v in env_info.items():
-                msg += f"\t\t\t{k}: {v}\n"
-        msg += "\tvariables:\n"
-        msg += "\t\t" + "\n\t\t".join(self.get_variables())
+
+        # environments
+        msg += "  environments\n"
+        for i, env in enumerate(self._environments_by_title.values()):
+            msg += textwrap.indent(env.get_info(env_num=i), "    ")
+
+        # variables
+        msg += "  variables\n"
+        for freq, variables in self._variables_by_freq.items():
+            msg += f"    {freq}\n"
+            for var in variables:
+                msg += f"      {var.ref} ({var.code})\n"
 
         return msg
+
+    def to_csv(self, dir_path, sep=";", decimal=","):
+        # create dir path if needed
+        if not os.path.isdir(dir_path):
+            os.mkdir(dir_path)
+
+        # dump data
+        for i, env in enumerate(self._environments_by_title.values()):
+            slug_env_title = slugify(env.title)
+            for freq, container in env._dev_get_data_conainers_by_freq().items():
+                file_path = os.path.join(dir_path, f"{i}#{slug_env_title}#{freq}.csv")
+                container.df.to_csv(file_path, sep=sep, decimal=decimal)
