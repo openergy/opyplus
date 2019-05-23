@@ -84,6 +84,7 @@ class Epm:
             buffer_or_path,
             idd_or_buffer_or_path=None,
             check_required=True,
+            check_length=True,
             load_only=None
     ):
         # prepare buffer
@@ -98,6 +99,7 @@ class Epm:
             json_data,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
+            check_length=check_length,
             load_only=load_only
         )
 
@@ -221,7 +223,12 @@ class Epm:
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls, json_data, check_required=True, idd_or_buffer_or_path=None, load_only=None):
+    def from_json_data(cls,
+                       json_data,
+                       check_required=True,
+                       check_length=True,
+                       idd_or_buffer_or_path=None,
+                       load_only=None):
         """
         Parameters
         ----------
@@ -230,6 +237,8 @@ class Epm:
             Epm and use to_json_data or to_json.
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+        check_length: boolean, default True
+            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
         idd_or_buffer_or_path: (expert) to load using a custom idd
         load_only: iterable, default None
             iterable of table names or refs which you want to load. All other tables will be skipped.
@@ -245,20 +254,28 @@ class Epm:
 
         epm = cls(
             idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required
+            check_required=check_required,
+            check_length=check_length
         )
 
         epm._dev_populate_from_json_data(json_data)
         return epm
 
     @classmethod
-    def from_idf(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None, load_only=None):
+    def from_idf(cls,
+                 buffer_or_path,
+                 check_required=True,
+                 check_length=True,
+                 idd_or_buffer_or_path=None,
+                 load_only=None):
         """
         Parameters
         ----------
         buffer_or_path: idf buffer or path
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+        check_length: boolean, default True
+            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
         idd_or_buffer_or_path: (expert) to load using a custom idd
         load_only: iterable, default None
             iterable of table names or refs which you want to load. All other tables will be skipped.
@@ -273,17 +290,25 @@ class Epm:
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
+            check_length=check_length,
             load_only=load_only
         )
 
     @classmethod
-    def from_json(cls, buffer_or_path, check_required=True, idd_or_buffer_or_path=None, load_only=None):
+    def from_json(cls,
+                  buffer_or_path,
+                  check_required=True,
+                  check_length=True,
+                  idd_or_buffer_or_path=None,
+                  load_only=None):
         """
         Parameters
         ----------
         buffer_or_path: json buffer or path
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+        check_length: boolean, default True
+            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
         idd_or_buffer_or_path: (expert) to load using a custom idd
         load_only: iterable, default None
             iterable of table names or refs which you want to load. All other tables will be skipped.
@@ -297,6 +322,7 @@ class Epm:
             buffer_or_path,
             idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
+            check_length=check_length,
             load_only=load_only
         )
 
