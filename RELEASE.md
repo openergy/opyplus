@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev110
 * m: new check_length argument for epm 
 * p: debug iter records while modifying primary key
