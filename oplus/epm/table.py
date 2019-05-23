@@ -146,7 +146,10 @@ class Table:
         raise KeyError("item must be an int or a str")
     
     def __iter__(self):
-        return iter(self._records.values())
+        # !! we create a list before transforming to an iterator. If we don't do this, user may modify self._record key
+        # (by changing the pk field key if any), which will not raise an error (surprisingly, it only raises if dict
+        # changes size), but will continue iteration in values of new key (although already itered) !!
+        return iter(tuple(self._records.values()))
     
     def __len__(self):
         return len(self._records)

@@ -106,7 +106,7 @@ def parse_epw(file_like):
     weather_series["hour"] -= 1  # switch from [1, 24] convention to [0, 23]
 
     # manage minutes
-    weather_series["minute"] = 0  # todo: check that we understood meaning
+    weather_series["minute"] = 0  # fixme: [must-work] check that we understood meaning
 
     return WeatherData(
         weather_series,

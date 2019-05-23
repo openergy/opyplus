@@ -8,6 +8,7 @@ from .record_hook import RecordHook, NONE_RECORD_HOOK
 from .exceptions import FieldValidationError
 from .external_file import ExternalFile
 
+MAX_FIELD_LENGTH = 100
 
 spaces_and_newlines_pattern = re.compile(r"[\n\r\s]+")
 not_python_var_pattern = re.compile(r"(^[^\w]+)|([^\w\d]+)")
@@ -54,7 +55,7 @@ class FieldDescriptor:
         self._extensible_info = (cycle_start, cycle_len, cycle_pattern)
 
     # deserialize
-    def deserialize(self, value, index):
+    def deserialize(self, value, index, check_length=True):
         """
         index is used for extensible fields error messages (if given)
         """
@@ -87,9 +88,9 @@ class FieldDescriptor:
                 value = value.lower()
 
             # check not too big
-            if len(value) >= 100:
+            if check_length and (len(value) >= MAX_FIELD_LENGTH):
                 raise FieldValidationError(
-                    f"Field has more than 100 characters which is the limit. "
+                    f"Field has more than {MAX_FIELD_LENGTH} characters which is the limit. "
                     f"{self.get_error_location_message(value, index=index)}"
                 )
 

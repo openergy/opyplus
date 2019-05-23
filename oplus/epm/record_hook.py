@@ -24,6 +24,16 @@ class RecordHook:
             return
         self.target_record = target_record
         self.relations_manager.register_record_hook(self)
+        
+    def update(self, new_target_value):
+        # store old keys
+        old_keys = tuple(self.keys)  # force iteration to prevent from obsolescence
+        
+        # modify target_value
+        self.target_value = new_target_value
+        
+        # inform relations_manager
+        self.relations_manager.record_hook_value_was_updated(self, old_keys)
 
     def unregister(self):
         self.relations_manager.unregister_record_hook(self)

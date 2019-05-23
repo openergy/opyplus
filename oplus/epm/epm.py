@@ -42,7 +42,7 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, check_required=True, idd_or_buffer_or_path=None):
+    def __init__(self, check_required=True, check_length=True, idd_or_buffer_or_path=None):
         """
         An Epm is an Energy Plus Model.
         It can come from and idf, a epjson (not coded yet), or a json.
@@ -51,6 +51,8 @@ class Epm:
         Parameters
         ----------
         idd_or_buffer_or_path: (expert) if you wan't to use a specific idd.
+        check_length: boolean, default True
+            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
         """
@@ -71,6 +73,7 @@ class Epm:
         ]))
 
         self._dev_check_required = check_required
+        self._dev_check_length = check_length
         self._comment = ""
 
     # ------------------------------------------ private ---------------------------------------------------------------
@@ -264,7 +267,7 @@ class Epm:
         -------
         An Epm instance.
         """
-        # todo: add geometry only (or equivalent)
+        # fixme: [load-geometry-only] add geometry only (or equivalent)
         return cls._create_from_buffer_or_path(
             parse_idf,
             buffer_or_path,

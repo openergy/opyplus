@@ -1,6 +1,5 @@
 import unittest
 import os
-import itertools
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 

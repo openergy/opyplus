@@ -56,6 +56,14 @@ class RelationsManager:
                     f"{field_descriptor.get_error_location_message(hook.target_value, hook.target_index)}"
                 )
             self._record_hooks[key] = hook
+            
+    def record_hook_value_was_updated(self, hook, old_keys):
+        # remove old keys
+        for key in old_keys:
+            del self._record_hooks[key]
+            
+        # register with new keys
+        self.register_record_hook(hook)
 
     def register_table_hook(self, references, table):
         table_lower_name = table.get_name().lower()

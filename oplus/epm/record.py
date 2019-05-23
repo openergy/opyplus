@@ -90,23 +90,38 @@ class Record:
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
         # prepare value
-        value = field_descriptor.deserialize(value, index)
+        value = field_descriptor.deserialize(value, index, check_length=self.get_epm()._dev_check_length)
 
-        # unregister previous link if relevant
+        # if relevant, store current pk to signal change to table later on
+        old_pk = None
+        if index == 0 and not self._table._dev_auto_pk:
+            # retrieve old value
+            old_value = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
+
+            # manage record hooks (should not be any other special field)
+            old_pk = old_value.target_value if isinstance(old_value, RecordHook) else old_value
+
+        # manage links
         if isinstance(value, Link):
             # de-activate current link if any
             current_link = self._data.get(index)
             if current_link is not None:
                 current_link.unregister()
 
-        # unregister previous hook if relevant
+        # manage hooks
         if isinstance(value, RecordHook):
             current_record_hook = self._data.get(index)
             if current_record_hook is not None:
-                current_record_hook.unregister()
+                # unregister or update
+                if value is None:
+                    current_record_hook.unregister()
+                else:
+                    # store old target value to signal table
+                    current_record_hook.update(value)
 
-        # unregister previous external file if relevant
+        # manage external files
         if isinstance(value, ExternalFile):
+            # unregister current external file if any
             current_external_file = self._data.get(index)
             if current_external_file is not None:
                 current_external_file._dev_unregister()
@@ -117,17 +132,12 @@ class Record:
             self._dev_set_none_without_unregistering(index, check_not_required=False)
             return
 
-        # if relevant, store current pk to signal table
-        old_hook = None
-        if index == 0 and not self._table._dev_auto_pk:
-            old_hook = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
-
         # set value
         self._data[index] = value
 
         # signal pk update if relevant
-        if old_hook is not None:
-            self._table._dev_record_pk_was_updated(old_hook.target_value)
+        if old_pk is not None:
+            self._table._dev_record_pk_was_updated(old_pk)
 
     def _dev_set_none_without_unregistering(self, index, check_not_required=True):
         # get field descriptor
