@@ -178,3 +178,18 @@ def to_buffer(buffer_or_path):
         path = None
         buffer = buffer_or_path
     return path, buffer
+
+
+def version_str_to_version(version_str):
+    """
+    Parameters
+    ----------
+    version_str: str
+        x.x or x.x.x or x.x.x.x
+    """
+    raw_version = [int(v) for v in version_str.split(".")] + [0]
+
+    if len(raw_version) < 3:
+        raise ValueError(f"incorrect format: {version_str}")
+
+    return tuple(raw_version[:3])

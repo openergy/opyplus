@@ -8,7 +8,7 @@ from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-
+# todo: change api (see obat)
 INSTANTS_COLUMNS = (
     "year",
     "month",

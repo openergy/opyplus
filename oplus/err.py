@@ -45,10 +45,11 @@ class Err:
                 # GET GENERIC INFORMATION
                 if "Program Version,EnergyPlus" in line_s:
                     self.info["EnergyPlus Simulation Version"] = str(line_s.split(",")[2].rstrip("Version "))
-                    if CONF.eplus_version < (9, 0, 0):
+                    if "IDD_Version" in line_s:  # is the case for eplus_version < 9.0.0
                         # todo: manage properly in compatibility
                         self.info["Idd_Version"] = str(line_s.split("IDD_Version ")[1])
-                    self.info["Idd_Version"] = None
+                    else:
+                        self.info["Idd_Version"] = None
                 elif "EnergyPlus Warmup Error Summary" in line_s:
                     self.info["EnergyPlus Warmup Error Summary"] = str(line_s.split(". ")[1])
                 elif "EnergyPlus Sizing Error Summary" in line_s:

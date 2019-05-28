@@ -1,5 +1,5 @@
 from ..util import get_multi_line_copyright_message
-from .util import table_name_to_ref
+from ..idd.util import table_name_to_ref
 
 
 def parse_idf(file_like):

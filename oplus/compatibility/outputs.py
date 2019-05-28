@@ -1,4 +1,4 @@
-from .util import make_enum, get_value_by_version, OS_NAME
+from .util import make_enum, v_lookup, OS_NAME
 
 OUTPUT_FILES_LAYOUTS = make_enum(
     "eplusout",  # {simulation_dir_path}/eplusout.{extension}
@@ -57,7 +57,7 @@ _layouts_matrix = {
 }
 
 
-def get_output_files_layout(output_category):
+def get_output_files_layout(version, output_category):
     """
     Parameters
     ----------
@@ -74,4 +74,4 @@ def get_output_files_layout(output_category):
     layouts = _layouts_matrix[OS_NAME][output_category]
 
     # get version
-    return get_value_by_version(layouts)
+    return v_lookup(version, layouts)

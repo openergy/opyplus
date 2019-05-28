@@ -1,6 +1,7 @@
 import collections
 import platform
 import re
+import os
 
 
 SYS_NAME = platform.system()
@@ -24,22 +25,23 @@ else:
     raise RuntimeError("Unknown os_name: '%s'" % OS_NAME)
 
 
-def get_value_by_version(d):
+def v_lookup(version, d):
     """
     Finds the value depending in current eplus version.
 
 
     Parameters
     ----------
+    version
     d: dict
         {(0, 0): value, (x, x): value, ...}
-        for current version (cv), current value is the value of version v such as v <= cv < v+1
+        for version v, current value is the value of version lv such as lv <= v < lv+1
     """
     from oplus import CONF  # touchy import
 
-    cv = CONF.eplus_version[:2]
-    for v, value in sorted(d.items(), reverse=True):
-        if cv >= v:
+    v = version[:2]
+    for lv, value in sorted(d.items(), reverse=True):
+        if v >= lv:
             return value
 
 

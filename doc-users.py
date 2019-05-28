@@ -18,8 +18,10 @@ import oplus as op
 ## ------------------------------------------------- epm ---------------------------------------------------------------
 #@ ### epm
 
+# choose which idf file we wan't to work on
+
 idf_path = os.path.join(
-    op.CONF.eplus_base_dir_path,
+    op.get_eplus_base_dir_path((9, 0, 1)),
     "ExampleFiles",
     "1ZoneEvapCooler.idf"
 )
@@ -245,7 +247,7 @@ if not os.path.isdir(simulation_dir):
 s = op.simulate(
     epm,
     os.path.join(
-        op.CONF.eplus_base_dir_path,
+        op.get_eplus_base_dir_path((9, 0, 1)),
         "WeatherData",
         "USA_CO_Golden-NREL.724666_TMY3.epw"
     ),

@@ -2,13 +2,13 @@ import os
 import unittest
 import datetime as dt
 
-from oplus import Simulation, CONF as CONFIG
+from oplus import Simulation, CONF as CONFIG, get_eplus_base_dir_path
 from tests.util import iter_eplus_versions, RESOURCES_DIR_PATH
 
 
 class StandardOutputTest(unittest.TestCase):
-    idf_path = os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf")
-    epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "USA_CO_Golden-NREL.724666_TMY3.epw")
+    # idf_path = os.path.join(CONFIG.eplus_base_dir_path, "ExampleFiles", "4ZoneWithShading_Simple_1.idf")
+    # epw_path = os.path.join(CONFIG.eplus_base_dir_path, "WeatherData", "USA_CO_Golden-NREL.724666_TMY3.epw")
 
     def test_all_time_steps(self):
         for eplus_version in iter_eplus_versions(self):

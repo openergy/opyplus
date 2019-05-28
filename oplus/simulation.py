@@ -4,10 +4,11 @@ import stat
 import logging
 import collections
 
+from oplus import get_eplus_base_dir_path
 from oplus.configuration import CONF
-from oplus.util import run_subprocess, LoggerStreamWriter
+from oplus.util import version_str_to_version, run_subprocess, LoggerStreamWriter
 from oplus import Epm, WeatherData
-from oplus.epm.idd import Idd
+from oplus.idd.idd import Idd
 from oplus.standard_output.standard_output import StandardOutput
 from oplus.mtd import Mtd
 from oplus.eio import Eio
@@ -50,7 +51,7 @@ def get_input_file_path(dir_path, file_ref):
     return os.path.join(dir_path, "%s.%s" % (CONF.default_model_name, file_ref))
 
 
-def get_output_file_path(dir_path, file_ref):
+def get_output_file_path(dir_path, file_ref, version):
     # set category
     if file_ref in (
         FILE_REFS.idf,
@@ -67,7 +68,7 @@ def get_output_file_path(dir_path, file_ref):
         raise ValueError(f"unknown file_ref: {file_ref}")
 
     # get layout
-    layout = get_output_files_layout(output_category)
+    layout = get_output_files_layout(version, output_category)
 
     # return path
     if layout == OUTPUT_FILES_LAYOUTS.eplusout:
@@ -186,7 +187,7 @@ class Simulation:
         """
         self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
         self._prepared_file_refs = None
-        self._outputs_cache = dict()
+        self._outputs_cache = dict()  # todo: remove cache system
 
         # check simulation directory path exists
         if not os.path.isdir(self._dir_path):
@@ -336,6 +337,13 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
     else:
         epm = epm_or_idf_path
 
+    # find version and eplus base dir path
+    version_str = epm.Version.one()[0]
+    version = version_str_to_version(version_str)
+    eplus_base_dir_path = get_eplus_base_dir_path(version)
+    if not os.path.exists(eplus_base_dir_path):
+        raise RuntimeError(f"EnergyPlus v{version_str} is not installed, can't simulation Epm.")
+
     # create idf
     simulation_idf_path = os.path.join(simulation_dir_path, CONF.default_model_name + ".idf")
     epm.to_idf(simulation_idf_path)
@@ -349,13 +357,13 @@ def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, st
         _copy_without_read_only(weather_data_or_epw_path, simulation_epw_path)
 
     # copy epw if needed (depends on os/eplus version)
-    temp_epw_path = get_simulated_epw_path()
+    temp_epw_path = get_simulated_epw_path(version)
     if temp_epw_path is not None:
         _copy_without_read_only(simulation_epw_path, temp_epw_path)
 
     # prepare command
-    eplus_relative_cmd = get_simulation_base_command()
-    eplus_cmd = os.path.join(CONF.eplus_base_dir_path, eplus_relative_cmd)
+    eplus_relative_cmd = get_simulation_base_command(version)
+    eplus_cmd = os.path.join(get_eplus_base_dir_path(version), eplus_relative_cmd)
 
     # idf
     idf_command_style = get_simulation_input_command_style("idf")

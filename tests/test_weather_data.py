@@ -5,6 +5,7 @@ import pandas as pd
 
 from oplus.configuration import CONF
 from oplus import WeatherData
+from oplus.compatibility import get_eplus_base_dir_path
 from tests.util import assert_epw_equal, iter_eplus_versions
 
 from pandas.util.testing import assert_frame_equal
@@ -13,8 +14,8 @@ from pandas.util.testing import assert_frame_equal
 class EPlusWeatherData(unittest.TestCase):
     # todo: make better checks
     def test_weather_series(self):
-        for _ in iter_eplus_versions(self):
-            weather_dir = os.path.join(CONF.eplus_base_dir_path, "WeatherData")
+        for eplus_version in iter_eplus_versions(self):
+            weather_dir = os.path.join(get_eplus_base_dir_path(eplus_version), "WeatherData")
 
             # check Chicago
             file_path = os.path.join(weather_dir, "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw")

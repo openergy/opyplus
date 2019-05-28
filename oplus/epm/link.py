@@ -1,5 +1,3 @@
-
-
 class Link:
     def __init__(self, hook_references, hook_value, source_index):
         """

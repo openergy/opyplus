@@ -1,5 +1,3 @@
-
-
 class RecordHook:
     def __init__(self, references, index, value):
         """

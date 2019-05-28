@@ -11,17 +11,18 @@ import os
 import collections
 import textwrap
 import json
+import logging
 
 from .. import CONF
-from ..util import get_multi_line_copyright_message, to_buffer
-from .idd import Idd
+from ..util import get_multi_line_copyright_message, to_buffer, version_str_to_version
+from ..idd.idd import Idd
 from .table import Table
 from .record import Record
 from .relations_manager import RelationsManager
 from .external_files_manager import ExternalFilesManager
 from .external_file import get_external_files_dir_name
 from .parse_idf import parse_idf
-from .util import json_data_to_json, multi_mode_write, table_name_to_ref
+from .util import json_data_to_json, multi_mode_write
 
 
 def default_external_files_dir_name(model_name):
@@ -34,6 +35,9 @@ def default_external_files_dir_name(model_name):
     return name + CONF.external_files_suffix
 
 
+logger = logging.getLogger(__name__)
+
+
 class Epm:
     """
     Energyplus model
@@ -42,7 +46,7 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, check_required=True, check_length=True, idd_or_buffer_or_path=None):
+    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
         """
         An Epm is an Energy Plus Model.
         It can come from and idf, a epjson (not coded yet), or a json.
@@ -50,16 +54,43 @@ class Epm:
 
         Parameters
         ----------
-        idd_or_buffer_or_path: (expert) if you wan't to use a specific idd.
+        json_data: json serializable object, default None
+            if provided, Epm will be filled with given objects
         check_length: boolean, default True
             If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
         check_required: boolean, default True
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
+            directly provide an IDD object.
+
+        Notes
+        -----
+        Eplus version behaviour:
+            - if idd_or_version is provided, required idd will be used (may trigger a warning if it is not
+                coherent with json_data version, if any)
+            - else if json_data is provided: will use proper idd (according to version field) or trigger a warning
+                if idd is not available and will choose the closest
+            - else will use default eplus version used in conf, which is initially set to latest available idd version
+
         """
-        self._dev_idd = (
-            idd_or_buffer_or_path if isinstance(idd_or_buffer_or_path, Idd) else
-            self._dev_idd_cls(idd_or_buffer_or_path)
-        )
+        # prepare idd
+        self._dev_idd = None
+        if isinstance(idd_or_version, Idd):
+            self._dev_idd = idd_or_version
+        elif idd_or_version is not None:
+            self._dev_idd = self._dev_idd_cls._dev_get_from_cache(idd_or_version)
+        elif json_data is not None:
+            if "Version" in json_data and len(json_data["Version"]) > 0:
+                version = version_str_to_version(json_data["Version"][0][0])
+                self._dev_idd = self._dev_idd_cls._dev_get_from_cache(version)
+            else:
+                logger.warning(
+                    f"given json_data does not contain a Version table, will use default eplus_version idd "
+                    f"({CONF.default_idf_version})"
+                )
+        if self._dev_idd is None:
+            self._dev_idd = self._dev_idd_cls._dev_get_from_cache(CONF.default_idd_version)
+
         # !! relations manager must be defined before table creation because table creation will trigger
         # hook registering
         self._dev_relations_manager = RelationsManager(self)
@@ -76,16 +107,19 @@ class Epm:
         self._dev_check_length = check_length
         self._comment = ""
 
+        # load json_data if relevant
+        if json_data is not None:
+            self._dev_populate_from_json_data(json_data)
+
     # ------------------------------------------ private ---------------------------------------------------------------
     @classmethod
     def _create_from_buffer_or_path(
             cls,
             parse_fct,
             buffer_or_path,
-            idd_or_buffer_or_path=None,
+            idd_or_version=None,
             check_required=True,
-            check_length=True,
-            load_only=None
+            check_length=True
     ):
         # prepare buffer
         _source_file_path, buffer = to_buffer(buffer_or_path)
@@ -95,12 +129,11 @@ class Epm:
             json_data = parse_fct(f)
 
         # create and return epm
-        return cls.from_json_data(
-            json_data,
-            idd_or_buffer_or_path=idd_or_buffer_or_path,
+        return cls(
+            json_data=json_data,
             check_required=check_required,
             check_length=check_length,
-            load_only=load_only
+            idd_or_version=idd_or_version
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
@@ -223,51 +256,13 @@ class Epm:
 
     # ------------------------------------------- load -----------------------------------------------------------------
     @classmethod
-    def from_json_data(cls,
-                       json_data,
-                       check_required=True,
-                       check_length=True,
-                       idd_or_buffer_or_path=None,
-                       load_only=None):
-        """
-        Parameters
-        ----------
-        json_data: dict
-            Dictionary of serialized data (text, floats, ints, ...). For more information on data structure, create an
-            Epm and use to_json_data or to_json.
-        check_required: boolean, default True
-            If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        check_length: boolean, default True
-            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        idd_or_buffer_or_path: (expert) to load using a custom idd
-        load_only: iterable, default None
-            iterable of table names or refs which you want to load. All other tables will be skipped.
-
-        Returns
-        -------
-        An Epm instance.
-        """
-        # remove skipped tables if relevant
-        if load_only is not None:
-            load_only = set(table_name_to_ref(t) for t in load_only)
-            json_data = {k: v for (k, v) in json_data.items() if (k in load_only or k[0] == "_")}
-
-        epm = cls(
-            idd_or_buffer_or_path=idd_or_buffer_or_path,
-            check_required=check_required,
-            check_length=check_length
-        )
-
-        epm._dev_populate_from_json_data(json_data)
-        return epm
-
-    @classmethod
-    def from_idf(cls,
-                 buffer_or_path,
-                 check_required=True,
-                 check_length=True,
-                 idd_or_buffer_or_path=None,
-                 load_only=None):
+    def from_idf(
+            cls,
+            buffer_or_path,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None
+    ):
         """
         Parameters
         ----------
@@ -276,31 +271,29 @@ class Epm:
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
         check_length: boolean, default True
             If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        idd_or_buffer_or_path: (expert) to load using a custom idd
-        load_only: iterable, default None
-            iterable of table names or refs which you want to load. All other tables will be skipped.
+        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
+            directly provide an IDD object.
 
         Returns
         -------
         An Epm instance.
         """
-        # fixme: [load-geometry-only] add geometry only (or equivalent)
         return cls._create_from_buffer_or_path(
             parse_idf,
             buffer_or_path,
-            idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
             check_length=check_length,
-            load_only=load_only
+            idd_or_version=idd_or_version
         )
 
     @classmethod
-    def from_json(cls,
-                  buffer_or_path,
-                  check_required=True,
-                  check_length=True,
-                  idd_or_buffer_or_path=None,
-                  load_only=None):
+    def from_json(
+            cls,
+            buffer_or_path,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None
+    ):
         """
         Parameters
         ----------
@@ -309,9 +302,8 @@ class Epm:
             If True, will raise an exception if a required field is missing. If False, not not perform any checks.
         check_length: boolean, default True
             If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        idd_or_buffer_or_path: (expert) to load using a custom idd
-        load_only: iterable, default None
-            iterable of table names or refs which you want to load. All other tables will be skipped.
+        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
+            directly provide an IDD object.
 
         Returns
         -------
@@ -320,10 +312,9 @@ class Epm:
         return cls._create_from_buffer_or_path(
             json.load,
             buffer_or_path,
-            idd_or_buffer_or_path=idd_or_buffer_or_path,
             check_required=check_required,
             check_length=check_length,
-            load_only=load_only
+            idd_or_version=idd_or_version
         )
 
     # ----------------------------------------- export -----------------------------------------------------------------
@@ -359,7 +350,7 @@ class Epm:
             buffer_or_path=buffer_or_path,
             indent=indent
         )
-        
+
     def to_idf(self, buffer_or_path=None, dump_external_files=True):
         """
         Parameters

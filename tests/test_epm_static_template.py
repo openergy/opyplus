@@ -5,7 +5,7 @@ from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
 from oplus import Epm
 from oplus.configuration import CONF
-
+from oplus.compatibility import get_eplus_base_dir_path
 
 schedule_test_record_str = """Schedule:Compact,
     %s,  !- Name
@@ -27,17 +27,18 @@ class StaticIdfTest(unittest.TestCase):
         cls.epms_d = {}
 
         for eplus_version in TESTED_EPLUS_VERSIONS:
-            CONF.eplus_version = eplus_version
-            cls.epms_d[eplus_version] = Epm.from_idf(os.path.join(
-                CONF.eplus_base_dir_path,
-                "ExampleFiles",
-                "1ZoneEvapCooler.idf")
+            cls.epms_d[eplus_version] = Epm.from_idf(
+                os.path.join(
+                    get_eplus_base_dir_path(eplus_version),
+                    "ExampleFiles",
+                    "1ZoneEvapCooler.idf"),
+                idd_or_version=eplus_version
             )
 
     @classmethod
     def tearDownClass(cls):
         del cls.epms_d
-        
+
     # ----------------------------------------- navigate ---------------------------------------------------------------
     def test_table_getattr(self):
         for eplus_version in iter_eplus_versions(self):
@@ -111,7 +112,6 @@ class StaticIdfTest(unittest.TestCase):
             # check number of pointing objects
             count = 0
             for qs in z.get_pointing_records():
-
                 count += len(qs)
             self.assertEqual(9, count)
 
@@ -170,4 +170,3 @@ class StaticIdfTest(unittest.TestCase):
     # todo: check to_str, including comments and copyright
     # todo: check __dir__ and help
     # todo: shouldn't we propose a record.delete() method ? (and queryset.delete()) ?
-

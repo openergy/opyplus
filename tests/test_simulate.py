@@ -3,8 +3,9 @@ import os
 import tempfile
 import io
 
-from oplus import simulate, CONF, Epm
+from oplus import simulate, Epm
 from tests.util import iter_eplus_versions
+from oplus.compatibility import get_eplus_base_dir_path
 
 
 class SimulateTest(unittest.TestCase):
@@ -15,12 +16,12 @@ class SimulateTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             # prepare paths
             idf_path = os.path.join(
-                CONF.eplus_base_dir_path,
+                get_eplus_base_dir_path(eplus_version),
                 "ExampleFiles",
                 "1ZoneEvapCooler.idf"
             )
             epw_path = os.path.join(
-                CONF.eplus_base_dir_path,
+                get_eplus_base_dir_path(eplus_version),
                 "WeatherData",
                 "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"
             )

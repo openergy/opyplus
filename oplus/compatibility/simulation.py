@@ -1,4 +1,6 @@
-from .util import get_value_by_version, make_enum, OS_NAME
+import os
+from .util import v_lookup, make_enum, OS_NAME, APPS_DIR_PATH, EPLUS_DIR_PATTERN
+
 
 # base command
 _simulation_base_command_matrix = {
@@ -18,9 +20,9 @@ _simulation_base_command_matrix = {
 }
 
 
-def get_simulation_base_command():
+def get_simulation_base_command(version):
     commands = _simulation_base_command_matrix[OS_NAME]
-    return get_value_by_version(commands)
+    return v_lookup(version, commands)
 
 
 # inputs
@@ -66,7 +68,7 @@ def get_simulation_input_command_style(extension):
     if extension not in ("idf", "epw"):
         raise ValueError(f"unknown extension: {extension}")
     styles = _simulation_input_command_matrix[OS_NAME][extension]
-    return get_value_by_version(styles)
+    return v_lookup(styles)
 
 
 # command style
@@ -92,4 +94,24 @@ _simulation_command_styles_matrix = {
 
 
 def get_simulation_command_style():
-    return get_value_by_version(_simulation_command_styles_matrix[OS_NAME])
+    return v_lookup(_simulation_command_styles_matrix[OS_NAME])
+
+
+EPLUS_AVAILABLE_VERSIONS = {}  # {(major, minor): , ...
+
+for file_name in os.listdir(APPS_DIR_PATH):
+    match = EPLUS_DIR_PATTERN.search(file_name)
+    if match is not None:
+        major, minor, patch = (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+        EPLUS_AVAILABLE_VERSIONS[(major, minor)] = os.path.join(APPS_DIR_PATH, file_name)
+
+
+def get_eplus_base_dir_path(version):
+    _major, _minor, _patch = version
+    try:
+        return EPLUS_AVAILABLE_VERSIONS[(_major, _minor)]
+    except KeyError:
+        raise KeyError(
+            f"requested EnergyPlus version is not installed ({version}). "
+            f"Available versions: {list(sorted(EPLUS_AVAILABLE_VERSIONS))}"
+        )

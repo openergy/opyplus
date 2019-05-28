@@ -14,7 +14,7 @@ import oplus as op
 #     UNTIL: 12:00,1,          !- Field 3
 #     UNTIL: 24:00,0;          !- Field 5"""
 
-# todo: relink
+# fixme: relink
 @unittest.skip("relink")
 class DynamicIdfTest(unittest.TestCase):
     """

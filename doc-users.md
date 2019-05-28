@@ -11,8 +11,10 @@
  ### epm
 
 
+	# choose which idf file we wan't to work on
+
 	idf_path = os.path.join(
-	    op.CONF.eplus_base_dir_path,
+	    op.get_eplus_base_dir_path((9, 0, 1)),
 	    "ExampleFiles",
 	    "1ZoneEvapCooler.idf"
 	)
@@ -383,7 +385,8 @@
 *out:*
 
 	ThermostatSetpoint:SingleHeating,
-	    heating setpoint;              ! Name
+	    heating setpoint,              ! Name
+	    heating setpoint schedule new_name;    ! Setpoint Temperature Schedule Name
 
 	ThermostatSetpoint:SingleHeating,
 	    heating setpoint,              ! Name
@@ -566,145 +569,3 @@
  ## simulation
 
  ### simulate
-
-	simulation_dir = os.path.join(work_dir_path, "simulation")
-	if not os.path.isdir(simulation_dir):
-	    os.mkdir(simulation_dir)
-	s = op.simulate(
-	    epm,
-	    os.path.join(
-	        op.CONF.eplus_base_dir_path,
-	        "WeatherData",
-	        "USA_CO_Golden-NREL.724666_TMY3.epw"
-	    ),
-	    base_dir_path=simulation_dir
-	)
-
-
- ### standard output
-
-	# explore output
-	print("info: \n", s.eso.get_info(), "\n")
-
-	# explore environements
-	print("environments: ", s.eso.get_environments(), "\n")
-
-	# explore variables
-	print(f"variables: {s.eso.get_variables()}\n")
-
-	# tuple instants dataframe
-	df = s.eso.get_data()
-	print(list(df.columns), "\n")
-	print("index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
-
-	# create datetime index
-	s.eso.create_datetime_index(2014)
-
-	# choose start year
-	df = s.eso.get_data()
-	print("datetime index: ",  df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
-
-	# choose time step
-	df = s.eso.get_data(frequency="hourly")
-
-	# dump to csv for debug
-	csv_dir_path = os.path.join(work_dir_path, "standard-output")
-	s.eso.to_csv(csv_dir_path)
-	print("standard-output content:")
-	for name in os.listdir(csv_dir_path):
-	    print(f"  {name}")
-
-
-*out:*
-
-	info: 
-	 Standard output
-	  environments
-	    denver centennial ann htg 99.6% condns db (0)
-	      latitude: 39.74
-	      longitude: -105.18
-	      timezone_offset: -7.0
-	      elevation: 1829.0
-	    denver centennial ann clg 1% condns db=>mwb (1)
-	      latitude: 39.74
-	      longitude: -105.18
-	      timezone_offset: -7.0
-	      elevation: 1829.0
-	    runperiod 1 (2)
-	      latitude: 39.74
-	      longitude: -105.18
-	      timezone_offset: -7.0
-	      elevation: 1829.0
-	  variables
-	    hourly
-	      environment,Site Outdoor Air Drybulb Temperature (7)
-	      environment,Site Outdoor Air Wetbulb Temperature (8)
-	      environment,Site Outdoor Air Humidity Ratio (9)
-	      environment,Site Outdoor Air Relative Humidity (10)
-	      main zone,Zone Mean Air Temperature (11)
-	      main zone baseboard,Baseboard Electric Power (160)
-	      supply inlet node,System Node Temperature (384)
-	      fan inlet node,System Node Temperature (385)
-	      evap cooler inlet node,System Node Temperature (386)
-	      supply outlet node,System Node Temperature (387)
-	      supply outlet node,System Node Mass Flow Rate (388)
-	      outside air inlet node,System Node Temperature (389)
-	      main zone outlet node,System Node Temperature (390)
-	      main zone node,System Node Temperature (391)
-	      main zone inlet node,System Node Temperature (392)
-	      zone equipment inlet node,System Node Temperature (393)
-	      zone equipment outlet node,System Node Temperature (394)
-	      relief air outlet node,System Node Temperature (395)
- 
-
-	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000019E21341668>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000019E21086A58>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000019E20FB7080>)]) 
-
-	variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
-
-	['month', 'day', 'hour', 'minute', 'end_minute', 'dst', 'day_type', 'environment,Site Outdoor Air Drybulb Temperature', 'environment,Site Outdoor Air Wetbulb Temperature', 'environment,Site Outdoor Air Humidity Ratio', 'environment,Site Outdoor Air Relative Humidity', 'main zone,Zone Mean Air Temperature', 'main zone baseboard,Baseboard Electric Power', 'supply inlet node,System Node Temperature', 'fan inlet node,System Node Temperature', 'evap cooler inlet node,System Node Temperature', 'supply outlet node,System Node Temperature', 'supply outlet node,System Node Mass Flow Rate', 'outside air inlet node,System Node Temperature', 'main zone outlet node,System Node Temperature', 'main zone node,System Node Temperature', 'main zone inlet node,System Node Temperature', 'zone equipment inlet node,System Node Temperature', 'zone equipment outlet node,System Node Temperature', 'relief air outlet node,System Node Temperature'] 
-
-	index:     environment,Site Outdoor Air Drybulb Temperature
-	0                                         -4.666667
-	1                                         -3.000000
-	2                                         -3.583333
-	3                                         -2.833333
-	4                                         -2.000000 
-
-	datetime index:                       environment,Site Outdoor Air Drybulb Temperature
-	2014-01-01 00:00:00                                         -4.666667
-	2014-01-01 01:00:00                                         -3.000000
-	2014-01-01 02:00:00                                         -3.583333
-	2014-01-01 03:00:00                                         -2.833333
-	2014-01-01 04:00:00                                         -2.000000 
-
-	standard-output content:
-	  0#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
-	  1#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
-	  2#runperiod-1#hourly.csv
-
- ### weather data
-
-	epw = op.WeatherData.from_epw(os.path.join(
-	    op.configuration.CONF.eplus_base_dir_path,
-	    "WeatherData",
-	    "USA_CO_Golden-NREL.724666_TMY3.epw")
-	)
-
-	# tuple index
-	df = epw.get_weather_series()
-	print(list(df.columns))
-	print(df[["drybulb"]].head())
-
-
-
-*out:*
-
-	['year', 'month', 'day', 'hour', 'minute', 'datasource', 'drybulb', 'dewpoint', 'relhum', 'atmos_pressure', 'exthorrad', 'extdirrad', 'horirsky', 'glohorrad', 'dirnorrad', 'difhorrad', 'glohorillum', 'dirnorillum', 'difhorillum', 'zenlum', 'winddir', 'windspd', 'totskycvr', 'opaqskycvr', 'visibility', 'ceiling_hgt', 'presweathobs', 'presweathcodes', 'precip_wtr', 'aerosol_opt_depth', 'snowdepth', 'days_last_snow', 'Albedo', 'liq_precip_depth', 'liq_precip_rate']
-	   drybulb
-	0     -3.0
-	1     -3.0
-	2     -4.0
-	3     -2.0
-	4     -2.0
-
-
