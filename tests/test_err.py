@@ -15,4 +15,4 @@ class ErrTest(unittest.TestCase):
                 "one_zone_uncontrolled",
                 version_str
             ))
-            self.assertIsNotNone(s.err)
+            self.assertIsNotNone(s.get_out_err())

@@ -257,32 +257,33 @@ s = op.simulate(
 ## -------------------------------------------- standard output --------------------------------------------------------
 #@ ### standard output
 # explore output
-print("info: \n", s.eso.get_info(), "\n")
+eso = s.get_out_eso()
+print("info: \n", eso.get_info(), "\n")
 
 # explore environements
-print("environments: ", s.eso.get_environments(), "\n")
+print("environments: ", eso.get_environments(), "\n")
 
 # explore variables
-print(f"variables: {s.eso.get_variables()}\n")
+print(f"variables: {eso.get_variables()}\n")
 
 # tuple instants dataframe
-df = s.eso.get_data()
+df = eso.get_data()
 print(list(df.columns), "\n")
 print("index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
 # create datetime index
-s.eso.create_datetime_index(2014)
+eso.create_datetime_index(2014)
 
 # choose start year
-df = s.eso.get_data()
+df = eso.get_data()
 print("datetime index: ",  df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
 
 # choose time step
-df = s.eso.get_data(frequency="hourly")
+df = eso.get_data(frequency="hourly")
 
 # dump to csv for debug
 csv_dir_path = os.path.join(work_dir_path, "standard-output")
-s.eso.to_csv(csv_dir_path)
+eso.to_csv(csv_dir_path)
 print("standard-output content:")
 for name in os.listdir(csv_dir_path):
     print(f"  {name}")
@@ -290,7 +291,7 @@ for name in os.listdir(csv_dir_path):
 ## -------------------------------------------- weather data -----------------------------------------------------------
 #@ ### weather data
 epw = op.WeatherData.from_epw(os.path.join(
-    op.configuration.CONF.eplus_base_dir_path,
+    op.get_eplus_base_dir_path((9, 0, 1)),
     "WeatherData",
     "USA_CO_Golden-NREL.724666_TMY3.epw")
 )

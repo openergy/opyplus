@@ -186,6 +186,10 @@ def version_str_to_version(version_str):
     ----------
     version_str: str
         x.x or x.x.x or x.x.x.x
+
+    Returns
+    -------
+    (x, x, x)
     """
     raw_version = [int(v) for v in version_str.split(".")] + [0]
 

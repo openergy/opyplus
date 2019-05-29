@@ -22,7 +22,7 @@ class StandardOutputTest(unittest.TestCase):
             s = Simulation(simulation_path)
 
             for frequency in ["timestep", "hourly", "daily", "monthly", "annual", "run_period"]:
-                df = s.eso.get_data(frequency=frequency)
+                df = s.get_out_eso().get_data(frequency=frequency)
                 if frequency == "annual":
                     self.assertIsNone(df)
                     continue

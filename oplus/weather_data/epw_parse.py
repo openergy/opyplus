@@ -63,7 +63,7 @@ def parse_epw(file_like):
     # ground temperatures
     ground_temperatures_row_l = _get_row_l(next(file_like))
     ground_temperatures = []
-    cycles_l = ground_temperatures_row_l[1:]
+    cycles_l = ground_temperatures_row_l[2:]
     cycles_l_len = len(cycles_l)
     for i in range(0, cycles_l_len, 16):
         if i + 15 >= cycles_l_len:
@@ -119,7 +119,7 @@ def parse_epw(file_like):
         country=country,
         source=source,
         wmo=wmo,
-        design_condition_source=design_condition_source,
+        design_conditions_source=design_condition_source,
         design_conditions=design_conditions,
         typical_extreme_periods=typical_extreme_periods,
         ground_temperatures=ground_temperatures,

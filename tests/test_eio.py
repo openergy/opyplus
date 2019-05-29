@@ -15,7 +15,7 @@ class TestValues(unittest.TestCase):
                 "one_zone_uncontrolled",
                 version_str
             ))
-            eio = s.eio
+            eio = s.get_out_eio()
 
             self.assertEqual(
                 float(eio.get_df("Site:GroundReflectance:SnowModifier").loc[0, "Normal"]),

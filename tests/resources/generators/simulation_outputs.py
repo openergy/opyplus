@@ -1,6 +1,6 @@
 import os
 
-from oplus import CONF, simulate, Epm
+from oplus import CONF, simulate, Epm, get_eplus_base_dir_path
 from tests.util import TESTED_EPLUS_VERSIONS
 
 
@@ -35,16 +35,13 @@ to_simulate = [
         "idf": "1ZoneUncontrolled",
         "epw": "USA_FL_Tampa.Intl.AP.722110_TMY3",
         "pre_process": one_zone_pre_process,
-        "extensions": ("eio", "err", "eso"),
+        "extensions": ("eio", "err", "eso", "json"),
     }
 ]
 
 
 def generate_outputs():
     for eplus_version in TESTED_EPLUS_VERSIONS:
-        # set eplus version
-        CONF.eplus_version = eplus_version
-
         # iter simulation cases
         for simulation_case in to_simulate:
 
@@ -69,8 +66,16 @@ def generate_outputs():
             os.mkdir(dir_path)
 
             # set paths
-            idf_path = os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", f"{simulation_case['idf']}.idf")
-            epw_path = os.path.join(CONF.eplus_base_dir_path, "WeatherData", f"{simulation_case['epw']}.epw")
+            idf_path = os.path.join(
+                get_eplus_base_dir_path(eplus_version),
+                "ExampleFiles",
+                f"{simulation_case['idf']}.idf"
+            )
+            epw_path = os.path.join(
+                get_eplus_base_dir_path(eplus_version),
+                "WeatherData",
+                f"{simulation_case['epw']}.epw"
+            )
 
             # prepare idf if needed
             pre_process = simulation_case.get("pre_process")

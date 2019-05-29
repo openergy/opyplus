@@ -51,7 +51,7 @@ class SimulateTest(unittest.TestCase):
                 )
 
                 # check one day output
-                eso_df = s.eso.get_data()
+                eso_df = s.get_out_eso().get_data()
                 self.assertEqual(24, len(eso_df))
 
             # check err (manage differences between eplus versions)

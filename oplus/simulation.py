@@ -1,95 +1,29 @@
+import json
 import os
+import collections
+import logging
 import shutil
 import stat
-import logging
-import collections
 
-from oplus import get_eplus_base_dir_path
-from oplus.configuration import CONF
+from oplus import Epm, WeatherData, CONF
 from oplus.util import version_str_to_version, run_subprocess, LoggerStreamWriter
-from oplus import Epm, WeatherData
-from oplus.idd.idd import Idd
+from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
+    get_output_files_layout, get_simulated_epw_path, get_simulation_base_command, get_simulation_input_command_style, \
+    get_simulation_command_style, get_eplus_base_dir_path
 from oplus.standard_output.standard_output import StandardOutput
 from oplus.mtd import Mtd
 from oplus.eio import Eio
 from oplus.err import Err
 from oplus.summary_table import SummaryTable
 
-from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
-    get_output_files_layout, get_simulated_epw_path, get_simulation_base_command, get_simulation_input_command_style, \
-    get_simulation_command_style
-
-
 DEFAULT_SERVER_PERMS = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP
 
+EMPTY = "empty"
+RUNNING = "running"
+FINISHED = "finished"
+FAILED = "failed"
 
-_refs = (
-    "idf",
-    "epw",
-    "eio",
-    "eso",
-    "mtr",
-    "mtd",
-    "mdd",
-    "err",
-    "summary_table"
-)
-_FileRefEnum = collections.namedtuple("_FileRefEnum", _refs)
-
-FILE_REFS = _FileRefEnum(**dict([(k, k) for k in _refs]))
-
-
-class FileInfo:
-    def __init__(self, constructor, get_path):
-        self.constructor = constructor
-        self.get_path = get_path
-
-
-def get_input_file_path(dir_path, file_ref):
-    if file_ref not in (FILE_REFS.idf, FILE_REFS.epw):
-        raise ValueError("'%s' file ref is not an input file")
-    return os.path.join(dir_path, "%s.%s" % (CONF.default_model_name, file_ref))
-
-
-def get_output_file_path(dir_path, file_ref, version):
-    # set category
-    if file_ref in (
-        FILE_REFS.idf,
-        FILE_REFS.epw
-    ):
-        output_category = "inputs"
-
-    elif file_ref == FILE_REFS.summary_table:
-        output_category = "table"
-
-    elif file_ref in (FILE_REFS.eio, FILE_REFS.eso, FILE_REFS.mtr, FILE_REFS.mtd, FILE_REFS.mdd, FILE_REFS.err):
-        output_category = "other"
-    else:
-        raise ValueError(f"unknown file_ref: {file_ref}")
-
-    # get layout
-    layout = get_output_files_layout(version, output_category)
-
-    # return path
-    if layout == OUTPUT_FILES_LAYOUTS.eplusout:
-        return os.path.join(dir_path, "eplusout.%s" % file_ref)
-
-    if layout == OUTPUT_FILES_LAYOUTS.simu:
-        return os.path.join(dir_path, "%s.%s" % (CONF.default_model_name, file_ref))
-
-    if layout == OUTPUT_FILES_LAYOUTS.output_simu:
-        return os.path.join(dir_path, "Output", "%s.%s" % (CONF.default_model_name, file_ref))
-
-    if layout == OUTPUT_FILES_LAYOUTS.simu_table:
-        return os.path.join(dir_path, "%sTable.csv" % CONF.default_model_name)
-
-    if layout == OUTPUT_FILES_LAYOUTS.output_simu_table:
-        return os.path.join(dir_path, "Output", "%sTable.csv" % CONF.default_model_name)
-
-    if layout == OUTPUT_FILES_LAYOUTS.eplustbl:
-        return os.path.join(dir_path, "eplustbl.csv")
-
-    raise RuntimeError("unknown file_ref")
+logger = logging.getLogger(__name__)
 
 
 def _copy_without_read_only(src, dst):
@@ -98,309 +32,375 @@ def _copy_without_read_only(src, dst):
     os.chmod(dst, DEFAULT_SERVER_PERMS)
 
 
-class Simulation:
-    # for subclassing
-    _idd_cls = Idd
-    _epm_cls = Epm
-    _weather_data_cls = WeatherData
-    _standard_output_cls = StandardOutput
-    _mtd_cls = Mtd
-    _eio_cls = Eio
-    _summary_table_cls = SummaryTable
-    _err_cls = Err
-
-    @classmethod
-    def simulate(
-            cls,
-            epm_or_path,
-            weather_data_or_path,
-            base_dir_path,
-            simulation_name=None,
-            stdout=None,
-            stderr=None,
-            beat_freq=None
-    ):
+class Info:
+    def __init__(self, status, eplus_version):
         """
         Parameters
         ----------
-        epm_or_path
-        weather_data_or_path
-        base_dir_path: simulation dir path
-        simulation_name: str, default None
-            if provided, simulation will be done in {base_dir_path}/{simulation_name}
-            else, simulation will be done in {base_dir_path}
-        stdout: stream, default logger.info
-            stream where EnergyPlus standard output is redirected
-        stderr: stream, default logger.error
-            stream where EnergyPlus standard error is redirected
-        beat_freq: float, default None
-            if provided, subprocess in which EnergyPlus is run will write at given frequency in standard output. May
-            be used to monitor subprocess state.
-
-        Returns
-        -------
-        Simulation instance
+        status: str
+            empty: only input files
+            running
+            finished
+            failed
+        eplus_version: tuple
         """
-        # manage simulation dir path
-        if not os.path.isdir(base_dir_path):
-            raise NotADirectoryError("Base dir path not found: '%s'" % base_dir_path)
-        simulation_dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
+        self._dev_status = status  # empty, running, finished, failed (a simulation necessarily has input files)
+        self._dev_eplus_version = eplus_version
 
-        # make directory if does not exist
-        if not os.path.exists(simulation_dir_path):
-            os.mkdir(simulation_dir_path)
+    @classmethod
+    def from_json(cls, path):
+        with open(path) as f:
+            json_data = json.load(f)
+        eplus_version = tuple(json_data["eplus_version"])
+        status = json_data["status"]
+        return cls(status, eplus_version)
 
-        # run simulation
-        stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
-        stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
-        run_eplus(
-            epm_or_path,
-            weather_data_or_path,
-            simulation_dir_path,
-            stdout=stdout,
-            stderr=stderr,
-            beat_freq=beat_freq
-        )
+    @property
+    def status(self):
+        return self._dev_status
 
-        # return simulation object
-        return cls(
-            base_dir_path,
-            simulation_name=simulation_name
-        )
+    @property
+    def eplus_version(self):
+        return self._dev_eplus_version
 
-    def __init__(
-            self,
-            base_dir_path,
-            simulation_name=None
-    ):
+    def to_json_data(self):
+        return collections.OrderedDict((
+            ("status", self.status),
+            ("eplus_version", self.eplus_version)
+        ))
+
+    def to_json(self, path):
+        with open(path, "w") as f:
+            json.dump(self.to_json_data(), f)
+
+
+def check_status(*authorized):
+    def method_generator(method):
+        def new_method(self, *args, **kwargs):
+            if self.get_status() not in authorized:
+                raise RuntimeError(
+                    f"current status: '{self.get_status()}', can't call method (authorized statuses: {authorized}"
+                )
+            return method(self, *args, **kwargs)
+
+        return new_method
+
+    return method_generator
+
+
+class Simulation:
+    def __init__(self, base_dir_path, simulation_name=None):
         """
-        
         Parameters
         ----------
         base_dir_path: simulation dir path
         simulation_name: str, default None
             if provided, simulation will be looked for in {base_dir_path}/{simulation_name}
             else, simulation will be looked for in {base_dir_path}
-            
+
         A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
         possible to load an already simulated directory without having to define it's idf or epw.
         """
         self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
-        self._prepared_file_refs = None
-        self._outputs_cache = dict()  # todo: remove cache system
 
-        # check simulation directory path exists
+        # check directory exists
         if not os.path.isdir(self._dir_path):
-            raise NotADirectoryError("Simulation directory does not exist: '%s'." % self._dir_path)
+            raise NotADirectoryError(f"simulation directory not found: {self._dir_path}")
 
-    def _check_file_ref(self, file_ref):
-        if file_ref not in self._prepared_file_refs:
-            raise ValueError("Unknown extension: '%s'." % file_ref)
+        # load info file
+        self._info = Info.from_json(self._get_resource_path("info", None))  # no need for version here
 
-    def _path(self, file_ref):
-        return self._file_refs[file_ref].get_path()
+    @classmethod
+    def _get_resource_rel_path(cls, ref, version):
+        # manage info
+        if ref == "info":
+            return "#info.json"
 
-    @property
-    def _file_refs(self):
-        """
-        Defined here so that we can use the class variables, in order to subclass in oplusplus
-        """
-        if self._prepared_file_refs is None:
-            self._prepared_file_refs = {
-                FILE_REFS.idf: FileInfo(
-                    constructor=lambda path: self._epm_cls.from_idf(path, idd_or_buffer_or_path=self._idd),
-                    get_path=lambda: get_input_file_path(self.dir_path, FILE_REFS.idf)
-                ),
-                FILE_REFS.epw: FileInfo(
-                    constructor=lambda path: self._weather_data_cls.from_epw(path),
-                    get_path=lambda: get_input_file_path(self.dir_path, FILE_REFS.epw)
-                ),
-                FILE_REFS.eio: FileInfo(
-                    constructor=lambda path: self._eio_cls(path),
-                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.eio)
-                ),
-                FILE_REFS.eso: FileInfo(
-                    constructor=lambda path: self._standard_output_cls(path),
-                    get_path=lambda: get_output_file_path(
-                        self.dir_path,
-                        FILE_REFS.eso
-                    )
-                ),
-                FILE_REFS.mtr: FileInfo(
-                    constructor=lambda path: self._standard_output_cls(path),
-                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mtr)
-                ),
-                FILE_REFS.mtd: FileInfo(
-                    constructor=lambda path: self._mtd_cls(path),
-                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mtd)
-                ),
-                FILE_REFS.mdd: FileInfo(
-                    constructor=lambda path: open(path).read(),
-                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.mdd)
+        # manage eplus files
+        if ref in ("idf", "epw"):
+            output_category = "inputs"
 
-                ),
-                FILE_REFS.err: FileInfo(
-                    constructor=lambda path: self._err_cls(path),
-                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.err)
-                ),
-                FILE_REFS.summary_table: FileInfo(
-                    constructor=lambda path: self._summary_table_cls(path),
-                    get_path=lambda: get_output_file_path(self.dir_path, FILE_REFS.summary_table)
-                )
-            }
-        return self._prepared_file_refs
+        elif ref == "summary_table":
+            output_category = "table"
+
+        elif ref in (
+                "eio",
+                "eso",
+                "mtr",
+                "mtd",
+                "mdd",
+                "err"):
+            output_category = "other"
+        else:
+            raise ValueError(f"unknown file_ref: {ref}")
+
+        # get layout
+        layout = get_output_files_layout(version, output_category)
+
+        # return path
+        rel_path = None
+        if layout == OUTPUT_FILES_LAYOUTS.eplusout:
+            rel_path = f"eplusout.{ref}"
+
+        if layout == OUTPUT_FILES_LAYOUTS.simu:
+            rel_path = f"{CONF.default_model_name}.{ref}"
+
+        if layout == OUTPUT_FILES_LAYOUTS.output_simu:
+            rel_path = os.path.join("Output", f"{CONF.default_model_name}.{ref}")
+
+        if layout == OUTPUT_FILES_LAYOUTS.simu_table:
+            rel_path = f"{CONF.default_model_name}Table.csv"
+
+        if layout == OUTPUT_FILES_LAYOUTS.output_simu_table:
+            rel_path = os.path.join("Output", f"{CONF.default_model_name}Table.csv")
+
+        if layout == OUTPUT_FILES_LAYOUTS.eplustbl:
+            rel_path = "eplustbl.csv"
+
+        if rel_path is None:
+            raise RuntimeError("unknown ref")
+
+        return rel_path
+
+    @classmethod
+    def from_inputs(cls, base_dir_path, epm_or_buffer_or_path, weather_data_or_buffer_or_path, simulation_name=None):
+        # create dir if needed
+        dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
+        if not os.path.isdir(dir_path):
+            os.mkdir(dir_path)
+
+        # check empty
+        if len(os.listdir(dir_path)) > 0:
+            logger.warning(f"called Simulation.from_input on a simulation directory that is not empty ({dir_path})")
+
+        # epm
+        if isinstance(epm_or_buffer_or_path, Epm):
+            epm = epm_or_buffer_or_path
+        else:
+            epm = Epm.from_idf(epm_or_buffer_or_path)
+
+        # weather data
+        if isinstance(weather_data_or_buffer_or_path, WeatherData):
+            weather_data = weather_data_or_buffer_or_path
+        else:
+            weather_data = WeatherData.from_epw(weather_data_or_buffer_or_path)
+
+        # find eplus version
+        eplus_version_str = epm.Version.one()[0]
+        eplus_version = version_str_to_version(eplus_version_str)
+
+        # store inputs
+        epm.to_idf(os.path.join(
+            dir_path,
+            cls._get_resource_rel_path("idf",eplus_version)
+        ))
+        weather_data.to_epw(os.path.join(
+            dir_path,
+            cls._get_resource_rel_path("epw", eplus_version)
+        ))
+
+        # store info
+        info = Info(EMPTY, eplus_version)
+        info.to_json(os.path.join(
+            dir_path,
+            cls._get_resource_rel_path("info", eplus_version)
+        ))
+
+        # create and return simulation
+        return cls(base_dir_path, simulation_name=simulation_name)
+
+    def _get_resource_path(self, ref, version):
+        return os.path.join(self._dir_path, self._get_resource_rel_path(ref, version))
 
     # ------------------------------------ public api ------------------------------------------------------------------
-    # python magic
-    def __getattr__(self, item):
-        if item not in FILE_REFS:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, item))
+    @check_status(EMPTY)
+    def simulate(self, stdout=None, stderr=None, beat_freq=None):
+        # manage defaults
+        stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
+        stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
 
-        if item not in self._outputs_cache:
-            self._outputs_cache[item] = self._file_refs[item].constructor(self.get_file_path(item))
+        # check empty
+        if self.get_status() != EMPTY:
+            raise RuntimeError(f"simulation status is '{self.get_status()}'', can't run (status must be 'empty')")
 
-        return self._outputs_cache[item]
+        # prepare useful variables
+        version = self._info.eplus_version
 
-    def __dir__(self):
-        return list(_refs) + list(self.__dict__)
+        # inform running
+        self._info._dev_status = RUNNING
+        self._info.to_json(self._get_resource_path("info", self._info.eplus_version))
 
-    @property
-    def dir_path(self):
-        """
-        Returns
-        -------
-        simulation directory path
-        """
+        # copy epw if needed (depends on os/eplus version)
+        temp_epw_path = get_simulated_epw_path(version)
+        if temp_epw_path is not None:
+            _copy_without_read_only(self._get_resource_path("epw", self._info.eplus_version), temp_epw_path)
+
+        # prepare command
+        eplus_relative_cmd = get_simulation_base_command(version)
+        eplus_cmd = os.path.join(get_eplus_base_dir_path(version), eplus_relative_cmd)
+
+        # idf
+        idf_command_style = get_simulation_input_command_style("idf", version)
+        if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
+            idf_file_cmd = CONF.default_model_name
+        elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
+            idf_file_cmd = self._get_resource_path("idf", self._info.eplus_version)
+        else:
+            raise AssertionError("should not be here")
+
+        # epw
+        epw_command_style = get_simulation_input_command_style("epw", version)
+        if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
+            epw_file_cmd = CONF.default_model_name
+        elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
+            epw_file_cmd = self._get_resource_rel_path("epw", self._info.eplus_version)
+        else:
+            raise AssertionError("should not be here")
+
+        # command list
+        simulation_command_style = get_simulation_command_style(version)
+        if simulation_command_style == SIMULATION_COMMAND_STYLES.args:
+            cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
+        elif simulation_command_style == SIMULATION_COMMAND_STYLES.kwargs:
+            cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
+        else:
+            raise RuntimeError("should not be here")
+
+        # launch calculation
+        run_subprocess(
+            cmd_l,
+            cwd=self._dir_path,
+            stdout=stdout,
+            stderr=stderr,
+            beat_freq=beat_freq
+        )
+
+        # if needed, we delete temp weather data (only on Windows, see above)
+        if (temp_epw_path is not None) and os.path.isfile(temp_epw_path):
+            os.remove(os.path.join(temp_epw_path))
+
+        # check if simulation was successful
+        # todo: improve, see with AL
+        with open(self._get_resource_path("err", version)) as f:
+            content = f.read()
+            if "EnergyPlus Completed Successfully" in content:
+                status = FINISHED
+            else:
+                status = FAILED
+
+        # inform new status
+        self._info._dev_status = status
+        self._info.to_json(self._get_resource_path("info", self._info.eplus_version))
+
+    def get_dir_path(self):
         return self._dir_path
 
-    def exists(self, file_ref):
-        """
-        Parameters
-        ----------
-        file_ref: str
-            reference of file.
-            Available references:  'idf', 'epw', 'eio', 'eso', 'mtr', 'mtd', 'mdd', 'err', 'summary_table'
-            See EnergyPlus documentation for more information.
+    def get_file_path(self, ref):
+        pass
+        # todo: code
 
+    def check_exists(self, ref):
+        pass
+        # todo: code
+
+    def get_status(self):
+        """
         Returns
         -------
-        Boolean
+        empty, success, error
         """
-        if file_ref not in FILE_REFS:
-            raise ValueError("Unknown file_ref: '%s'. Available: '%s'." % (file_ref, list(sorted(FILE_REFS._fields))))
-        return os.path.isfile(self._path(file_ref))
+        return self._info.status
 
-    def get_file_path(self, file_ref):
-        """
-        Parameters
-        ----------
-        file_ref: str
-            reference of file.
-            Available references:  'idf', 'epw', 'eio', 'eso', 'mtr', 'mtd', 'mdd', 'err', 'summary_table'
-            See EnergyPlus documentation for more information.
+    def get_info(self):
+        return self._info
 
-        Returns
-        -------
-        Instance of required output.
-        """
-        if not self.exists(file_ref):
-            raise FileNotFoundError("File '%s' not found in simulation '%s'." % (file_ref, self._path(file_ref)))
-        return self._path(file_ref)
+    def get_path(self):
+        return self._dir_path
+
+    def get_in_epm(self):
+        return Epm.from_idf(self._get_resource_path("idf", self._info.eplus_version))
+
+    def get_in_weather_data(self):
+        return WeatherData.from_epw(self._get_resource_path("epw", self._info.eplus_version))
+
+    @check_status(FINISHED, FAILED)
+    def get_out_err(self):
+        return Err(self._get_resource_path("err", self._info.eplus_version))
+
+    @check_status(FINISHED, FAILED)
+    def get_out_epm(self):
+        return Epm.from_idf(self._get_resource_path("idf", self._info.eplus_version))
+
+    @check_status(FINISHED, FAILED)
+    def get_out_weather_data(self):
+        return WeatherData.from_epw(self._get_resource_path("epw", self._info.eplus_version))
+
+    @check_status(FINISHED)
+    def get_out_eso(self):
+        return StandardOutput(self._get_resource_path("eso", self._info.eplus_version))
+
+    @check_status(FINISHED)
+    def get_out_eio(self):
+        return Eio(self._get_resource_path("eio", self._info.eplus_version))
+
+    @check_status(FINISHED)
+    def get_out_mtr(self):
+        return StandardOutput(self._get_resource_path("mtr", self._info.eplus_version))
+
+    @check_status(FINISHED)
+    def get_out_mtd(self):
+        return Mtd(self._get_resource_path("mtd", self._info.eplus_version))
+
+    @check_status(FINISHED)
+    def get_out_mdd(self):
+        with open(self._get_resource_path("mdd", self._info.eplus_version)) as f:
+            return f.read()
+
+    @check_status(FINISHED)
+    def get_out_summary_table(self):
+        return SummaryTable(self._get_resource_path("summary_table", self._info.eplus_version))
 
 
-simulate = Simulation.simulate
-
-
-def run_eplus(epm_or_idf_path, weather_data_or_epw_path, simulation_dir_path, stdout=None, stderr=None, beat_freq=None):
+def simulate(
+        epm_or_buffer_or_path,
+        weather_data_or_buffer_or_path,
+        base_dir_path,
+        simulation_name=None,
+        stdout=None,
+        stderr=None,
+        beat_freq=None
+):
     """
     Parameters
     ----------
-    epm_or_idf_path:
-    weather_data_or_epw_path
-    simulation_dir_path
-    stdout: default sys.stdout
-    stderr: default sys.stderr
-    beat_freq: if not none, stdout will be used at least every beat_freq (in seconds)
+    epm_or_buffer_or_path
+    weather_data_or_buffer_or_path
+    base_dir_path: simulation dir path
+    simulation_name: str, default None
+        if provided, simulation will be done in {base_dir_path}/{simulation_name}
+        else, simulation will be done in {base_dir_path}
+    stdout: stream, default logger.info
+        stream where EnergyPlus standard output is redirected
+    stderr: stream, default logger.error
+        stream where EnergyPlus standard error is redirected
+    beat_freq: float, default None
+        if provided, subprocess in which EnergyPlus is run will write at given frequency in standard output. May
+        be used to monitor subprocess state.
+
+    Returns
+    -------
+    Simulation instance
     """
-    # work with absolute paths
-    simulation_dir_path = os.path.abspath(simulation_dir_path)
-
-    # check dir path
-    if not os.path.isdir(simulation_dir_path):
-        raise NotADirectoryError("Simulation directory does not exist: '%s'." % simulation_dir_path)
-
-    # epm
-    if not isinstance(epm_or_idf_path, Epm):
-        # we don't copy file directly because we want to manage it's external files
-        # could be optimized (use _copy_without_read_only)
-        epm = Epm.from_idf(epm_or_idf_path)
-    else:
-        epm = epm_or_idf_path
-
-    # find version and eplus base dir path
-    version_str = epm.Version.one()[0]
-    version = version_str_to_version(version_str)
-    eplus_base_dir_path = get_eplus_base_dir_path(version)
-    if not os.path.exists(eplus_base_dir_path):
-        raise RuntimeError(f"EnergyPlus v{version_str} is not installed, can't simulation Epm.")
-
-    # create idf
-    simulation_idf_path = os.path.join(simulation_dir_path, CONF.default_model_name + ".idf")
-    epm.to_idf(simulation_idf_path)
-
-    # weather data
-    simulation_epw_path = os.path.join(simulation_dir_path, CONF.default_model_name + ".epw")
-    if isinstance(weather_data_or_epw_path, WeatherData):
-        weather_data_or_epw_path.to_epw(simulation_epw_path)
-    else:
-        # no need to load: we copy directly
-        _copy_without_read_only(weather_data_or_epw_path, simulation_epw_path)
-
-    # copy epw if needed (depends on os/eplus version)
-    temp_epw_path = get_simulated_epw_path(version)
-    if temp_epw_path is not None:
-        _copy_without_read_only(simulation_epw_path, temp_epw_path)
-
-    # prepare command
-    eplus_relative_cmd = get_simulation_base_command(version)
-    eplus_cmd = os.path.join(get_eplus_base_dir_path(version), eplus_relative_cmd)
-
-    # idf
-    idf_command_style = get_simulation_input_command_style("idf")
-    if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-        idf_file_cmd = os.path.join(simulation_dir_path, CONF.default_model_name)
-    elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
-        idf_file_cmd = simulation_idf_path
-    else:
-        raise AssertionError("should not be here")
-
-    # epw
-    epw_command_style = get_simulation_input_command_style("epw")
-    if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-        epw_file_cmd = os.path.join(simulation_dir_path, CONF.default_model_name)
-    elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
-        epw_file_cmd = simulation_epw_path
-    else:
-        raise AssertionError("should not be here")
-
-    # command list
-    simulation_command_style = get_simulation_command_style()
-    if simulation_command_style == SIMULATION_COMMAND_STYLES.args:
-        cmd_l = [eplus_cmd, idf_file_cmd, epw_file_cmd]
-    elif simulation_command_style == SIMULATION_COMMAND_STYLES.kwargs:
-        cmd_l = [eplus_cmd, "-w", epw_file_cmd, "-r", idf_file_cmd]
-    else:
-        raise RuntimeError("should not be here")
-
-    # launch calculation
-    run_subprocess(
-        cmd_l,
-        cwd=simulation_dir_path,
-        stdout=stdout,
-        stderr=stderr,
-        beat_freq=beat_freq
+    # create simulation from input
+    s = Simulation.from_inputs(
+        base_dir_path,
+        epm_or_buffer_or_path,
+        weather_data_or_buffer_or_path,
+        simulation_name=simulation_name
     )
 
-    # if needed, we delete temp weather data (only on Windows, see above)
-    if (temp_epw_path is not None) and os.path.isfile(temp_epw_path):
-        os.remove(os.path.join(temp_epw_path))
+    # simulate
+    s.simulate(stdout=stdout, stderr=stderr, beat_freq=beat_freq)
+
+    # return
+    return s

@@ -70,7 +70,7 @@ class WeatherData:
             country=None,
             source=None,
             wmo=None,
-            design_condition_source=None,
+            design_conditions_source=None,
             design_conditions=None,  # list of design conditions
             typical_extreme_periods=None,  # list of typical/extreme periods
             ground_temperatures=None,  # list of ground temperatures
@@ -108,7 +108,7 @@ class WeatherData:
         country
         source
         wmo
-        design_condition_source
+        design_conditions_source
         design_conditions
         typical_extreme_periods
         ground_temperatures
@@ -144,7 +144,7 @@ class WeatherData:
             source=source,
             wmo=wmo,
             # design conditions
-            design_condition_source=design_condition_source,
+            design_conditions_source=design_conditions_source,
             design_conditions=[] if design_conditions is None else design_conditions,
             # typical/extreme periods
             typical_extreme_periods=[] if typical_extreme_periods is None else typical_extreme_periods,
@@ -175,13 +175,21 @@ class WeatherData:
         ]
 
         # design conditions
-        design_conditions = ["DESIGN CONDITIONS", len(self._headers["design_conditions"])]
+        # todo: understand why definition (Auxiliary programs differs from example files (one additionnal comma
+        #  in example file USA_FL_Tampa.Intl.AP.722110_TMY3.epw for example, after source)
+        design_conditions = [
+            "DESIGN CONDITIONS",
+            len(self._headers["design_conditions"]),
+            self._headers["design_conditions_source"]
+        ]
         for dc in self._headers["design_conditions"]:
             design_conditions.extend([dc.name] + dc.values)
 
         # typical/extreme periods
-        typical_extreme_periods = ["TYPICAL/EXTREME PERIODS", len(self._headers["typical_extreme_periods"])
-                                   ]
+        typical_extreme_periods = [
+            "TYPICAL/EXTREME PERIODS",
+            len(self._headers["typical_extreme_periods"])
+        ]
         for tep in self._headers["typical_extreme_periods"]:
             typical_extreme_periods.extend([tep.name, tep.period_type, tep.start_day, tep.end_day])
 
@@ -236,6 +244,7 @@ class WeatherData:
                 "DATA PERIODS",
                 1,
                 1,
+                "",
                 self._start_day_of_week,
                 f"{start_month}/{start_day}",
                 f"{end_month}/{end_day}"

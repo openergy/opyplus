@@ -17,4 +17,4 @@ class SummaryTableTest(unittest.TestCase):
                 idf.OutputControl_Table_Style.add({0: "Comma", 1: "JtoKWH"})
                 idf.Output_Table_SummaryReports.add({0: "AllSummary"})
                 s = simulate(idf, epw_path, temp_dir_path)
-                self.assertIsNotNone(s.summary_table)
+                self.assertIsNotNone(s.get_out_summary_table())

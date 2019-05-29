@@ -64,11 +64,11 @@ _simulation_input_command_matrix = {
 }
 
 
-def get_simulation_input_command_style(extension):
+def get_simulation_input_command_style(extension, version):
     if extension not in ("idf", "epw"):
         raise ValueError(f"unknown extension: {extension}")
     styles = _simulation_input_command_matrix[OS_NAME][extension]
-    return v_lookup(styles)
+    return v_lookup(version, styles)
 
 
 # command style
@@ -93,8 +93,8 @@ _simulation_command_styles_matrix = {
 }
 
 
-def get_simulation_command_style():
-    return v_lookup(_simulation_command_styles_matrix[OS_NAME])
+def get_simulation_command_style(version):
+    return v_lookup(version, _simulation_command_styles_matrix[OS_NAME])
 
 
 EPLUS_AVAILABLE_VERSIONS = {}  # {(major, minor): , ...

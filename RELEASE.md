@@ -2,7 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 7.0.1.dev200
+* M: energy+ version is now managed based on epm version. All idds are now stored in package, computers idd is not used anymore.
+* M: new simulation interface
 
 ## 7.0.1.dev110
 * m: new check_length argument for epm 
