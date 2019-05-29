@@ -101,11 +101,14 @@ class Simulation:
         A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
         possible to load an already simulated directory without having to define it's idf or epw.
         """
-        self._dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
+        # store absolute: important for eplus commands
+        self._dir_abs_path = os.path.abspath(
+            base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
+        )
 
         # check directory exists
-        if not os.path.isdir(self._dir_path):
-            raise NotADirectoryError(f"simulation directory not found: {self._dir_path}")
+        if not os.path.isdir(self._dir_abs_path):
+            raise NotADirectoryError(f"simulation directory not found: {self._dir_abs_path}")
 
         # load info file
         self._info = Info.from_json(self._get_resource_path("info", None))  # no need for version here
@@ -210,7 +213,7 @@ class Simulation:
         return cls(base_dir_path, simulation_name=simulation_name)
 
     def _get_resource_path(self, ref, version):
-        return os.path.join(self._dir_path, self._get_resource_rel_path(ref, version))
+        return os.path.join(self._dir_abs_path, self._get_resource_rel_path(ref, version))
 
     # ------------------------------------ public api ------------------------------------------------------------------
     @check_status(EMPTY)
@@ -242,7 +245,7 @@ class Simulation:
         # idf
         idf_command_style = get_simulation_input_command_style("idf", version)
         if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-            idf_file_cmd = CONF.default_model_name
+            idf_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
         elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
             idf_file_cmd = self._get_resource_path("idf", self._info.eplus_version)
         else:
@@ -251,7 +254,7 @@ class Simulation:
         # epw
         epw_command_style = get_simulation_input_command_style("epw", version)
         if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-            epw_file_cmd = CONF.default_model_name
+            epw_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
         elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
             epw_file_cmd = self._get_resource_rel_path("epw", self._info.eplus_version)
         else:
@@ -269,7 +272,7 @@ class Simulation:
         # launch calculation
         run_subprocess(
             cmd_l,
-            cwd=self._dir_path,
+            cwd=self._dir_abs_path,
             stdout=stdout,
             stderr=stderr,
             beat_freq=beat_freq
@@ -293,7 +296,7 @@ class Simulation:
         self._info.to_json(self._get_resource_path("info", self._info.eplus_version))
 
     def get_dir_path(self):
-        return self._dir_path
+        return self._dir_abs_path
 
     def get_file_path(self, ref):
         pass
@@ -315,7 +318,7 @@ class Simulation:
         return self._info
 
     def get_path(self):
-        return self._dir_path
+        return self._dir_abs_path
 
     def get_in_epm(self):
         return Epm.from_idf(self._get_resource_path("idf", self._info.eplus_version))

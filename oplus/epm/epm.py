@@ -81,12 +81,21 @@ class Epm:
             self._dev_idd = self._dev_idd_cls._dev_get_from_cache(idd_or_version)
         elif json_data is not None:
             if "Version" in json_data and len(json_data["Version"]) > 0:
-                version = version_str_to_version(json_data["Version"][0][0])
+                version_record = json_data["Version"][0]
+                if 0 in version_record:
+                    version_str = version_record[0]
+                elif "version_identifier" in version_record:
+                    version_str = version_record["version_identifier"]
+                else:
+                    raise RuntimeError(
+                        f"could not understand json_data version. json_data table: {json_data['Version']}"
+                    )
+                version = version_str_to_version(version_str)
                 self._dev_idd = self._dev_idd_cls._dev_get_from_cache(version)
             else:
                 logger.warning(
                     f"given json_data does not contain a Version table, will use default eplus_version idd "
-                    f"({CONF.default_idf_version})"
+                    f"({CONF.default_idd_version})"
                 )
         if self._dev_idd is None:
             self._dev_idd = self._dev_idd_cls._dev_get_from_cache(CONF.default_idd_version)
