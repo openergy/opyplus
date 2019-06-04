@@ -1,6 +1,6 @@
 import os
 
-IDD_DIR_PATH = os.path.realpath(os.path.dirname(__file__))
+IDD_DIR_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_latest_idd_version():
