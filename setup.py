@@ -27,6 +27,5 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering :: Physics",
     ],
-    package_data={'oplus': ['*.txt']},
     include_package_data=True
 )

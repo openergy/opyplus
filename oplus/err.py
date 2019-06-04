@@ -22,11 +22,6 @@ class Err:
 
         self._simulation_step_list = list(set(self._df.columns.levels[0]))
 
-    @property
-    def content(self):
-        with open(self.path, encoding=CONF.encoding) as f:
-            return f.read()
-
     def _parse(self):
         # todo: manage information with ahead "*************"
         # todo: manage "error flag" :
@@ -118,6 +113,11 @@ class Err:
                 self._df = multi_step_df
 
             self.info = pd.Series(self.info, index=self.info.keys())
+
+    # ------------------------------------------ public api ------------------------------------------------------------
+    def get_content(self):
+        with open(self.path, encoding=CONF.encoding) as f:
+            return f.read()
 
     def get_data(self, simulation_step=None, error_category=None):
         """

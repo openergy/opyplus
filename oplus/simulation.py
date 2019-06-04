@@ -89,29 +89,10 @@ def check_status(*authorized):
 
 
 class Simulation:
-    def __init__(self, base_dir_path, simulation_name=None):
-        """
-        Parameters
-        ----------
-        base_dir_path: simulation dir path
-        simulation_name: str, default None
-            if provided, simulation will be looked for in {base_dir_path}/{simulation_name}
-            else, simulation will be looked for in {base_dir_path}
-
-        A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
-        possible to load an already simulated directory without having to define it's idf or epw.
-        """
-        # store absolute: important for eplus commands
-        self._dir_abs_path = os.path.abspath(
-            base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
-        )
-
-        # check directory exists
-        if not os.path.isdir(self._dir_abs_path):
-            raise NotADirectoryError(f"simulation directory not found: {self._dir_abs_path}")
-
-        # load info file
-        self._info = Info.from_json(self._get_resource_path("info", None))  # no need for version here
+    EMPTY = EMPTY
+    RUNNING = RUNNING
+    FINISHED = FINISHED
+    FAILED = FAILED
 
     @classmethod
     def _get_resource_rel_path(cls, ref, version):
@@ -165,6 +146,31 @@ class Simulation:
 
         return rel_path
 
+    def __init__(self, base_dir_path, simulation_name=None):
+        """
+        Parameters
+        ----------
+        base_dir_path: simulation dir path
+        simulation_name: str, default None
+            if provided, simulation will be looked for in {base_dir_path}/{simulation_name}
+            else, simulation will be looked for in {base_dir_path}
+
+        A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
+        possible to load an already simulated directory without having to define it's idf or epw.
+        """
+        # store absolute: important for eplus commands
+        self._dir_abs_path = os.path.abspath(
+            base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
+        )
+
+        # check directory exists
+        if not os.path.isdir(self._dir_abs_path):
+            raise NotADirectoryError(f"simulation directory not found: {self._dir_abs_path}")
+
+        # load info file
+        self._info = Info.from_json(self.get_resource_path("info"))
+
+    # ------------------------------------ public api ------------------------------------------------------------------
     @classmethod
     def from_inputs(cls, base_dir_path, epm_or_buffer_or_path, weather_data_or_buffer_or_path, simulation_name=None):
         # create dir if needed
@@ -195,7 +201,7 @@ class Simulation:
         # store inputs
         epm.to_idf(os.path.join(
             dir_path,
-            cls._get_resource_rel_path("idf",eplus_version)
+            cls._get_resource_rel_path("idf", eplus_version)
         ))
         weather_data.to_epw(os.path.join(
             dir_path,
@@ -212,31 +218,23 @@ class Simulation:
         # create and return simulation
         return cls(base_dir_path, simulation_name=simulation_name)
 
-    def _get_resource_path(self, ref, version):
-        return os.path.join(self._dir_abs_path, self._get_resource_rel_path(ref, version))
-
-    # ------------------------------------ public api ------------------------------------------------------------------
     @check_status(EMPTY)
     def simulate(self, stdout=None, stderr=None, beat_freq=None):
         # manage defaults
         stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
         stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
 
-        # check empty
-        if self.get_status() != EMPTY:
-            raise RuntimeError(f"simulation status is '{self.get_status()}'', can't run (status must be 'empty')")
-
         # prepare useful variables
         version = self._info.eplus_version
 
         # inform running
         self._info._dev_status = RUNNING
-        self._info.to_json(self._get_resource_path("info", self._info.eplus_version))
+        self._info.to_json(self.get_resource_path("info"))
 
         # copy epw if needed (depends on os/eplus version)
         temp_epw_path = get_simulated_epw_path(version)
         if temp_epw_path is not None:
-            _copy_without_read_only(self._get_resource_path("epw", self._info.eplus_version), temp_epw_path)
+            _copy_without_read_only(self.get_resource_path("epw"), temp_epw_path)
 
         # prepare command
         eplus_relative_cmd = get_simulation_base_command(version)
@@ -247,7 +245,7 @@ class Simulation:
         if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
             idf_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
         elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
-            idf_file_cmd = self._get_resource_path("idf", self._info.eplus_version)
+            idf_file_cmd = self.get_resource_path("idf")
         else:
             raise AssertionError("should not be here")
 
@@ -284,7 +282,7 @@ class Simulation:
 
         # check if simulation was successful
         # todo: improve, see with AL
-        with open(self._get_resource_path("err", version)) as f:
+        with open(self.get_resource_path("err")) as f:
             content = f.read()
             if "EnergyPlus Completed Successfully" in content:
                 status = FINISHED
@@ -293,18 +291,17 @@ class Simulation:
 
         # inform new status
         self._info._dev_status = status
-        self._info.to_json(self._get_resource_path("info", self._info.eplus_version))
+        self._info.to_json(self.get_resource_path("info"))
 
     def get_dir_path(self):
         return self._dir_abs_path
 
-    def get_file_path(self, ref):
-        pass
-        # todo: code
+    def get_resource_path(self, ref):
+        version = None if ref == "info" else self._info.eplus_version
+        return os.path.join(self._dir_abs_path, self._get_resource_rel_path(ref, version))
 
     def check_exists(self, ref):
-        pass
-        # todo: code
+        return os.path.exists(self.get_resource_path(ref))
 
     def get_status(self):
         """
@@ -321,47 +318,47 @@ class Simulation:
         return self._dir_abs_path
 
     def get_in_epm(self):
-        return Epm.from_idf(self._get_resource_path("idf", self._info.eplus_version))
+        return Epm.from_idf(self.get_resource_path("idf"))
 
     def get_in_weather_data(self):
-        return WeatherData.from_epw(self._get_resource_path("epw", self._info.eplus_version))
+        return WeatherData.from_epw(self.get_resource_path("epw"))
 
     @check_status(FINISHED, FAILED)
     def get_out_err(self):
-        return Err(self._get_resource_path("err", self._info.eplus_version))
+        return Err(self.get_resource_path("err"))
 
     @check_status(FINISHED, FAILED)
     def get_out_epm(self):
-        return Epm.from_idf(self._get_resource_path("idf", self._info.eplus_version))
+        return Epm.from_idf(self.get_resource_path("idf"))
 
     @check_status(FINISHED, FAILED)
     def get_out_weather_data(self):
-        return WeatherData.from_epw(self._get_resource_path("epw", self._info.eplus_version))
+        return WeatherData.from_epw(self.get_resource_path("epw"))
 
     @check_status(FINISHED)
     def get_out_eso(self):
-        return StandardOutput(self._get_resource_path("eso", self._info.eplus_version))
+        return StandardOutput(self.get_resource_path("eso"))
 
     @check_status(FINISHED)
     def get_out_eio(self):
-        return Eio(self._get_resource_path("eio", self._info.eplus_version))
+        return Eio(self.get_resource_path("eio"))
 
     @check_status(FINISHED)
     def get_out_mtr(self):
-        return StandardOutput(self._get_resource_path("mtr", self._info.eplus_version))
+        return StandardOutput(self.get_resource_path("mtr"))
 
     @check_status(FINISHED)
     def get_out_mtd(self):
-        return Mtd(self._get_resource_path("mtd", self._info.eplus_version))
+        return Mtd(self.get_resource_path("mtd"))
 
     @check_status(FINISHED)
     def get_out_mdd(self):
-        with open(self._get_resource_path("mdd", self._info.eplus_version)) as f:
+        with open(self.get_resource_path("mdd")) as f:
             return f.read()
 
     @check_status(FINISHED)
     def get_out_summary_table(self):
-        return SummaryTable(self._get_resource_path("summary_table", self._info.eplus_version))
+        return SummaryTable(self.get_resource_path("summary_table"))
 
 
 def simulate(

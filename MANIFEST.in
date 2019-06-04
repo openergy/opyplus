@@ -1,2 +1,2 @@
-recursive-include oplus/idd/resources *
+include oplus/idd/resources/*
 include LICENSE.txt
