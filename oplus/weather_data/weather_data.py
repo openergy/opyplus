@@ -1,6 +1,7 @@
 import collections
 import datetime as dt
 
+import numpy as np
 import pandas as pd
 from pandas.util.testing import assert_index_equal
 
@@ -8,49 +9,48 @@ from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-# todo: change api (see obat)
-INSTANTS_COLUMNS = (
-    "year",
-    "month",
-    "day",
-    "hour",
-    "minute"
-)
+# todo: change datetime api (see obat)
 
-WEATHER_SERIES_DEFAULTS = collections.OrderedDict((  # if None: mandatory field, else optional
-    ("datasource", ""),
-    ("drybulb", None),
-    ("dewpoint", None),
-    ("relhum", None),
-    ("atmos_pressure", None),
-    ("exthorrad", 9999),
-    ("extdirrad", 9999),
-    ("horirsky", 9999),
-    ("glohorrad", None),
-    ("dirnorrad", None),
-    ("difhorrad", None),
-    ("glohorillum", 999999),
-    ("dirnorillum", 999999),
-    ("difhorillum", 999999),
-    ("zenlum", 9999),
-    ("winddir", None),
-    ("windspd", None),
-    ("totskycvr", 99),
-    ("opaqskycvr", 99),
-    ("visibility", 9999),
-    ("ceiling_hgt", 99999),
-    ("presweathobs", 999),
-    ("presweathcodes", 999),
-    ("precip_wtr", 999),
-    ("aerosol_opt_depth", 999),
-    ("snowdepth", 999),
-    ("days_last_snow", 99),
-    ("Albedo", 999),
-    ("liq_precip_depth", 999),
-    ("liq_precip_rate", 99)
+# AuxiliaryPrograms, p25, 63
+# year is used, but only in E+>=9 if epm option runperiod:treat_weather_as_actual is activated. We consider it
+# is mandatory (which is convenient to find start day)
+COLUMNS = collections.OrderedDict((  # name: (used, missing)
+    ("year", (True, None)),
+    ("month", (True, None)),
+    ("day", (True, None)),
+    ("hour", (True, None)),
+    ("minute", (False, None)),
+    ("datasource", (False, None)),
+    ("drybulb", (True, 99.9)),
+    ("dewpoint", (True, 99.9)),
+    ("relhum", (True, 999)),
+    ("atmos_pressure", (True, 999999)),
+    ("exthorrad", (False, 9999)),
+    ("extdirrad", (False, 9999)),
+    ("horirsky", (True, 9999)),
+    ("glohorrad", (False, 9999)),
+    ("dirnorrad", (True, 9999)),
+    ("difhorrad", (True, 9999)),
+    ("glohorillum", (False, 999999)),
+    ("dirnorillum", (False, 999999)),
+    ("difhorillum", (False, 999999)),
+    ("zenlum", (False, 9999)),
+    ("winddir", (True, 999)),
+    ("windspd", (True, 999)),
+    ("totskycvr", (False, 99)),
+    ("opaqskycvr", (False, 99)),
+    ("visibility", (False, 9999)),
+    ("ceiling_hgt", (False, 99999)),
+    ("presweathobs", (True, 9)),
+    ("presweathcodes", (True, 999999999)),
+    ("precip_wtr", (False, 999)),
+    ("aerosol_opt_depth", (False, 0.999)),
+    ("snowdepth", (True, 999)),
+    ("days_last_snow", (False, 99)),
+    ("Albedo", (False, 999)),
+    ("liq_precip_depth", (True, 999)),
+    ("liq_precip_rate", (False, 99)),
 ))
-
-mandatory_columns = tuple(k for k, v in WEATHER_SERIES_DEFAULTS.items() if v is None)  # we use tuple for immutability
 
 
 def to_str(value):
@@ -89,16 +89,8 @@ class WeatherData:
         Parameters
         ----------
         weather_series: dataframe
-            Must at least contain mandatory columns: 'drybulb', 'dewpoint', 'relhum', 'atmos_pressure', 'glohorrad',
-            'dirnorrad', 'difhorrad', 'winddir',  'windspd'.
-
-            Two instants modes are available:
-             - datetime instants mode: index must be a hourly datetime index
-             - tuple mode: index does not matter, and dataframe must have following instants columns: 'year', 'month',
-                 'day', 'hour', 'minute'. 'hour' is not written in a epw fashion ([0, 23], not [1, 24] as epw).
-
-            Note that it will be possible, after weather data is created, to switch from datetime to tuple instants (or
-            vice versa).
+            * containing epw columns (some may be missing)
+            * missing values may be None or E+ missing value
         latitude
         longitude
         timezone_offset
@@ -120,16 +112,21 @@ class WeatherData:
         comments_2
         start_day_of_week
         """
-        # instants may be datetimes or tuples
-        self._weather_series = _check_and_sanitize_weather_series(weather_series)
+        # weather series
+        self._weather_series = _sanitize_weather_series(weather_series)
 
-        # manage start day of week (only relevant if tuples datetimes)
-        self._start_day_of_week = None
-        if self.has_tuple_instants and start_day_of_week is not None:
-            self._start_day_of_week = start_day_of_week
+        # start day of week
+        if start_day_of_week is None:
+            date = dt.date(
+                self._weather_series["year"].iloc[0],
+                self._weather_series["month"].iloc[0],
+                self._weather_series["day"].iloc[0]
+            )
+            self._start_day_of_week = WEEK_DAYS[date.weekday()]
         else:
-            self._set_start_day_of_week()
+            self._start_day_of_week = start_day_of_week
 
+        # headers
         # todo: check headers
         self._headers = dict(
             # mandatory location
@@ -160,7 +157,7 @@ class WeatherData:
             comments_2=comments_2
         )
 
-    def _headers_to_epw(self):
+    def _headers_to_epw(self, use_datetimes=True):
         location = [
             "LOCATION",
             to_str(self._headers["city"]),
@@ -225,7 +222,7 @@ class WeatherData:
         comments_2 = ["COMMENTS 2", to_str(self._headers["comments_2"])]
 
         # data periods
-        if self.has_datetime_instants:
+        if use_datetimes and self.has_datetime_instants:
             start_timestamp = self._weather_series.index[0]
             end_timestamp = self._weather_series.index[-1]
             data_periods = [
@@ -261,56 +258,44 @@ class WeatherData:
             data_periods
         )]) + "\n"
 
-    def _set_start_day_of_week(self):
-        if self.has_datetime_instants:
-            date = self._weather_series.index[0]
-        else:
-            date = dt.date(
-                self._weather_series["year"].iloc[0],
-                self._weather_series["month"].iloc[0],
-                self._weather_series["day"].iloc[0]
-            )
-
-        self._start_day_of_week = WEEK_DAYS[date.weekday()]
-
     # ------------------------------------------------ public api ------------------------------------------------------
     @property
     def has_datetime_instants(self):
         return isinstance(self._weather_series.index, pd.DatetimeIndex)
 
-    @property
-    def has_tuple_instants(self):
-        return not self.has_datetime_instants
+    def create_datetime_instants(self, start_year=None):
+        """
+        Parameters
+        ----------
+        start_year: int or None, default None
+            if given, will force year column with start_year (multi-year not supported for now)
+        """
 
-    def switch_to_tuple_instants(self):
-        # don't switch if not relevant
-        if self.has_tuple_instants:
-            return
-        # remove datetime index
-        self._weather_series.index = range(len(self._weather_series))
-
-    def switch_to_datetime_instants(self):
-        # don't switch if not relevant
-        if self.has_datetime_instants:
-            return
-
-        # create index
-        index = pd.DatetimeIndex(self._weather_series.apply(
-            lambda x: dt.datetime(x.year, x.month, x.day, x.hour, x.minute),
+        # create and set index
+        self._weather_series.index = pd.DatetimeIndex(self._weather_series.apply(
+            lambda x: dt.datetime(
+                x.year if start_year is None else start_year,
+                x.month,
+                x.day,
+                x.hour-1
+            ),
             axis=1
         ))
 
-        # set new index
-        self._weather_series.index = index
-
-        # check and sanitize
-        self._weather_series = _check_and_sanitize_datetime_instants(self._weather_series)
-
-        # remove old start day of week
-        self._start_day_of_week = None
-
-        # set new start day of week
-        self._set_start_day_of_week()
+        # force frequency if needed
+        if self._weather_series.index.freq != "H":
+            forced_df = self._weather_series.asfreq("H")
+            # check no change
+            try:
+                assert_index_equal(self._weather_series.index, forced_df.index)
+            except AssertionError:
+                raise ValueError(
+                    f"Couldn't convert to hourly datetime instants. Probable cause : "
+                    f"given start instant ({self._weather_series.index[0]}) is incorrect and data can't match because "
+                    f"of leap year issues."
+                ) from None
+            # replace old variable
+            self._weather_series = forced_df
 
     def get_weather_series(self):
         """
@@ -321,7 +306,7 @@ class WeatherData:
         """
         return self._weather_series.copy()
 
-    def get_bounds(self):
+    def get_bounds(self, use_datetimes=True):
         """
         Returns
         -------
@@ -333,13 +318,12 @@ class WeatherData:
         if len(self._weather_series) == 0:
             return start, end
 
+        if use_datetimes and self.has_datetime_instants:
+            return self._weather_series.index[0].to_pydatetime(), self._weather_series.index[1].to_pydatetime()
+
         for i in (0, -1):
-            # create or find instant
-            if self.has_tuple_instants:
-                row = self._weather_series.iloc[i, :]
-                instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"], row["minute"])
-            else:
-                instant = self._weather_series.index[i].to_pydatetime()
+            row = self._weather_series.iloc[i, :]
+            instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"]-1)
 
             # store
             if i == 0:
@@ -355,7 +339,7 @@ class WeatherData:
             start, end = "no data", "no data"
 
         msg = "WeatherData\n"
-        msg += f"\tinstants: {'tuple' if self.has_tuple_instants else 'datetime'}\n"
+        msg += f"\thas datetime instants: {self.has_datetime_instants}\n"
         for k in ("latitude", "longitude", "timezone_offset", "elevation"):
             msg += f"\t{k}: {self._headers[k]}\n"
         msg += f"\tdata period: {start.isoformat()}, {end.isoformat()}"
@@ -379,21 +363,41 @@ class WeatherData:
             return parse_epw(f)
 
     # ----------------------------------------------- export -----------------------------------------------------------
-    def to_epw(self, buffer_or_path=None):
+    def to_epw(self, buffer_or_path=None, use_datetimes=True):
         """
         Parameters
         ----------
         buffer_or_path: buffer or path, default None
             Buffer or path to write into. If None, will return a string containing epw info.
+        use_datetimes: bool, default True
+            if True and datetime index was created, will use this index to generate epw (start day and data)
+            else: will use instant columns information
 
         Returns
         -------
         None or a string if buffer_or_path is None.
         """
-        # copy and change hours convention [0, 23] -> [1, 24]
+        # copy (will be modified)
         df = self._weather_series.copy()
-        df["hour"] += 1
-        epw_content = self._headers_to_epw() + df.to_csv(header=False, index=False, line_terminator="\n")
+
+        # if datetime index, force year
+        if use_datetimes and self.has_datetime_instants:
+            df["year"] = self._weather_series.index.map(lambda x: x.year)
+
+        # fill nans by default values
+        df.fillna(
+            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None},  # pandas does not like None fills
+            inplace=True
+        )
+
+        # generate content
+        epw_content = self._headers_to_epw() + df.to_csv(
+            header=False,
+            index=False,
+            line_terminator="\n"
+        )
+        
+        # write and return
         return multi_mode_write(
             lambda buffer: buffer.write(epw_content),
             lambda: epw_content,
@@ -401,97 +405,30 @@ class WeatherData:
         )
 
 
-def _check_and_sanitize_weather_series(df):
+def _sanitize_weather_series(df):
+    # copy df (we will modify it)
+    df = df.copy()
+
     # check dataframe
     if not isinstance(df, pd.DataFrame):
         raise TypeError("Weather series must be a pandas DataFrame.")
 
-    # check data columns
-    given_columns = set(df.columns)
-    diff = set(mandatory_columns).difference(given_columns)
-    if len(diff) != 0:
-        raise ValueError(f"Missing mandatory columns: {diff}.")
+    # create df
+    df = pd.DataFrame(collections.OrderedDict((k, df.get(k)) for k in COLUMNS))
 
-    # prepare data container
-    data = collections.OrderedDict()
-
-    # check index info
-    is_datetime_index = False
-    if isinstance(df.index, pd.DatetimeIndex):  # datetime index mode
-        is_datetime_index = True
-
-        # check and sanitize index
-        df = _check_and_sanitize_datetime_instants(df)
-
-        # prepare instant columns
-        data.update((
-            ("year", df.index.year),
-            ("month", df.index.month),
-            ("day", df.index.day),
-            ("hour", df.index.hour),
-            ("minute", 0)
-        ))
-
-    else:
-        # check instant columns
-        diff = set(INSTANTS_COLUMNS).difference(given_columns)
-        if len(diff) != 0:
-            raise ValueError(f"Missing mandatory columns: {diff}.")
-
-        # prepare instant columns
-        data.update((k, df[k]) for k in ("year", "month", "day", "hour", "minute"))
-
-    # add data columns
-    data.update(collections.OrderedDict(
-            (k, df[k] if k in given_columns else v) for k, v in WEATHER_SERIES_DEFAULTS.items())
+    # replace all missing values by nans
+    df.replace(
+        to_replace={k: v[1] for k, v in COLUMNS.items()},
+        value=np.nan,
+        inplace=True
     )
 
-    # create
-    sanitized_df = pd.DataFrame(data, index=df.index if is_datetime_index else None)
+    # check that all used columns with no missing value aren't null
+    not_null = [k for k, v in COLUMNS.items() if (v[0] and v[1] is None)]
+    if df[not_null].isnull().sum().sum() > 0:
+        raise ValueError(
+            f"given dataframe contains empty values on some mandatory columns:\n{df[not_null].isnull().sum()}"
+        )
 
-    # check no empty values
-    nan_columns = set(sanitized_df.columns[sanitized_df.isnull().sum() > 0])
-    if len(nan_columns) > 0:
-        raise ValueError(f"Some columns contain null values: {tuple(sorted(nan_columns))}")
-
-    # prepare
-    return sanitized_df
-
-
-def _check_and_sanitize_datetime_instants(df):
-    """
-    Parameters
-    ----------
-    df
-
-    Returns
-    -------
-    sanitized df
-    """
-    # leave if not relevant
-    if df is None or len(df) == 0:
-        return df
-
-    # check datetime index
-    if not isinstance(df.index, pd.DatetimeIndex):
-        raise ValueError("df index must be a datetime index.")
-
-    # force frequency if needed
-    if df.index.freq != "H":
-        forced_df = df.asfreq("H")
-        # check no change
-        try:
-            assert_index_equal(df.index, forced_df.index)
-        except AssertionError:
-            raise ValueError(
-                f"Couldn't convert to hourly datetime instants. Probable cause : "
-                f"given start instant ({df.index[0]}) is incorrect and data can't match because of leap year issues."
-            ) from None
-        # replace old variable
-        df = forced_df
-
-    # check first minute is 0
-    if df.index[0].minute != 0:
-        raise ValueError("Minutes must be 0.")
-
+    # return
     return df

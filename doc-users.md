@@ -661,7 +661,7 @@
 	      relief air outlet node,System Node Temperature (395)
  
 
-	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001E7A3CB9550>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001E7A3BC0978>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001E7A3B2C550>)]) 
+	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001BA6C93DA58>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001BA6C703D68>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001BA6C65D7F0>)]) 
 
 	variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
 
@@ -694,7 +694,7 @@
 	    "USA_CO_Golden-NREL.724666_TMY3.epw")
 	)
 
-	# tuple index
+	# weather series
 	df = epw.get_weather_series()
 	print(list(df.columns))
 	print(df[["drybulb"]].head())

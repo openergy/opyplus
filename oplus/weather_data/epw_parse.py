@@ -1,12 +1,10 @@
 import pandas as pd
 
 from oplus import CONF
-from .weather_data import WeatherData, WEATHER_SERIES_DEFAULTS, INSTANTS_COLUMNS
+from .weather_data import WeatherData, COLUMNS
 from .design_condition import DesignCondition
 from .typical_extreme_period import TypicalExtremePeriod
 from .ground_temperature import GroundTemperature
-
-EPW_COLUMNS = INSTANTS_COLUMNS + tuple(WEATHER_SERIES_DEFAULTS)
 
 
 def _get_row_l(row):
@@ -95,18 +93,15 @@ def parse_epw(file_like):
     comments_2_row_l = _get_row_l(next(file_like))
     comments_2 = comments_2_row_l[1]
 
-    # skip run period
-    next(file_like)
+    # data period
+    data_period_row_l = _get_row_l(next(file_like))
+    start_day_of_week = data_period_row_l[4]
+    if start_day_of_week == "":
+        start_day_of_week = None
 
     # load dataframe
     weather_series = pd.read_csv(file_like, header=None, encoding=CONF.encoding)
-    weather_series.columns = EPW_COLUMNS[:len(weather_series.columns)]
-
-    # manage hours
-    weather_series["hour"] -= 1  # switch from [1, 24] convention to [0, 23]
-
-    # manage minutes
-    weather_series["minute"] = 0  # fixme: [must-work] check that we understood meaning
+    weather_series.columns = list(COLUMNS)[:len(weather_series.columns)]
 
     return WeatherData(
         weather_series,
@@ -128,5 +123,6 @@ def parse_epw(file_like):
         daylight_savings_end_day=daylight_savings_end_day,
         holidays=holidays,
         comments_1=comments_1,
-        comments_2=comments_2
+        comments_2=comments_2,
+        start_day_of_week=start_day_of_week
     )

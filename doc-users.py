@@ -296,7 +296,7 @@ epw = op.WeatherData.from_epw(os.path.join(
     "USA_CO_Golden-NREL.724666_TMY3.epw")
 )
 
-# tuple index
+# weather series
 df = epw.get_weather_series()
 print(list(df.columns))
 print(df[["drybulb"]].head())
