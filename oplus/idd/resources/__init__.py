@@ -4,7 +4,8 @@ IDD_DIR_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_latest_idd_version():
-    last_file_name = sorted(os.listdir(IDD_DIR_PATH))[-1]
+    split_file_names = (os.path.splitext(name) for name in sorted(os.listdir(IDD_DIR_PATH)))
+    last_file_name = sorted(root for (root, ext) in split_file_names if ext == ".idd")[-1]
     major, minor, patch, _ = last_file_name[1:].split("-")
     return int(major), int(minor), 0
 
