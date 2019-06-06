@@ -1,5 +1,5 @@
 from .multi_table_queryset import MultiTableQueryset
-from .exceptions import FieldValidationError
+from ..exceptions import FieldValidationError
 
 
 class RelationsManager:

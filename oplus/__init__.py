@@ -12,4 +12,4 @@ from oplus.err import Err
 from oplus.summary_table import SummaryTable
 from oplus.output_table import OutputTable
 from oplus.simulation import Simulation, simulate
-
+from .exceptions import *

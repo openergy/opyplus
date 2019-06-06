@@ -80,6 +80,8 @@ class Epm:
         elif idd_or_version is not None:
             self._dev_idd = self._dev_idd_cls._dev_get_from_cache(idd_or_version)
         elif json_data is not None:
+            if isinstance(json_data, str):
+                raise TypeError(f"json_data must be a dict like, but '{type(json_data)}' was given")
             if "Version" in json_data and len(json_data["Version"]) > 0:
                 version_record = json_data["Version"][0]
                 if 0 in version_record:

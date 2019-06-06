@@ -1,6 +1,6 @@
 from .record import Record
 from .queryset import Queryset
-from .exceptions import FieldValidationError
+from ..exceptions import FieldValidationError
 
 
 def get_documented_add(self, record_descriptors):

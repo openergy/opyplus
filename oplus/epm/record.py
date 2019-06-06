@@ -5,7 +5,7 @@ import collections
 from .link import Link, NONE_LINK
 from .record_hook import RecordHook, NONE_RECORD_HOOK
 from .external_file import ExternalFile, NONE_EXTERNAL_FILE, get_external_files_dir_name
-from .exceptions import FieldValidationError
+from ..exceptions import FieldValidationError
 
 
 TAB_LEN = 4

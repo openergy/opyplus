@@ -6,6 +6,7 @@ import pandas as pd
 from pandas.util.testing import assert_index_equal
 
 from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
+from ..exceptions import DatetimeInstantsCreationError
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
@@ -289,10 +290,24 @@ class WeatherData:
             try:
                 assert_index_equal(self._weather_series.index, forced_df.index)
             except AssertionError:
-                raise ValueError(
-                    f"Couldn't convert to hourly datetime instants. Probable cause : "
-                    f"given start instant ({self._weather_series.index[0]}) is incorrect and data can't match because "
-                    f"of leap year issues."
+                feb29_observed = len(
+                    self._weather_series[np.logical_and(
+                        self._weather_series["month"] == 2,
+                        self._weather_series["day"] == 29)]
+                ) > 0
+                if feb29_observed:
+                    hint_msg = "should be a leap year because 29 february was found in data, " \
+                               "2012 could for example work"
+                else:
+                    hint_msg = "shouldn't be a leap year because no 29 february was found in data, " \
+                               "2013 could for example work"
+                raise DatetimeInstantsCreationError(
+                    f"Couldn't convert to hourly datetime instants. "
+                    f"Probable cause : year column is not correctly set.\n"
+                    f"You may use start year to force year column (don't forget to watch out for leap years).\n"
+                    f"For your information:\n"
+                    f"    * observed values in year column are: {list(self._weather_series.year.unique())}\n"
+                    f"    * {hint_msg}"
                 ) from None
             # replace old variable
             self._weather_series = forced_df

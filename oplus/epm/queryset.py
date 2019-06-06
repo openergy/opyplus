@@ -1,6 +1,6 @@
 from itertools import filterfalse
 
-from .exceptions import RecordDoesNotExistError, MultipleRecordsReturnedError
+from ..exceptions import RecordDoesNotExistError, MultipleRecordsReturnedError
 
 
 def unique_ever_seen(iterable, key=None):

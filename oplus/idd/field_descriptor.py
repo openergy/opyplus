@@ -1,10 +1,10 @@
 import re
 import unidecode
 
+from ..exceptions import FieldValidationError
 from ..epm.record import Record
 from ..epm.link import Link, NONE_LINK
 from ..epm.record_hook import RecordHook, NONE_RECORD_HOOK
-from ..epm.exceptions import FieldValidationError
 from ..epm.external_file import ExternalFile
 from .util import isinstance_str
 
