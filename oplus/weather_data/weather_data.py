@@ -15,42 +15,44 @@ WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 # AuxiliaryPrograms, p25, 63
 # year is used, but only in E+>=9 if epm option runperiod:treat_weather_as_actual is activated. We consider it
 # is mandatory (which is convenient to find start day)
-COLUMNS = collections.OrderedDict((  # name: (used, missing)
-    ("year", (True, None)),
-    ("month", (True, None)),
-    ("day", (True, None)),
-    ("hour", (True, None)),
-    ("minute", (False, None)),
-    ("datasource", (False, None)),
-    ("drybulb", (True, 99.9)),
-    ("dewpoint", (True, 99.9)),
-    ("relhum", (True, 999)),
-    ("atmos_pressure", (True, 999999)),
-    ("exthorrad", (False, 9999)),
-    ("extdirrad", (False, 9999)),
-    ("horirsky", (True, 9999)),
-    ("glohorrad", (False, 9999)),
-    ("dirnorrad", (True, 9999)),
-    ("difhorrad", (True, 9999)),
-    ("glohorillum", (False, 999999)),
-    ("dirnorillum", (False, 999999)),
-    ("difhorillum", (False, 999999)),
-    ("zenlum", (False, 9999)),
-    ("winddir", (True, 999)),
-    ("windspd", (True, 999)),
-    ("totskycvr", (False, 99)),
-    ("opaqskycvr", (False, 99)),
-    ("visibility", (False, 9999)),
-    ("ceiling_hgt", (False, 99999)),
-    ("presweathobs", (True, 9)),
-    ("presweathcodes", (True, 999999999)),
-    ("precip_wtr", (False, 999)),
-    ("aerosol_opt_depth", (False, 0.999)),
-    ("snowdepth", (True, 999)),
-    ("days_last_snow", (False, 99)),
-    ("Albedo", (False, 999)),
-    ("liq_precip_depth", (True, 999)),
-    ("liq_precip_rate", (False, 99)),
+#
+# we can't put an int if a column may have nans (use float or str)
+COLUMNS = collections.OrderedDict((  # name: (used, missing, dtype)
+    ("year", (True, None, int)),
+    ("month", (True, None, int)),
+    ("day", (True, None, int)),
+    ("hour", (True, None, int)),
+    ("minute", (False, None, str)),
+    ("datasource", (False, None, str)),
+    ("drybulb", (True, 99.9, float)),
+    ("dewpoint", (True, 99.9, float)),
+    ("relhum", (True, 999, float)),
+    ("atmos_pressure", (True, 999999, float)),
+    ("exthorrad", (False, 9999, float)),
+    ("extdirrad", (False, 9999, float)),
+    ("horirsky", (True, 9999, float)),
+    ("glohorrad", (False, 9999, float)),
+    ("dirnorrad", (True, 9999, float)),
+    ("difhorrad", (True, 9999, float)),
+    ("glohorillum", (False, 999999, float)),
+    ("dirnorillum", (False, 999999, float)),
+    ("difhorillum", (False, 999999, float)),
+    ("zenlum", (False, 9999, float)),
+    ("winddir", (True, 999, float)),
+    ("windspd", (True, 999, float)),
+    ("totskycvr", (False, 99, float)),
+    ("opaqskycvr", (False, 99, float)),
+    ("visibility", (False, 9999, float)),
+    ("ceiling_hgt", (False, 99999, float)),
+    ("presweathobs", (True, 9, float)),
+    ("presweathcodes", (True, 999999999, str)),
+    ("precip_wtr", (False, 999, float)),
+    ("aerosol_opt_depth", (False, 0.999, float)),
+    ("snowdepth", (True, 999, float)),
+    ("days_last_snow", (False, 99, float)),
+    ("Albedo", (False, 999, float)),
+    ("liq_precip_depth", (True, 999, float)),
+    ("liq_precip_rate", (False, 99, float)),
 ))
 
 
@@ -274,11 +276,12 @@ class WeatherData:
 
         # create and set index
         self._weather_series.index = pd.DatetimeIndex(self._weather_series.apply(
+            # we cast to ints because of a pandas bug on apply which returns floats
             lambda x: dt.datetime(
-                x.year if start_year is None else start_year,
-                x.month,
-                x.day,
-                x.hour-1
+                int(x.year) if start_year is None else start_year,
+                int(x.month),
+                int(x.day),
+                int(x.hour-1)
             ),
             axis=1
         ))
@@ -304,7 +307,8 @@ class WeatherData:
                 raise DatetimeInstantsCreationError(
                     f"Couldn't convert to hourly datetime instants. "
                     f"Probable cause : year column is not correctly set.\n"
-                    f"You may use start year to force year column (don't forget to watch out for leap years).\n"
+                    f"You may use 'start_year' parameter to force year column "
+                    f"(don't forget to watch out for leap years).\n"
                     f"For your information:\n"
                     f"    * observed values in year column are: {list(self._weather_series.year.unique())}\n"
                     f"    * {hint_msg}"
@@ -444,6 +448,12 @@ def _sanitize_weather_series(df):
         raise ValueError(
             f"given dataframe contains empty values on some mandatory columns:\n{df[not_null].isnull().sum()}"
         )
+
+    # force dtypes
+    df.astype(
+        {k: v[2] for k, v in COLUMNS.items()},
+        copy=False
+    )
 
     # return
     return df

@@ -1,3 +1,13 @@
+"""
+#@: will appear in markdown
+##: will not appear in markdown
+
+Everything else appears (including prints), except:
+ - everything before first markdown comment
+ - everything after last markdown comment
+"""
+
+
 import io as __io
 import sys as __sys
 import textwrap as __textwrap

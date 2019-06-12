@@ -71,7 +71,7 @@ class Info:
 
     def to_json(self, path):
         with open(path, "w") as f:
-            json.dump(self.to_json_data(), f)
+            json.dump(self.to_json_data(), f, indent=4)
 
 
 def check_status(*authorized):
