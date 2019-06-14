@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev210
 * m: save/load api implemented for epm and weather data
 
