@@ -27,7 +27,7 @@ class SimulateTest(unittest.TestCase):
             )
 
             # prepare a quick simulation
-            idf = Epm.from_idf(idf_path)
+            idf = Epm.load(idf_path)
             sc = idf.SimulationControl.one()
             sc.run_simulation_for_sizing_periods = "No"
             rp = idf.RunPeriod.one()

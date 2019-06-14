@@ -186,24 +186,24 @@ class Simulation:
         if isinstance(epm_or_buffer_or_path, Epm):
             epm = epm_or_buffer_or_path
         else:
-            epm = Epm.from_idf(epm_or_buffer_or_path)
+            epm = Epm.load(epm_or_buffer_or_path)
 
         # weather data
         if isinstance(weather_data_or_buffer_or_path, WeatherData):
             weather_data = weather_data_or_buffer_or_path
         else:
-            weather_data = WeatherData.from_epw(weather_data_or_buffer_or_path)
+            weather_data = WeatherData.load(weather_data_or_buffer_or_path)
 
         # find eplus version
         eplus_version_str = epm.Version.one()[0]
         eplus_version = version_str_to_version(eplus_version_str)
 
         # store inputs
-        epm.to_idf(os.path.join(
+        epm.save(os.path.join(
             dir_path,
             cls._get_resource_rel_path("idf", eplus_version)
         ))
-        weather_data.to_epw(os.path.join(
+        weather_data.save(os.path.join(
             dir_path,
             cls._get_resource_rel_path("epw", eplus_version)
         ))
@@ -318,10 +318,10 @@ class Simulation:
         return self._dir_abs_path
 
     def get_in_epm(self):
-        return Epm.from_idf(self.get_resource_path("idf"))
+        return Epm.load(self.get_resource_path("idf"))
 
     def get_in_weather_data(self):
-        return WeatherData.from_epw(self.get_resource_path("epw"))
+        return WeatherData.load(self.get_resource_path("epw"))
 
     @check_status(FINISHED, FAILED)
     def get_out_err(self):
@@ -329,11 +329,11 @@ class Simulation:
 
     @check_status(FINISHED, FAILED)
     def get_out_epm(self):
-        return Epm.from_idf(self.get_resource_path("idf"))
+        return Epm.load(self.get_resource_path("idf"))
 
     @check_status(FINISHED, FAILED)
     def get_out_weather_data(self):
-        return WeatherData.from_epw(self.get_resource_path("epw"))
+        return WeatherData.load(self.get_resource_path("epw"))
 
     @check_status(FINISHED)
     def get_out_eso(self):

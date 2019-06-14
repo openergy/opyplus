@@ -19,8 +19,8 @@
 	    "1ZoneEvapCooler.idf"
 	)
 
-	epm = op.Epm.from_idf(idf_path)
-	epm.to_idf(os.path.join(work_dir_path, "my_idf.idf"))
+	epm = op.Epm.load(idf_path)
+	epm.save(os.path.join(work_dir_path, "my_idf.idf"))
 	print(epm)
 
 
@@ -661,7 +661,7 @@
 	      relief air outlet node,System Node Temperature (395)
  
 
-	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001BA6C93DA58>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001BA6C703D68>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000001BA6C65D7F0>)]) 
+	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x00000228AA59C828>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x00000228A9DCB908>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x00000228A649F5C0>)]) 
 
 	variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
 
@@ -688,7 +688,7 @@
 
  ### weather data
 
-	epw = op.WeatherData.from_epw(os.path.join(
+	epw = op.WeatherData.load(os.path.join(
 	    op.get_eplus_base_dir_path((9, 0, 1)),
 	    "WeatherData",
 	    "USA_CO_Golden-NREL.724666_TMY3.epw")

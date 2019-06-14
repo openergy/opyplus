@@ -26,8 +26,8 @@ idf_path = os.path.join(
     "1ZoneEvapCooler.idf"
 )
 
-epm = op.Epm.from_idf(idf_path)
-epm.to_idf(os.path.join(work_dir_path, "my_idf.idf"))
+epm = op.Epm.load(idf_path)
+epm.save(os.path.join(work_dir_path, "my_idf.idf"))
 print(epm)
 
 ## ------------------------------------------------- table -------------------------------------------------------------
@@ -290,7 +290,7 @@ for name in os.listdir(csv_dir_path):
 
 ## -------------------------------------------- weather data -----------------------------------------------------------
 #@ ### weather data
-epw = op.WeatherData.from_epw(os.path.join(
+epw = op.WeatherData.load(os.path.join(
     op.get_eplus_base_dir_path((9, 0, 1)),
     "WeatherData",
     "USA_CO_Golden-NREL.724666_TMY3.epw")

@@ -27,7 +27,7 @@ class StaticIdfTest(unittest.TestCase):
         cls.epms_d = {}
 
         for eplus_version in TESTED_EPLUS_VERSIONS:
-            cls.epms_d[eplus_version] = Epm.from_idf(
+            cls.epms_d[eplus_version] = Epm.load(
                 os.path.join(
                     get_eplus_base_dir_path(eplus_version),
                     "ExampleFiles",

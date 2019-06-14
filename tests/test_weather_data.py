@@ -24,11 +24,11 @@ class EPlusWeatherData(unittest.TestCase):
             file_path = os.path.join(weather_dir, "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw")
 
             # create weather data
-            weather_data0 = WeatherData.from_epw(file_path)
+            weather_data0 = WeatherData.load(file_path)
 
             # create new epw
-            epw1 = weather_data0.to_epw()
-            weather_data1 = WeatherData.from_epw(io.StringIO(epw1))
+            epw1 = weather_data0.save()
+            weather_data1 = WeatherData.load(io.StringIO(epw1))
 
             # check
             assert_frame_equal(

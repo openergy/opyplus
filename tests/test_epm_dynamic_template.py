@@ -14,7 +14,6 @@ import oplus as op
 #     UNTIL: 12:00,1,          !- Field 3
 #     UNTIL: 24:00,0;          !- Field 5"""
 
-# fixme: relink
 @unittest.skip("relink")
 class DynamicIdfTest(unittest.TestCase):
     """
@@ -23,7 +22,7 @@ class DynamicIdfTest(unittest.TestCase):
 
     @staticmethod
     def get_epm():
-        return op.Epm.from_idf(os.path.join(
+        return op.Epm.load(os.path.join(
             op.CONF.eplus_base_dir_path,
             "ExampleFiles",
             "1ZoneEvapCooler.idf")

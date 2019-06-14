@@ -265,9 +265,22 @@ class Epm:
         """
         self._dev_external_files_manager.dump_external_files(target_dir_path=target_dir_path)
 
-    # ------------------------------------------- load -----------------------------------------------------------------
+    def to_json_data(self):
+        """
+        Returns
+        -------
+        A dictionary of serialized data.
+        """
+        # create data
+        d = collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
+        d["_comment"] = self._comment
+        d.move_to_end("_comment", last=False)
+        d["_external_files"] = self._dev_external_files_manager
+        return d
+
+    # ------------------------------------------- save/load ------------------------------------------------------------
     @classmethod
-    def from_idf(
+    def load(
             cls,
             buffer_or_path,
             check_required=True,
@@ -289,80 +302,14 @@ class Epm:
         -------
         An Epm instance.
         """
-        return cls._create_from_buffer_or_path(
-            parse_idf,
+        return cls().from_idf(
             buffer_or_path,
             check_required=check_required,
             check_length=check_length,
             idd_or_version=idd_or_version
         )
 
-    @classmethod
-    def from_json(
-            cls,
-            buffer_or_path,
-            check_required=True,
-            check_length=True,
-            idd_or_version=None
-    ):
-        """
-        Parameters
-        ----------
-        buffer_or_path: json buffer or path
-        check_required: boolean, default True
-            If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        check_length: boolean, default True
-            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
-            directly provide an IDD object.
-
-        Returns
-        -------
-        An Epm instance.
-        """
-        return cls._create_from_buffer_or_path(
-            json.load,
-            buffer_or_path,
-            check_required=check_required,
-            check_length=check_length,
-            idd_or_version=idd_or_version
-        )
-
-    # ----------------------------------------- export -----------------------------------------------------------------
-    def to_json_data(self):
-        """
-        Returns
-        -------
-        A dictionary of serialized data.
-        """
-        # create data
-        d = collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
-        d["_comment"] = self._comment
-        d.move_to_end("_comment", last=False)
-        d["_external_files"] = self._dev_external_files_manager
-        return d
-
-    def to_json(self, buffer_or_path=None, indent=2):
-        """
-        Parameters
-        ----------
-        buffer_or_path: buffer or path, default None
-            output to write into. If None, will return a json string.
-        indent: int, default 2
-            Defines the indentation of the json
-
-        Returns
-        -------
-        None, or a json string (if buffer_or_path is None).
-        """
-        # return json
-        return json_data_to_json(
-            self.to_json_data(),
-            buffer_or_path=buffer_or_path,
-            indent=indent
-        )
-
-    def to_idf(self, buffer_or_path=None, dump_external_files=True):
+    def save(self, buffer_or_path=None, dump_external_files=True):
         """
         Parameters
         ----------
@@ -374,6 +321,33 @@ class Epm:
         Returns
         -------
         None, or an idf string (if buffer_or_path is None).
+        """
+        return self.to_idf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
+
+    # --------------------------------------- import/export ------------------------------------------------------------
+    # ----------- idf
+    @classmethod
+    def from_idf(
+            cls,
+            buffer_or_path,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None
+    ):
+        """
+        see load
+        """
+        return cls._create_from_buffer_or_path(
+            parse_idf,
+            buffer_or_path,
+            check_required=check_required,
+            check_length=check_length,
+            idd_or_version=idd_or_version
+        )
+
+    def to_idf(self, buffer_or_path=None, dump_external_files=True):
+        """
+        see save
         """
         # prepare comment
         comment = get_multi_line_copyright_message()
@@ -406,4 +380,56 @@ class Epm:
             lambda f: f.write(content),
             lambda: content,
             buffer_or_path
+        )
+
+    # ----------- json
+    @classmethod
+    def from_json(
+            cls,
+            buffer_or_path,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None
+    ):
+        """
+        Parameters
+        ----------
+        buffer_or_path: json buffer or path
+        check_required: boolean, default True
+            If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+        check_length: boolean, default True
+            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
+        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
+            directly provide an IDD object.
+
+        Returns
+        -------
+        An Epm instance.
+        """
+        return cls._create_from_buffer_or_path(
+            json.load,
+            buffer_or_path,
+            check_required=check_required,
+            check_length=check_length,
+            idd_or_version=idd_or_version
+        )
+
+    def to_json(self, buffer_or_path=None, indent=2):
+        """
+        Parameters
+        ----------
+        buffer_or_path: buffer or path, default None
+            output to write into. If None, will return a json string.
+        indent: int, default 2
+            Defines the indentation of the json
+
+        Returns
+        -------
+        None, or a json string (if buffer_or_path is None).
+        """
+        # return json
+        return json_data_to_json(
+            self.to_json_data(),
+            buffer_or_path=buffer_or_path,
+            indent=indent
         )

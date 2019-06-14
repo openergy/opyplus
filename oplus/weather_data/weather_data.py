@@ -364,9 +364,9 @@ class WeatherData:
         msg += f"\tdata period: {start.isoformat()}, {end.isoformat()}"
         return msg
 
-    # ------------------------------------------------- load -----------------------------------------------------------
+    # ------------------------------------------------- save/load ------------------------------------------------------
     @classmethod
-    def from_epw(cls, buffer_or_path):
+    def load(cls, buffer_or_path):
         """
         Parameters
         ----------
@@ -376,13 +376,9 @@ class WeatherData:
         -------
         WeatherData instance.
         """
-        from .epw_parse import parse_epw
-        _, buffer = to_buffer(buffer_or_path)
-        with buffer as f:
-            return parse_epw(f)
+        return cls.from_epw(buffer_or_path)
 
-    # ----------------------------------------------- export -----------------------------------------------------------
-    def to_epw(self, buffer_or_path=None, use_datetimes=True):
+    def save(self, buffer_or_path=None, use_datetimes=True):
         """
         Parameters
         ----------
@@ -395,6 +391,23 @@ class WeatherData:
         Returns
         -------
         None or a string if buffer_or_path is None.
+        """
+        return self.to_epw(buffer_or_path=buffer_or_path, use_datetimes=use_datetimes)
+
+    # ------------------------------------------- import/export --------------------------------------------------------
+    @classmethod
+    def from_epw(cls, buffer_or_path):
+        """
+        see load
+        """
+        from .epw_parse import parse_epw
+        _, buffer = to_buffer(buffer_or_path)
+        with buffer as f:
+            return parse_epw(f)
+
+    def to_epw(self, buffer_or_path=None, use_datetimes=True):
+        """
+        see save
         """
         # copy (will be modified)
         df = self._weather_series.copy()
