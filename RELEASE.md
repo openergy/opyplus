@@ -2,7 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 7.0.1.dev220
+* m: simulation object can now connect to non-oplus simulations
 
 ## 7.0.1.dev210
 * m: save/load api implemented for epm and weather data

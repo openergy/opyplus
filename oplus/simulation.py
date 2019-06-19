@@ -32,6 +32,20 @@ def _copy_without_read_only(src, dst):
     os.chmod(dst, DEFAULT_SERVER_PERMS)
 
 
+def _get_done_simulation_status(err_path):
+    # todo: improve, see with AL
+    with open(err_path) as f:
+        content = f.read()
+    finished = "EnergyPlus Completed Successfully" in content
+    return FINISHED if finished else FAILED
+
+
+def _get_eplus_version(epm):
+    eplus_version_str = epm.Version.one()[0]
+    eplus_version = version_str_to_version(eplus_version_str)
+    return eplus_version
+
+
 class Info:
     def __init__(self, status, eplus_version):
         """
@@ -167,6 +181,41 @@ class Simulation:
         if not os.path.isdir(self._dir_abs_path):
             raise NotADirectoryError(f"simulation directory not found: {self._dir_abs_path}")
 
+        # check info file exists, create it if not
+        if not os.path.exists(self.get_resource_path("info")):
+            logger.warning(
+                "Info file not found (info.json), we will creating one. "
+                "This can happen if simulation was probably not created by oplus.")
+
+            # find idf file (try three known layouts, since eplus version is for the moment unknown)
+            # todo: mutualise with layout code in _get_resource_rel_path
+            lookup_paths = [
+                os.path.join(self._dir_abs_path, rel_path) for rel_path in (
+                    "eplusout.idf",
+                    f"{CONF.default_model_name}.idf",
+                    os.path.join("Output", f"{CONF.default_model_name}.idf")
+            )]
+            for path in lookup_paths:
+                if os.path.isfile(path):
+                    break
+            else:
+                raise RuntimeError(
+                    "idf file not found, can't create simulation object. Looked up paths:\n" +
+                    "\n - ".join(lookup_paths)
+                )
+
+            # find epm version
+            epm = Epm.load(path)
+            eplus_version = _get_eplus_version(epm)
+
+            # find simulation status (we can't use get_resource_rel_path because no _info variable yet)
+            err_path = os.path.join(self._dir_abs_path, self._get_resource_rel_path("err", eplus_version))
+            status = _get_done_simulation_status(err_path)
+
+            # create and dump info
+            info = Info(status=status, eplus_version=eplus_version)
+            info.to_json(self.get_resource_path("info"))
+
         # load info file
         self._info = Info.from_json(self.get_resource_path("info"))
 
@@ -195,8 +244,7 @@ class Simulation:
             weather_data = WeatherData.load(weather_data_or_buffer_or_path)
 
         # find eplus version
-        eplus_version_str = epm.Version.one()[0]
-        eplus_version = version_str_to_version(eplus_version_str)
+        eplus_version = _get_eplus_version(epm)
 
         # store inputs
         epm.save(os.path.join(
@@ -281,13 +329,7 @@ class Simulation:
             os.remove(os.path.join(temp_epw_path))
 
         # check if simulation was successful
-        # todo: improve, see with AL
-        with open(self.get_resource_path("err")) as f:
-            content = f.read()
-            if "EnergyPlus Completed Successfully" in content:
-                status = FINISHED
-            else:
-                status = FAILED
+        status = _get_done_simulation_status(self.get_resource_path("err"))
 
         # inform new status
         self._info._dev_status = status
