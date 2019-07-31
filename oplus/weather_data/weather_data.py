@@ -273,16 +273,31 @@ class WeatherData:
         start_year: int or None, default None
             if given, will force year column with start_year (multi-year not supported for now)
         """
+        #todo [GL] improve code - index were incorrect (use shift)
+        self._weather_series["year_"] = self._weather_series["year"].shift(1)
+        self._weather_series["month_"] = self._weather_series["month"].shift(1)
+        self._weather_series["day_"] = self._weather_series["day"].shift(1)
+        self._weather_series["hour_"] = self._weather_series["hour"].shift(1)
 
+        #todo [GL] manage multi year ?
+        def _get_right_index(x, start_year):
+            if x.hour == 24:
+                year = int(x.year_) if start_year is None else start_year
+                month = int(x.month_)
+                day = int(x.day_)
+                hour = int(x.hour - 1)
+            else:
+                year = x.year if start_year is None else start_year
+                month = x.month
+                day = x.day
+                hour = x.hour - 1
+            return dt.datetime(year, month, day, hour)
+
+        former_start_year = min(self._weather_series.year)
         # create and set index
         self._weather_series.index = pd.DatetimeIndex(self._weather_series.apply(
             # we cast to ints because of a pandas bug on apply which returns floats
-            lambda x: dt.datetime(
-                int(x.year) if start_year is None else start_year,
-                int(x.month),
-                int(x.day),
-                int(x.hour-1)
-            ),
+            lambda x: _get_right_index(x, start_year),
             axis=1
         ))
 
