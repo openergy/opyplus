@@ -25,6 +25,7 @@ setup(
         "Natural Language :: French",
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering :: Physics",
     ],
     include_package_data=True

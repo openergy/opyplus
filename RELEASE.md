@@ -2,7 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 7.0.1.dev221
+* p: python 3.7 support
 
 ## 7.0.1.dev220
 * m: simulation object can now connect to non-oplus simulations
