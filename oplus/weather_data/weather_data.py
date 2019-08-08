@@ -293,7 +293,6 @@ class WeatherData:
                 hour = x.hour - 1
             return dt.datetime(year, month, day, hour)
 
-        former_start_year = min(self._weather_series.year)
         # create and set index
         self._weather_series.index = pd.DatetimeIndex(self._weather_series.apply(
             # we cast to ints because of a pandas bug on apply which returns floats
