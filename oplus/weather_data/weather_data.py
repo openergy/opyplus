@@ -287,10 +287,10 @@ class WeatherData:
                 day = int(x.day_)
                 hour = int(x.hour - 1)
             else:
-                year = x.year if start_year is None else start_year
-                month = x.month
-                day = x.day
-                hour = x.hour - 1
+                year = int(x.year) if start_year is None else start_year
+                month = int(x.month)
+                day = int(x.day)
+                hour = int(x.hour - 1)
             return dt.datetime(year, month, day, hour)
 
         former_start_year = min(self._weather_series.year)
