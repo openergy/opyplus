@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev222
 * p: cast epw year/month/day/hour to int in case they are floats
 
