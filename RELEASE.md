@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev300
 * queryset api was modified (get was introduced)
 * table api was modified (get was introduced)
