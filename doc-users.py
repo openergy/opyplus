@@ -56,7 +56,7 @@ print("\niter:")
 for r in qs:
     print(r["name"])
 print("\nget item:")
-print(qs[0])
+print(qs.get())
 
 ## ------------------------------------------------ record -------------------------------------------------------------
 #@ ### record
@@ -193,7 +193,7 @@ print("pointing on sch:")
 for _pointing in sch.get_pointing_records():
     print(_pointing)
 # todo: explore by table
-setpoint = pointing.ThermostatSetpoint_SingleHeating[0]
+setpoint = pointing.ThermostatSetpoint_SingleHeating.get()
 print("pointed by setpoint:")
 for _pointed in setpoint.get_pointed_records():
     print(_pointed)

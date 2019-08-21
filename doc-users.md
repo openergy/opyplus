@@ -116,7 +116,7 @@
 	for r in qs:
 	    print(r["name"])
 	print("\nget item:")
-	print(qs[0])
+	print(qs.get())
 
 
 *out:*
@@ -426,7 +426,7 @@
 	for _pointing in sch.get_pointing_records():
 	    print(_pointing)
 	# todo: explore by table
-	setpoint = pointing.ThermostatSetpoint_SingleHeating[0]
+	setpoint = pointing.ThermostatSetpoint_SingleHeating.get()
 	print("pointed by setpoint:")
 	for _pointed in setpoint.get_pointed_records():
 	    print(_pointed)
@@ -661,7 +661,7 @@
 	      relief air outlet node,System Node Temperature (395)
  
 
-	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x00000228AA59C828>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x00000228A9DCB908>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x00000228A649F5C0>)]) 
+	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000002A954622BE0>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000002A95302D630>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x000002A952981A20>)]) 
 
 	variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
 

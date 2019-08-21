@@ -58,7 +58,7 @@ class StaticIdfTest(unittest.TestCase):
             bsd = self.epms_d[eplus_version].BuildingSurface_Detailed[bsd_name]
             self.assertEqual(bsd.name, bsd_name)
             self.assertEqual(bsd[0], bsd_name)
-            self.assertEqual(bsd.get_pk(), bsd_name)
+            self.assertEqual(bsd.pk, bsd_name)
 
     def test_get_table(self):
         for eplus_version in iter_eplus_versions(self):
@@ -125,7 +125,7 @@ class StaticIdfTest(unittest.TestCase):
             self.assertEqual(2, len(pointed))
 
             self.assertEqual("main zone", pointed.Zone.one().name)
-            self.assertEqual("r13wall", pointed.Construction.one().get_pk())
+            self.assertEqual("r13wall", pointed.Construction.one().pk)
 
     # ----------------------------------------- construct --------------------------------------------------------------
     def test_add_records(self):

@@ -215,7 +215,7 @@ class Record:
         if self._table._dev_auto_pk:
             return f"<Record {self.get_table()._dev_descriptor.table_name}>"
 
-        return f"<Record {self.get_table().get_name()} '{self.get_pk()}'>"
+        return f"<Record {self.get_table().get_name()} '{self.pk}'>"
 
     def __str__(self):
         if self._table is None:
@@ -343,6 +343,15 @@ class Record:
         # equality on common fields, len will settle
         return self_len <= other_len
 
+    @property
+    def pk(self):
+        """
+        Returns
+        -------
+        If record has a name, returns its name, else returns record's python id.
+        """
+        return id(self) if self._table._dev_auto_pk else self[0]
+
     # get context
     def get_epm(self):
         return self._table.get_epm()
@@ -354,14 +363,6 @@ class Record:
         return self._table.get_ref()
 
     # explore specific info
-    def get_pk(self):
-        """
-        Returns
-        -------
-        If record has a name, returns its name, else returns record's python id.
-        """
-        return id(self) if self._table._dev_auto_pk else self[0]
-
     def get_serialized_value(self, ref_or_index, model_name=None):
         """
         Parameters
