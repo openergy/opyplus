@@ -4,10 +4,13 @@
 
 ## next
 
+## 7.0.1.dev301
+* p: weather data leap year observed is defaulted to 'yes' (not 'no')
+
 ## 7.0.1.dev300
-* queryset api was modified (get was introduced)
-* table api was modified (get was introduced)
-* record api was modified (.get_pk() is now .pk)
+* M: queryset api was modified (get was introduced)
+* M: table api was modified (get was introduced)
+* M: record api was modified (.get_pk() is now .pk)
 
 ## 7.0.1.dev222
 * p: cast epw year/month/day/hour to int in case they are floats
