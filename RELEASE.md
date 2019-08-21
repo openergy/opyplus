@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev301
 * p: weather data leap year observed is defaulted to 'yes' (not 'no')
 
