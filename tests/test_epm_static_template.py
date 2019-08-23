@@ -55,7 +55,7 @@ class StaticIdfTest(unittest.TestCase):
     def test_record_getitem_getattr_and_pk(self):
         bsd_name = "zn001:roof001"
         for eplus_version in iter_eplus_versions(self):
-            bsd = self.epms_d[eplus_version].BuildingSurface_Detailed[bsd_name]
+            bsd = self.epms_d[eplus_version].BuildingSurface_Detailed.one(bsd_name)
             self.assertEqual(bsd.name, bsd_name)
             self.assertEqual(bsd[0], bsd_name)
             self.assertEqual(bsd.pk, bsd_name)
@@ -118,7 +118,7 @@ class StaticIdfTest(unittest.TestCase):
     def test_pointed(self):
         for eplus_version in iter_eplus_versions(self):
             epm = self.epms_d[eplus_version]
-            bsd = epm.BuildingSurface_Detailed["zn001:wall001"]
+            bsd = epm.BuildingSurface_Detailed.one("zn001:wall001")
 
             pointed = bsd.get_pointed_records()
 

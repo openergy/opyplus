@@ -59,19 +59,14 @@ class Queryset:
         """
         Parameters
         ----------
-        item: str
-            value of record name. If table does not have a name field, raises a KeyError
+        item: index or slice
+            record(s) position(s) (records are ordered by their content, not by creation order)
 
         Returns
         -------
-        Record instance
+        Record instance or list of records
         """
-        if self._table._dev_auto_pk:
-            raise KeyError(f"table {self._table.get_ref()} does not have a primary key, can't use getitem syntax")
-        for r in self._records:  # todo: we could store records in an ordered dict with pk keys
-            if r.pk == item:
-                return r
-        raise KeyError(f"queryset does not contain a record who's pk is '{item}'")
+        return self._records[item]
 
     def __iter__(self):
         return iter(self._records)
@@ -111,15 +106,6 @@ class Queryset:
         iterator = self._records if filter_by is None else filter(filter_by, self._records)
         return Queryset(self._table, iterator)
 
-    def get(self, index=0):
-        """
-        Parameters
-        ----------
-        index: int, default 0
-            record position (records are ordered by their content, not by creation order)
-        """
-        return self._records[index]
-
     def one(self, filter_by=None):
         """
         Parameters
@@ -139,6 +125,14 @@ class Queryset:
         MultipleRecordsReturnedError if multiple records are found
         """
         # filter if needed
+        if isinstance(filter_by, str):
+            if self._table._dev_auto_pk:
+                raise KeyError(f"table {self._table.get_ref()} does not have a primary key, can't use getitem syntax")
+            for r in self._records:  # todo: we could store records in an ordered dict with pk keys
+                if r.pk == filter_by:
+                    return r
+            raise RecordDoesNotExistError(f"queryset does not contain a record who's pk is '{filter_by}'")
+
         qs = self if filter_by is None else self.select(filter_by=filter_by)
 
         # check one and only one
@@ -148,7 +142,7 @@ class Queryset:
             raise MultipleRecordsReturnedError("Queryset contains more than one value.")
 
         # return record
-        return qs.get()
+        return qs[0]
 
     # delete
     def delete(self):

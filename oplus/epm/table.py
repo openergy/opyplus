@@ -1,6 +1,6 @@
 from .record import Record
 from .queryset import Queryset
-from ..exceptions import FieldValidationError
+from ..exceptions import FieldValidationError, RecordDoesNotExistError
 
 
 def get_documented_add(self, record_descriptors):
@@ -125,19 +125,14 @@ class Table:
         """
         Parameters
         ----------
-        item: str
-            value of record name. If table does not have a name field, raises a KeyError
+        item: index or slice
+            record(s) position(s) (records are ordered by their content, not by creation order)
 
         Returns
         -------
-        Record instance
+        Record instance or list of records
         """
-        if self._dev_auto_pk:
-            raise KeyError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
-        try:
-            return self._records[item]
-        except KeyError:
-            raise KeyError(f"table {self.get_ref()} does not contain a record who's pk is '{item}'")
+        return self.select()[item]
     
     def __iter__(self):
         # !! we create a list before transforming to an iterator. If we don't do this, user may modify self._record key
@@ -189,10 +184,11 @@ class Table:
         """
         Parameters
         ----------
-        filter_by: callable, default None
-            Callable must take one argument (a record of table), and return True to keep record, or False to skip it.
-            Example : .one(lambda x: x.name == "my_name").
-            If None, records are not filtered.
+        filter_by: callable or str, default None
+            if str: record pk
+            if callable: a callable must take one argument (a record of table), and return True to keep record,
+            or False to skip it. Example : .one(lambda x: x.name == "my_name").
+            if None: records are not filtered.
 
         Returns
         -------
@@ -200,19 +196,19 @@ class Table:
 
         Raises
         ------
+        TypeError if pk search on a table that does not have a name field
         RecordDoesNotExistError if no record is found
         MultipleRecordsReturnedError if multiple records are found
         """
+        if isinstance(filter_by, str):
+            if self._dev_auto_pk:
+                raise TypeError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
+            try:
+                return self._records[filter_by]
+            except KeyError:
+                raise RecordDoesNotExistError(
+                    f"table {self.get_ref()} does not contain a record who's pk is '{filter_by}'")
         return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
-
-    def get(self, index=0):
-        """
-        Parameters
-        ----------
-        index: int, default 0
-            record position (records are ordered by their content, not by creation order)
-        """
-        return self.select().get(index=index)  # queryset will be ordered
 
     # construct
     # def add(self, data=None, **or_data):
