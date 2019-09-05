@@ -1,6 +1,6 @@
 from .record import Record
 from .queryset import Queryset
-from ..exceptions import FieldValidationError
+from ..exceptions import FieldValidationError, RecordDoesNotExistError
 
 
 def get_documented_add(self, record_descriptors):
@@ -46,7 +46,7 @@ def get_documented_add(self, record_descriptors):
         -------
         Created Record instance
         """
-        return self.batch_add([or_data if data is None else data])[0]
+        return self.batch_add([or_data if data is None else data]).one()
 
     add.__doc__ = "\n".join([fd.ref.lower() for fd in record_descriptors if fd.ref is not None])
 
@@ -78,7 +78,7 @@ class Table:
         record = self._records.pop(old_pk)
 
         # check uniqueness
-        new_pk = record.get_pk()
+        new_pk = record.pk
         if new_pk in self._records:
             field_descriptor = record.get_field_descriptor(0)
             raise FieldValidationError(
@@ -101,7 +101,7 @@ class Table:
 
             # store
             # we don't check uniqueness here => will be done while checking hooks
-            self._records[record.get_pk()] = record
+            self._records[record.pk] = record
             
             # remember record
             added_records.append(record)
@@ -109,7 +109,7 @@ class Table:
         return added_records
 
     def _dev_remove_record_without_unregistering(self, record):
-        del self._records[record.get_pk()]
+        del self._records[record.pk]
 
     # --------------------------------------------- public api ---------------------------------------------------------
     def __repr__(self):
@@ -125,25 +125,14 @@ class Table:
         """
         Parameters
         ----------
-        item: str or int
-            if str: value of record name. If table does not have a name field, raises a KeyError
-            if int: record position (records are ordered by their content, not by creation order)
+        item: index or slice
+            record(s) position(s) (records are ordered by their content, not by creation order)
 
         Returns
         -------
-        Record instance
+        Record instance or list of records
         """
-        if isinstance(item, str):
-            if self._dev_auto_pk:
-                raise KeyError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
-            try:
-                return self._records[item]
-            except KeyError:
-                raise KeyError(f"table {self.get_ref()} does not contain a record who's pk is '{item}'")
-        if isinstance(item, int):
-            return self.select()[item]  # queryset will be ordered
-
-        raise KeyError("item must be an int or a str")
+        return self.select()[item]
     
     def __iter__(self):
         # !! we create a list before transforming to an iterator. If we don't do this, user may modify self._record key
@@ -195,10 +184,11 @@ class Table:
         """
         Parameters
         ----------
-        filter_by: callable, default None
-            Callable must take one argument (a record of table), and return True to keep record, or False to skip it.
-            Example : .one(lambda x: x.name == "my_name").
-            If None, records are not filtered.
+        filter_by: callable or str, default None
+            if str: record pk
+            if callable: a callable must take one argument (a record of table), and return True to keep record,
+            or False to skip it. Example : .one(lambda x: x.name == "my_name").
+            if None: records are not filtered.
 
         Returns
         -------
@@ -206,9 +196,18 @@ class Table:
 
         Raises
         ------
+        TypeError if pk search on a table that does not have a name field
         RecordDoesNotExistError if no record is found
         MultipleRecordsReturnedError if multiple records are found
         """
+        if isinstance(filter_by, str):
+            if self._dev_auto_pk:
+                raise TypeError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
+            try:
+                return self._records[filter_by]
+            except KeyError:
+                raise RecordDoesNotExistError(
+                    f"table {self.get_ref()} does not contain a record who's pk is '{filter_by}'")
         return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
 
     # construct

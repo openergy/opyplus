@@ -77,7 +77,7 @@ class WeatherData:
             design_conditions=None,  # list of design conditions
             typical_extreme_periods=None,  # list of typical/extreme periods
             ground_temperatures=None,  # list of ground temperatures
-            leap_year_observed="no",
+            leap_year_observed="yes",
             daylight_savings_start_day=0,
             daylight_savings_end_day=0,
             holidays=None,  # [(name, day), ...]
@@ -287,10 +287,10 @@ class WeatherData:
                 day = int(x.day_)
                 hour = int(x.hour - 1)
             else:
-                year = x.year if start_year is None else start_year
-                month = x.month
-                day = x.day
-                hour = x.hour - 1
+                year = int(x.year) if start_year is None else start_year
+                month = int(x.month)
+                day = int(x.day)
+                hour = int(x.hour - 1)
             return dt.datetime(year, month, day, hour)
 
         # create and set index

@@ -4,6 +4,23 @@
 
 ## next
 
+## 7.0.1.dev4.0.0
+* M: get is removed in favor of getitem and one
+
+## 7.0.1.dev301
+* p: weather data leap year observed is defaulted to 'yes' (not 'no')
+
+## 7.0.1.dev300
+* M: queryset api was modified (get was introduced)
+* M: table api was modified (get was introduced)
+* M: record api was modified (.get_pk() is now .pk)
+
+## 7.0.1.dev222
+* p: cast epw year/month/day/hour to int in case they are floats
+
+## 7.0.1.dev221
+* p: python 3.7 support
+
 ## 7.0.1.dev220
 * m: simulation object can now connect to non-oplus simulations
 
