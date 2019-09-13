@@ -132,10 +132,10 @@ class Idd:
                 continue
 
             # unnamed field descriptors
-            match = re.search(r"^\s*([AN]\d+([;,])\s*)+\\note.*$", line)
+            match = re.search(r"^\s*([AN]\d+[;,]\s*)+.*$", line)
             if match is not None:
                 # identify
-                fields_l = [s.strip() for s in line.split(r"\note")[0].strip()[:-1].split(",")]
+                fields_l = [s.strip() for s in match.group(1).strip()[:-1].split(",")]
                 for fieldd_s in fields_l:
                     fieldd_type = fieldd_s[0]
 
@@ -168,4 +168,4 @@ class Idd:
                 rd, field_descriptor = None, None
                 continue
 
-            raise RuntimeError("Line %i not parsed: '%s'." % (i+1, raw_line))
+            raise RuntimeError("Line %i not parsed: '%s'." % (i+3, raw_line))

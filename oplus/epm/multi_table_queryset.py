@@ -46,3 +46,5 @@ class MultiTableQueryset:
     def __len__(self):
         # works with 0 (checked)
         return len(self._querysets)
+
+# todo: !! [GL] adapt syntax to new obat syntax !!

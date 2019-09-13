@@ -5,13 +5,14 @@ def correct_idd(idd):
     fd = td.get_field_descriptor(1)
     fd.append_tag("begin-extensible")
 
-    # Table:MultiVariableLookup extensible info
-    # extensible cycle_len should be 1 (not 20), cycle_start should be 20 (not 22)
-    td = idd.table_descriptors["table_multivariablelookup"]
-    del td.tags["extensible:20"]
-    td.add_tag("extensible:1")
-    fd = td.get_field_descriptor(20)
-    fd.append_tag("begin-extensible")
+    if idd.version < (9, 2, 0):
+        # Table:MultiVariableLookup extensible info
+        # extensible cycle_len should be 1 (not 20), cycle_start should be 20 (not 22)
+        td = idd.table_descriptors["table_multivariablelookup"]
+        del td.tags["extensible:20"]
+        td.add_tag("extensible:1")
+        fd = td.get_field_descriptor(20)
+        fd.append_tag("begin-extensible")
 
     # EnergyManagementSystem:Sensor add retain case
     fd = idd.table_descriptors["energymanagementsystem_sensor"].get_field_descriptor(2)
@@ -22,7 +23,7 @@ def correct_idd(idd):
     fd.append_tag("retaincase")
 
     # Meter:Custom add retain case
-    fd = idd.table_descriptors["meter_custom"].get_field_descriptor(3)
+    fd = idd.table_descriptors["meter_custom"].get_field_descriptor(2)
     fd.append_tag("retaincase")
 
     if idd.version == (9, 0, 1):  # was corrected in 9.1.0

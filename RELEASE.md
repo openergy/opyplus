@@ -2,7 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 7.0.1.dev4.5.0
+* m: idd 9.2.0 pre-release was integrated (E+: v9.2.0-IOFreeze)
+* p: idd debug script slightly changed (Meter:Custom index 3->2 for retaincase)
 
 ## 7.0.1.dev4.0.0
 * M: get is removed in favor of getitem and one
