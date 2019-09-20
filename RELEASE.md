@@ -3,6 +3,7 @@
 **M: major, m: minor, p: patch**
 
 ## next
+* p : fix bug parse idd < 8.2.0
 
 ## 7.0.1.dev4.5.0
 * m: idd 9.2.0 pre-release was integrated (E+: v9.2.0-IOFreeze)
