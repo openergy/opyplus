@@ -78,7 +78,7 @@ class Record:
             field_descriptor.check_not_required()
 
             # check not pk (in case idd was badly written)
-            if i == 0 and not self._table._dev_auto_pk:
+            if i == 0 and not self._table._dev_no_pk:
                 raise FieldValidationError(
                     f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
@@ -92,14 +92,14 @@ class Record:
         # prepare value
         value = field_descriptor.deserialize(value, index, check_length=self.get_epm()._dev_check_length)
 
-        # if relevant, store current pk to signal change to table later on
-        old_pk = None
-        if index == 0 and not self._table._dev_auto_pk:
+        # if relevant, store current id to signal change to table later on
+        old_id = None
+        if index == 0 and not self._table._dev_no_pk:
             # retrieve old value
-            old_value = self._data.get(0)  # we use get, because record may not have a pk yet if it is being created
+            old_value = self._data.get(0)  # we use get, because record may not have an id yet if it is being created
 
             # manage record hooks (should not be any other special field)
-            old_pk = old_value.target_value if isinstance(old_value, RecordHook) else old_value
+            old_id = old_value.target_value if isinstance(old_value, RecordHook) else old_value
 
         # manage links
         if isinstance(value, Link):
@@ -135,9 +135,9 @@ class Record:
         # set value
         self._data[index] = value
 
-        # signal pk update if relevant
-        if old_pk is not None:
-            self._table._dev_record_pk_was_updated(old_pk)
+        # signal id update if relevant
+        if old_id is not None:
+            self._table._dev_record_id_was_updated(old_id)
 
     def _dev_set_none_without_unregistering(self, index, check_not_required=True):
         # get field descriptor
@@ -148,7 +148,7 @@ class Record:
             field_descriptor.check_not_required()
 
         # check not pk (in case idd was badly written)
-        if not self._table._dev_auto_pk and index == 0:
+        if not self._table._dev_no_pk and index == 0:
             raise FieldValidationError(
                 f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
@@ -212,10 +212,10 @@ class Record:
         if self._table is None:
             return "<Record (deleted)>"
 
-        if self._table._dev_auto_pk:
+        if self._table._dev_no_pk:
             return f"<Record {self.get_table()._dev_descriptor.table_name}>"
 
-        return f"<Record {self.get_table().get_name()} '{self.pk}'>"
+        return f"<Record {self.get_table().get_name()} '{self.id}'>"
 
     def __str__(self):
         if self._table is None:
@@ -344,13 +344,13 @@ class Record:
         return self_len <= other_len
 
     @property
-    def pk(self):
+    def id(self):
         """
         Returns
         -------
         If record has a name, returns its name, else returns record's python id.
         """
-        return id(self) if self._table._dev_auto_pk else self[0]
+        return id(self) if self._table._dev_no_pk else self[0]
 
     # get context
     def get_epm(self):
@@ -437,7 +437,7 @@ class Record:
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
-        #     * record is stored in table (=> pk uniqueness is checked)
+        #     * record is stored in table (=> id uniqueness is checked)
         # 2. activate: hooks, links, external files
 
         data = or_data if data is None else data
@@ -460,8 +460,8 @@ class Record:
         Copied record.
         """
         # todo: check this really works, !! must not use same link, hook, external_file, ... for different records !!
-        # auto pk tables can just be copied
-        if self._table._dev_auto_pk:
+        # no pk tables can just be copied
+        if self._table._dev_no_pk:
             return self._table.add(self._data)
 
         # for ref pk tables, must manage name
