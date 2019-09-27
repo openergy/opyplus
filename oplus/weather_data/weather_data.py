@@ -170,7 +170,7 @@ class WeatherData:
             to_str(self._headers["wmo"]),
             to_str(self._headers["latitude"]),
             to_str(self._headers["longitude"]),
-            to_str(self._headers["timezone_offset"]),
+            to_str(self._headers["timezone_offset"]).split(":")[0], #todo: [GL] clean it
             to_str(self._headers["elevation"])
         ]
 
