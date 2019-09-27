@@ -378,8 +378,8 @@ class Simulation:
         return WeatherData.load(self.get_resource_path("epw"))
 
     @check_status(FINISHED)
-    def get_out_eso(self):
-        return StandardOutput(self.get_resource_path("eso"))
+    def get_out_eso(self, print_function=lambda x: None):
+        return StandardOutput(self.get_resource_path("eso"), print_function=print_function)
 
     @check_status(FINISHED)
     def get_out_eio(self):
