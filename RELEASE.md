@@ -2,6 +2,9 @@
 
 **M: major, m: minor, p: patch**
 
+## 7.0.1.dev4.6.0
+* m: added print function to simulation.get_out_eso
+
 ## 7.0.1.dev4.5.1
 * p : fix bug parse idd < 8.2.0
 

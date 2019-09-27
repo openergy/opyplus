@@ -1,5 +1,6 @@
 import collections
 import re
+import time
 
 from .output_environment import OutputEnvironment, EACH_CALL, DAILY, MONTHLY, ANNUAL, RUN_PERIOD, SUB_HOURLY, \
     FREQUENCIES
@@ -11,7 +12,7 @@ comment_brackets_pattern = re.compile(r"\s\[[\w,]+\]")
 METER = "Meter"
 
 
-def parse_eso(file_like):
+def parse_eso(file_like, print_function=lambda x: None):
     # ----------------------- LOAD METERS
     # VERSION
     row_l = next(file_like).split(",")
@@ -25,7 +26,15 @@ def parse_eso(file_like):
     # variables
     variables_by_freq = dict()  # timestep: variables
 
+    # initialize timer
+    start = time.time()
+    row_num = 1
     while True:
+        if time.time() - start > 60:
+            start = time.time()
+            print_function(f"parsing E+ eso, row: {row_num}")
+
+        row_num += 1
         row = next(file_like).strip()
 
         # leave if finished

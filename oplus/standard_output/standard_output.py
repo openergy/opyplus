@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class StandardOutput:
-    def __init__(self, buffer_or_path, start_year=None):
+    def __init__(self, buffer_or_path, start_year=None, print_function=lambda x: None):
         """
         Parameters
         ----------
@@ -24,7 +24,7 @@ class StandardOutput:
         self._path, buffer = to_buffer(buffer_or_path)
         self._start_year = None
         with buffer as f:
-            self._environments_by_title, self._variables_by_freq = parse_eso(f)
+            self._environments_by_title, self._variables_by_freq = parse_eso(f, print_function=print_function)
         if start_year is not None:
             self.create_datetime_index(start_year)
 
