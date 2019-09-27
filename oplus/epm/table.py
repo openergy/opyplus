@@ -59,8 +59,8 @@ class Table:
         self._epm = epm
         self._records = dict()
 
-        # auto pk if first field is not a required reference
-        self._dev_auto_pk = not (
+        # no pk if first field is not a required reference
+        self._dev_no_pk = not (
                 (table_descriptor.field_descriptors[0].detailed_type == "reference") and
                 ("required-field" in table_descriptor.field_descriptors[0].tags)
         )
@@ -73,19 +73,19 @@ class Table:
         if table_hooks_references is not None:
             self._epm._dev_relations_manager.register_table_hook(table_hooks_references, self)
         
-    def _dev_record_pk_was_updated(self, old_pk):
-        # remove old pk
-        record = self._records.pop(old_pk)
+    def _dev_record_id_was_updated(self, old_id):
+        # remove old id
+        record = self._records.pop(old_id)
 
         # check uniqueness
-        new_pk = record.pk
-        if new_pk in self._records:
+        new_id = record.id
+        if new_id in self._records:
             field_descriptor = record.get_field_descriptor(0)
             raise FieldValidationError(
-                f"Primary key already exists, can't create. {field_descriptor.get_error_location_message(new_pk)}")
+                f"Primary key already exists, can't create. {field_descriptor.get_error_location_message(new_id)}")
 
-        # store with new pk
-        self._records[new_pk] = record
+        # store with new id
+        self._records[new_id] = record
 
     def _dev_add_inert(self, records_data):
         """
@@ -101,7 +101,7 @@ class Table:
 
             # store
             # we don't check uniqueness here => will be done while checking hooks
-            self._records[record.pk] = record
+            self._records[record.id] = record
             
             # remember record
             added_records.append(record)
@@ -109,7 +109,7 @@ class Table:
         return added_records
 
     def _dev_remove_record_without_unregistering(self, record):
-        del self._records[record.pk]
+        del self._records[record.id]
 
     # --------------------------------------------- public api ---------------------------------------------------------
     def __repr__(self):
@@ -117,9 +117,9 @@ class Table:
 
     def __str__(self):
         header = f"Table {self.get_name()} ({self.get_ref()})"
-        if self._dev_auto_pk:
+        if self._dev_no_pk:
             return header
-        return header + "\n" + "\n".join(f"  {pk}" for pk in sorted(self._records))
+        return header + "\n" + "\n".join(f"  {record.id}" for record in sorted(self._records))
 
     def __getitem__(self, item):
         """
@@ -185,7 +185,7 @@ class Table:
         Parameters
         ----------
         filter_by: callable or str, default None
-            if str: record pk
+            if str: record id
             if callable: a callable must take one argument (a record of table), and return True to keep record,
             or False to skip it. Example : .one(lambda x: x.name == "my_name").
             if None: records are not filtered.
@@ -196,18 +196,18 @@ class Table:
 
         Raises
         ------
-        TypeError if pk search on a table that does not have a name field
+        TypeError if id search on a table that does not have a pk
         RecordDoesNotExistError if no record is found
         MultipleRecordsReturnedError if multiple records are found
         """
         if isinstance(filter_by, str):
-            if self._dev_auto_pk:
-                raise TypeError(f"table {self.get_ref()} does not have a primary key, can't use getitem syntax")
+            if self._dev_no_pk:
+                raise TypeError(f"table {self.get_ref()} does not have a primary key, can't use string syntax")
             try:
                 return self._records[filter_by]
             except KeyError:
                 raise RecordDoesNotExistError(
-                    f"table {self.get_ref()} does not contain a record who's pk is '{filter_by}'")
+                    f"table {self.get_ref()} does not contain a record who's id is '{filter_by}'")
         return Queryset(self, records=self._records.values()).one(filter_by=filter_by)
 
     # construct
@@ -234,7 +234,7 @@ class Table:
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
-        #     * record is stored in table (=> pk uniqueness is checked)
+        #     * record is stored in table (=> id uniqueness is checked)
         # 2. activate: hooks, links, external files
 
         # add inert

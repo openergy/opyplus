@@ -126,12 +126,12 @@ class Queryset:
         """
         # filter if needed
         if isinstance(filter_by, str):
-            if self._table._dev_auto_pk:
+            if self._table._dev_no_pk:
                 raise KeyError(f"table {self._table.get_ref()} does not have a primary key, can't use getitem syntax")
-            for r in self._records:  # todo: we could store records in an ordered dict with pk keys
-                if r.pk == filter_by:
+            for r in self._records:  # later: we could store records in an ordered dict with id keys
+                if r.id == filter_by:
                     return r
-            raise RecordDoesNotExistError(f"queryset does not contain a record who's pk is '{filter_by}'")
+            raise RecordDoesNotExistError(f"queryset does not contain a record who's id is '{filter_by}'")
 
         qs = self if filter_by is None else self.select(filter_by=filter_by)
 

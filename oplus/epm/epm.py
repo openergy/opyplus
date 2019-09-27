@@ -160,7 +160,7 @@ class Epm:
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
-        #     * record is stored in table (=> pk uniqueness is checked)
+        #     * record is stored in table (=> id uniqueness is checked)
         # 2. activate: hooks, links, external files
 
         # manage comment if any

@@ -52,13 +52,13 @@ class StaticIdfTest(unittest.TestCase):
             bsd = self.epms_d[eplus_version].BuILdINGsURFaCE_DETaILED
             self.assertEqual(bsd.get_ref(), ref)
 
-    def test_record_getitem_getattr_and_pk(self):
+    def test_record_getitem_getattr_and_id(self):
         bsd_name = "zn001:roof001"
         for eplus_version in iter_eplus_versions(self):
             bsd = self.epms_d[eplus_version].BuildingSurface_Detailed.one(bsd_name)
             self.assertEqual(bsd.name, bsd_name)
             self.assertEqual(bsd[0], bsd_name)
-            self.assertEqual(bsd.pk, bsd_name)
+            self.assertEqual(bsd.id, bsd_name)
 
     def test_get_table(self):
         for eplus_version in iter_eplus_versions(self):
@@ -125,7 +125,7 @@ class StaticIdfTest(unittest.TestCase):
             self.assertEqual(2, len(pointed))
 
             self.assertEqual("main zone", pointed.Zone.one().name)
-            self.assertEqual("r13wall", pointed.Construction.one().pk)
+            self.assertEqual("r13wall", pointed.Construction.one().id)
 
     # ----------------------------------------- construct --------------------------------------------------------------
     def test_add_records(self):
@@ -164,7 +164,7 @@ class StaticIdfTest(unittest.TestCase):
             self.assertEqual(3, len(schedules))
             self.assertEqual(set(schedules), set(schedule_compact.select(lambda x: "batch" in x.name)))
 
-    # todo: test pk change
+    # todo: test id change
     # todo: test link/hook change
     # todo: test extensible fields limitations
     # todo: check to_str, including comments and copyright

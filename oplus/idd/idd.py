@@ -79,7 +79,7 @@ class Idd:
         # store build
         row = next(open_buffer)
         row_l = row.split("IDD_BUILD ")
-        if len(row_l) == 2: # this row appeared in idd >= 8.2.0
+        if len(row_l) == 2:  # this row appeared in idd >= 8.2.0
           _, self.build = row.split("IDD_BUILD ")
 
         # iter
