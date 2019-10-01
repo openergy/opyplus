@@ -30,3 +30,8 @@ def correct_idd(idd):
         # Fan:SystemModel add reference
         fd = idd.table_descriptors["fan_systemmodel"].get_field_descriptor(0)
         fd.append_tag("reference", "FansCVandVAV")
+
+    # ZoneHvac:CoolingPanel:RadiantConvective:Water
+    fd = idd.table_descriptors["zonehvac_coolingpanel_radiantconvective_water"].get_field_descriptor(0)
+    fd.append_tag("reference-class-name", "validBranchEquipmentTypes")
+    fd.append_tag("reference", "validBranchEquipmentNames")
