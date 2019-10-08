@@ -23,6 +23,11 @@ class DataContainer:
         self.current_row = None
         self.df = None
 
+    def __str__(self):
+        msg = "DataContainer\n"
+        msg += f"  freq: {self.freq}\n"
+        return msg
+
     def register_instant(self, *args):
         v = {c: args[i] for (i, c) in enumerate(self.instant_columns)}
         # v.update({code: None for code in self.variables_by_code})
@@ -61,7 +66,7 @@ class DataContainer:
             if len({"month", "day"}.intersection(self.instant_columns)) == 2:
                 year_counter = (
                         (self.df[["month", "day"]] - self.df[["month", "day"]].shift()) ==
-                        pd.Series(dict(month=12, day=-31))
+                        pd.Series(dict(month=-11, day=-30))
                 ).all(axis=1).cumsum()
             elif "month" in self.instant_columns:
                 year_counter = ((self.df["month"] - self.df["month"].shift()) == -12).cumsum()

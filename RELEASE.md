@@ -4,6 +4,7 @@
 
 ## next
 * M: oplus records now have ids, not pks
+* p: create_datetime_index debug
 
 ## 7.0.1.dev4.6.0
 * m: added print function to simulation.get_out_eso

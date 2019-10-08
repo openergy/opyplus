@@ -184,10 +184,9 @@ class Simulation:
         # check info file exists, create it if not
         if not os.path.exists(self.get_resource_path("info")):
             logger.warning(
-                "Info file not found (info.json), we will creating one. "
+                "Info file not found (info.json), creating one. "
                 "This can happen if simulation was probably not created by oplus.")
 
-            # find idf file (try three known layouts, since eplus version is for the moment unknown)
             # todo: mutualise with layout code in _get_resource_rel_path
             lookup_paths = [
                 os.path.join(self._dir_abs_path, rel_path) for rel_path in (
