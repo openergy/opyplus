@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev5.0.0
 * M: oplus records now have ids, not pks
 * p: create_datetime_index debug
