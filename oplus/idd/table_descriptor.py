@@ -120,7 +120,7 @@ class TableDescriptor:
                 # calculate and return index
                 return cycle_start + (cycle_num-1)*cycle_len + pattern_num
 
-        err_msg = f"No field of '{self.table_name}' has ref '{ref}'.\nAvailable fields: \n -"
+        err_msg = f"No field of '{self.table_name}' has ref '{ref}'.\nAvailable fields: \n - "
         err_msg += "\n - ".join(fd.ref for fd in self._field_descriptors if fd.ref is not None)
         raise AttributeError(err_msg)
 

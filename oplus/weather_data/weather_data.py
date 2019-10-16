@@ -302,7 +302,6 @@ class WeatherData:
 
         # force frequency if needed
         if self._weather_series.index.freq != "H":
-            print(self._weather_series.loc[self._weather_series.index.duplicated()])
             forced_df = self._weather_series.asfreq("H")
             # check no change
             try:
