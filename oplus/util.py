@@ -8,7 +8,7 @@ import threading
 import contextlib
 import textwrap
 
-
+import cchardet as chardet
 import pandas as pd
 
 
@@ -173,7 +173,9 @@ def to_buffer(buffer_or_path):
         if not os.path.isfile(buffer_or_path):
             raise FileNotFoundError(f"no file found at given path: {buffer_or_path}")
         path = buffer_or_path
-        buffer = open(buffer_or_path, encoding=CONF.encoding)
+        with open(buffer_or_path, "rb") as f:
+            encoding = chardet.detect(f.read())
+        buffer = open(buffer_or_path, encoding=encoding["encoding"], errors="ignore")
     else:
         path = None
         buffer = buffer_or_path

@@ -2,3 +2,4 @@ pandas>=0.19.2,<0.25
 nose>=1.3.7,<4.1
 unidecode>=1.0.22,<2.0
 python-slugify>=3.0.2,<4.0
+cchardet>=2.1.4,<3.0
