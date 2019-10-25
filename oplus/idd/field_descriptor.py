@@ -112,7 +112,13 @@ class FieldDescriptor:
             
             if self.detailed_type == "integer":
                 try:
-                    return int(value)
+                    try:
+                        return int(value)
+                    except ValueError:
+                        i = float(value)
+                        if not i.is_integer():
+                            raise ValueError
+                        return int(i)
                 except:
                     raise FieldValidationError(
                         f"Couldn't parse to integer. {self.get_error_location_message(value, index=index)}"
