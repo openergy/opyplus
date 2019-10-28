@@ -6,7 +6,7 @@ import shutil
 import stat
 
 from oplus import Epm, WeatherData, CONF
-from oplus.util import version_str_to_version, run_subprocess, LoggerStreamWriter
+from oplus.util import version_str_to_version, run_subprocess, LoggerStreamWriter, PrintFunctionStreamWriter
 from .compatibility import OUTPUT_FILES_LAYOUTS, SIMULATION_INPUT_COMMAND_STYLES, SIMULATION_COMMAND_STYLES, \
     get_output_files_layout, get_simulated_epw_path, get_simulation_base_command, get_simulation_input_command_style, \
     get_simulation_command_style, get_eplus_base_dir_path
@@ -266,10 +266,12 @@ class Simulation:
         return cls(base_dir_path, simulation_name=simulation_name)
 
     @check_status(EMPTY)
-    def simulate(self, stdout=None, stderr=None, beat_freq=None):
+    def simulate(self, print_function=None, beat_freq=None):
         # manage defaults
-        stdout = LoggerStreamWriter(logger_name=__name__, level=logging.INFO) if stdout is None else stdout
-        stderr = LoggerStreamWriter(logger_name=__name__, level=logging.ERROR) if stderr is None else stderr
+        if print_function is not None:
+            std_out_err = PrintFunctionStreamWriter(print_function)
+        else:
+            std_out_err = LoggerStreamWriter(logger_name=__name__, level=logging.INFO)
 
         # prepare useful variables
         version = self._info.eplus_version
@@ -318,8 +320,8 @@ class Simulation:
         run_subprocess(
             cmd_l,
             cwd=self._dir_abs_path,
-            stdout=stdout,
-            stderr=stderr,
+            stdout=std_out_err,
+            stderr=std_out_err,
             beat_freq=beat_freq
         )
 
@@ -407,8 +409,7 @@ def simulate(
         weather_data_or_buffer_or_path,
         base_dir_path,
         simulation_name=None,
-        stdout=None,
-        stderr=None,
+        print_function=None,
         beat_freq=None
 ):
     """
@@ -420,10 +421,8 @@ def simulate(
     simulation_name: str, default None
         if provided, simulation will be done in {base_dir_path}/{simulation_name}
         else, simulation will be done in {base_dir_path}
-    stdout: stream, default logger.info
-        stream where EnergyPlus standard output is redirected
-    stderr: stream, default logger.error
-        stream where EnergyPlus standard error is redirected
+    print_function:
+        interface fct(message): do what you want with message
     beat_freq: float, default None
         if provided, subprocess in which EnergyPlus is run will write at given frequency in standard output. May
         be used to monitor subprocess state.
@@ -441,7 +440,7 @@ def simulate(
     )
 
     # simulate
-    s.simulate(stdout=stdout, stderr=stderr, beat_freq=beat_freq)
+    s.simulate(print_function=print_function, beat_freq=beat_freq)
 
     # return
     return s

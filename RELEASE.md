@@ -3,6 +3,7 @@
 **M: major, m: minor, p: patch**
 
 ## next
+* M: new print_function style used for simulation logs
 
 ## 7.0.1.dev5.0.1
 * p: field_descriptor integer parse debug

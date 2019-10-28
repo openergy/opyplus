@@ -78,6 +78,16 @@ class LoggerStreamWriter:
             self._logger.log(self._level, message)
 
 
+class PrintFunctionStreamWriter:
+    def __init__(self, print_function):
+        self._print_function = print_function
+
+    def write(self, message):
+        message = message.strip()
+        if message != "":
+            self._print_function(message)
+
+
 def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, beat_freq=None):
     """
     Parameters
