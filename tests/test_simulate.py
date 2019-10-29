@@ -58,12 +58,6 @@ class SimulateTest(unittest.TestCase):
             # aggregate messages
             complete_message = "\n".join(all_messages)
 
-            # check completion
-            self.assertIn(
-                "EnergyPlus Completed Successfully.",
-                complete_message
-            )
-
             # check subprocess is still running
             self.assertIn("subprocess is still running", complete_message)
 
