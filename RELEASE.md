@@ -2,6 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
+## next
+
 ## 7.0.1.dev6.0.0
 * M: new print_function style used for simulation logs
 
