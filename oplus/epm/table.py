@@ -119,7 +119,7 @@ class Table:
         header = f"Table {self.get_name()} ({self.get_ref()})"
         if self._dev_no_pk:
             return header
-        return header + "\n" + "\n".join(f"  {record.id}" for record in sorted(self._records))
+        return header + "\n" + "\n".join(f"  {record.id}" for record in sorted(self._records.values()))
 
     def __getitem__(self, item):
         """

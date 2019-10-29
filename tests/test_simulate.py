@@ -35,8 +35,10 @@ class SimulateTest(unittest.TestCase):
             rp.end_day_of_month = 1
 
             # prepare outputs
-            out_f = io.StringIO()
-            err_f = io.StringIO()
+            all_messages = []
+
+            def print_fct(message):
+                all_messages.append(message)
 
             # simulate
             with tempfile.TemporaryDirectory() as dir_path:
@@ -45,8 +47,7 @@ class SimulateTest(unittest.TestCase):
                     idf,
                     epw_path,
                     dir_path,
-                    stdout=out_f,
-                    stderr=err_f,
+                    print_function=print_fct,
                     beat_freq=0.1
                 )
 
@@ -54,16 +55,18 @@ class SimulateTest(unittest.TestCase):
                 eso_df = s.get_out_eso().get_data()
                 self.assertEqual(24, len(eso_df))
 
-            # check err (manage differences between eplus versions)
-            err_out = err_f.getvalue()
-            self.assertTrue(
-                (err_out == "") or
-                ("EnergyPlus Completed Successfully.\n" in err_out)
+            # aggregate messages
+            complete_message = "\n".join(all_messages)
+
+            # check completion
+            self.assertIn(
+                "EnergyPlus Completed Successfully.",
+                complete_message
             )
-            # check beat
-            out_str = out_f.getvalue()
-            self.assertIn("subprocess is still running", out_str)
+
+            # check subprocess is still running
+            self.assertIn("subprocess is still running", complete_message)
 
             # check stdout
-            out_str = out_str.replace("subprocess is still running\n", "")
-            self.assertGreater(len(out_str.split("\n")), 15)  # check that more than 15 lines
+            without_subprocess_message = complete_message.replace("subprocess is still running\n", "")
+            self.assertGreater(len(without_subprocess_message.split("\n")), 15)  # check that more than 15 lines
