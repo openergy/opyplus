@@ -2,7 +2,8 @@
 
 **M: major, m: minor, p: patch**
 
-## next
+## 8.0.0
+* M: new official version
 
 ## 7.0.1.dev6.0.0
 * M: new print_function style used for simulation logs
