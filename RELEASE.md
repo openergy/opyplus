@@ -1,8 +1,11 @@
 # oplus
 
-**M: major, m: minor, p: patch**
+    M: major
+    m: minor
+    p: patch
 
 ## next
+* p: standard output non managed version format added
 
 ## 8.0.0
 * M: new official version

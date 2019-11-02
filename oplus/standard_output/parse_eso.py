@@ -15,8 +15,20 @@ METER = "Meter"
 def parse_eso(file_like, print_function=lambda x: None):
     # ----------------------- LOAD METERS
     # VERSION
-    row_l = next(file_like).split(",")
-    match = re.fullmatch(r"\s*Version\s*(\d+.\d+.\d+)-([\w\d]+)\s*", row_l[2])
+    row_s = next(file_like)
+    row_l = row_s.split(",")
+    if len(row_l) == 4:  # most common syntax
+        # ex: Program Version,EnergyPlus, Version 9.2.0-921312fa1d, YMD=2019.10.30 13:21
+        version_s = row_l[2]
+        match = re.fullmatch(r"\s*Version\s*(\d+\.\d+\.\d+)-([\w\d]+)\s*", version_s)
+    elif len(row_l) == 3:  # other syntax
+        # Program Version,EnergyPlus-Windows-64 8.0.0.008, YMD=2019.10.31 21:19
+        version_s = row_l[1]
+        match = re.fullmatch(r"\s*EnergyPlus-[\w\d\-]+\s(\d+\.\d+\.\d+)\.([\d\w]+)\s*", version_s)
+    else:
+        match = None
+    if match is None:
+        raise RuntimeError(f"unknown version format: '{row_s}'")
     detailed_version = tuple(int(s) for s in match.group(1).split(".")) + (match.group(2),)
 
     # for eplus >= 9, code 6 is for annual variables (did not exist before)
