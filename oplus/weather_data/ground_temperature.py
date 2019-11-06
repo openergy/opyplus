@@ -7,7 +7,7 @@ class GroundTemperature:
             soil_specific_heat,
             monthly_average_ground_temperatures  # 12 values
     ):
-        # todo: checks
+        # todo: [GL] checks
         self.depth = depth
         self.soil_conductivity = soil_conductivity
         self.soil_density = soil_density

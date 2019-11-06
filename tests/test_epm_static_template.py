@@ -164,9 +164,9 @@ class StaticIdfTest(unittest.TestCase):
             self.assertEqual(3, len(schedules))
             self.assertEqual(set(schedules), set(schedule_compact.select(lambda x: "batch" in x.name)))
 
-    # todo: test id change
-    # todo: test link/hook change
-    # todo: test extensible fields limitations
-    # todo: check to_str, including comments and copyright
-    # todo: check __dir__ and help
-    # todo: shouldn't we propose a record.delete() method ? (and queryset.delete()) ?
+    # todo: [GL] test id change
+    # todo: [GL] test link/hook change
+    # todo: [GL] test extensible fields limitations
+    # todo: [GL] check to_str, including comments and copyright
+    # todo: [GL] check __dir__ and help
+    # todo: [GL] shouldn't we propose a record.delete() method ? (and queryset.delete()) ?

@@ -14,7 +14,7 @@ from pandas.util.testing import assert_frame_equal
 
 
 class EPlusWeatherData(unittest.TestCase):
-    # todo: make better checks
+    # todo: [GL] make better checks
     def test_weather_series(self):
 
         for eplus_version in iter_eplus_versions(self):
@@ -36,7 +36,7 @@ class EPlusWeatherData(unittest.TestCase):
                 weather_data1.get_weather_series()
             )
 
-    # todo: test extensively (including headers)
+    # todo: [GL] test extensively (including headers)
 
     # def test_df_get_and_set_integrity(self):
     #     for _ in iter_eplus_versions(self):

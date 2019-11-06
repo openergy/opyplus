@@ -33,7 +33,7 @@ def _copy_without_read_only(src, dst):
 
 
 def _get_done_simulation_status(err_path):
-    # todo: improve, see with AL
+    # todo: [GL] [AL] improve
     with open(err_path) as f:
         content = f.read()
     finished = "EnergyPlus Completed Successfully" in content
@@ -187,7 +187,7 @@ class Simulation:
                 "Info file not found (info.json), creating one. "
                 "This can happen if simulation was probably not created by oplus.")
 
-            # todo: mutualise with layout code in _get_resource_rel_path
+            # todo: [AL] mutualise with layout code in _get_resource_rel_path
             lookup_paths = [
                 os.path.join(self._dir_abs_path, rel_path) for rel_path in (
                     "eplusout.idf",

@@ -23,9 +23,9 @@ class Err:
         self._simulation_step_list = list(set(self._df.columns.levels[0]))
 
     def _parse(self):
-        # todo: manage information with ahead "*************"
-        # todo: manage "error flag" :
-        # todo: it corresponds to error type for each error_category lines_s.split("=")[0] --> MultiIndex
+        # todo: [GL] manage information with ahead "*************"
+        # todo: [GL] manage "error flag" :
+        # todo: [GL] it corresponds to error type for each error_category lines_s.split("=")[0] --> MultiIndex
 
         # first step: warmup
         simulation_step = "Warmup"
@@ -41,7 +41,7 @@ class Err:
                 if "Program Version,EnergyPlus" in line_s:
                     self.info["EnergyPlus Simulation Version"] = str(line_s.split(",")[2].rstrip("Version "))
                     if "IDD_Version" in line_s:  # is the case for eplus_version < 9.0.0
-                        # todo: manage properly in compatibility
+                        # todo: [GL] manage properly in compatibility
                         self.info["Idd_Version"] = str(line_s.split("IDD_Version ")[1])
                     else:
                         self.info["Idd_Version"] = None

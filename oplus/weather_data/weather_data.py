@@ -10,7 +10,7 @@ from ..exceptions import DatetimeInstantsCreationError
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-# todo: change datetime api (see obat)
+# todo: [GL] change datetime api (see obat)
 
 # AuxiliaryPrograms, p25, 63
 # year is used, but only in E+>=9 if epm option runperiod:treat_weather_as_actual is activated. We consider it
@@ -130,7 +130,7 @@ class WeatherData:
             self._start_day_of_week = start_day_of_week
 
         # headers
-        # todo: check headers
+        # todo: [GL] check headers
         self._headers = dict(
             # mandatory location
             latitude=latitude,
@@ -175,7 +175,7 @@ class WeatherData:
         ]
 
         # design conditions
-        # todo: understand why definition (Auxiliary programs differs from example files (one additionnal comma
+        # todo: [GL] understand why definition (Auxiliary programs differs from example files (one additionnal comma
         #  in example file USA_FL_Tampa.Intl.AP.722110_TMY3.epw for example, after source)
         design_conditions = [
             "DESIGN CONDITIONS",

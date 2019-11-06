@@ -20,4 +20,4 @@ class IdfParseTest(unittest.TestCase):
             ) as f:
                 json_data = parse_idf(f)
 
-        # todo: test properly
+        # todo: [GL] test properly

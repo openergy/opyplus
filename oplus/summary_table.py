@@ -93,7 +93,7 @@ class SummaryTable:
                     self.report_tables_ref["{r}_{f}".format(r=report, f=for_)][table_name]["linestart"] = line_nb
                     search_end = True
 
-        # todo: manage key error correctly
+        # todo: [GL] manage key error correctly
         delete_t = []
         for report_key in self.report_tables_ref.keys():
             for table_key in self.report_tables_ref[report_key].keys():

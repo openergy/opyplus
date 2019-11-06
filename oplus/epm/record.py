@@ -1,6 +1,7 @@
 import uuid
 import os
 import collections
+import textwrap
 
 from .link import Link, NONE_LINK
 from .record_hook import RecordHook, NONE_RECORD_HOOK
@@ -38,6 +39,9 @@ class Record:
         """
         self._table = table  # when record is deleted, __init__ fields are set to None
         self._data = {}
+
+        # comment
+        self._comment = ""  # todo-later: manage properly (for the moment only used in to_idf)
 
         # signal initialized
         self._initialized = True
@@ -448,6 +452,10 @@ class Record:
         self._dev_activate_links()
         self._dev_activate_external_files()
 
+    def set_comment(self, comment):
+        # todo-later: manage properly (for the moment only used in to_idf)
+        self._comment = comment
+
     def copy(self, new_name=None):
         """
         Parameters
@@ -459,7 +467,7 @@ class Record:
         -------
         Copied record.
         """
-        # todo: check this really works, !! must not use same link, hook, external_file, ... for different records !!
+        # todo: [GL] check this really works, !! must not use same link, hook, external_file, ... for different records !!
         # no pk tables can just be copied
         if self._table._dev_no_pk:
             return self._table.add(self._data)
@@ -655,11 +663,13 @@ class Record:
         -------
         idf string
         """
-
         json_data = self.to_json_data(model_name=model_name)
-            
+
+        # comment
+        s = "" if self._comment == "" else f"{textwrap.indent(self._comment, '! ')}\n"
+
         # record descriptor ref
-        s = f"{self._table._dev_descriptor.table_name},\n"
+        s += f"{self._table._dev_descriptor.table_name},\n"
 
         # fields
         # fields_nb: we don't use len(self) but max(self). We wan't to stop if no more values (even base fields)

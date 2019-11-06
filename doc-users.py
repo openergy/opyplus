@@ -192,12 +192,12 @@ pointing = sch.get_pointing_records()
 print("pointing on sch:")
 for _pointing in sch.get_pointing_records():
     print(_pointing)
-# todo: explore by table
+# todo: [GL] explore by table
 setpoint = pointing.ThermostatSetpoint_SingleHeating[0]
 print("pointed by setpoint:")
 for _pointed in setpoint.get_pointed_records():
     print(_pointed)
-# todo: explore by table
+# todo: [GL] explore by table
 
 ## ------------------------------------------ case management ----------------------------------------------------------
 #@ ### case management

@@ -6,6 +6,7 @@
 
 ## next
 * p: standard output non managed version format added
+* m: write-only comments added
 
 ## 8.0.0
 * M: new official version
