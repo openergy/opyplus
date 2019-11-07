@@ -247,6 +247,8 @@ class Epm:
 
     # construct
     def set_comment(self, comment):
+        if comment is None:
+            comment = ""
         self._comment = str(comment)
 
     def set_defaults(self):

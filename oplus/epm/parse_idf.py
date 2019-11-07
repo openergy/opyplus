@@ -9,6 +9,7 @@ def parse_idf(file_like):
     in idf: header comment, chapter comments, records
     in record: head comment, field comments, tail comment
     """
+    # todo-later: manage record comments
     tables_data = {}
     head_comment = ""
     record_data = None

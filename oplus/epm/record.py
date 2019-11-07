@@ -41,13 +41,14 @@ class Record:
         self._data = {}
 
         # comment
-        self._comment = ""  # todo-later: manage properly (for the moment only used in to_idf)
+        self._comment = ""
 
         # signal initialized
         self._initialized = True
 
         # set data if any
         if data is not None:
+            self._comment = data.pop("_comment", "")
             self._update_inert(data)
 
     def _field_key_to_index(self, ref_or_index):
@@ -367,6 +368,9 @@ class Record:
         return self._table.get_ref()
 
     # explore specific info
+    def get_comment(self):
+        return self._comment
+
     def get_serialized_value(self, ref_or_index, model_name=None):
         """
         Parameters
@@ -650,7 +654,10 @@ class Record:
         -------
         A dictionary of serialized data.
         """
-        return collections.OrderedDict([(k, self.get_serialized_value(k, model_name=model_name )) for k in self._data])
+        return collections.OrderedDict(
+            [("_comment", self._comment)]
+            + [(k, self.get_serialized_value(k, model_name=model_name)) for k in self._data]
+        )
     
     def to_idf(self, model_name=None):
         """
