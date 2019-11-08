@@ -160,6 +160,10 @@ class Simulation:
 
         return rel_path
 
+    @classmethod
+    def get_simulation_dir_path(cls, base_dir_path, simulation_name=None):
+        return base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
+
     def __init__(self, base_dir_path, simulation_name=None):
         """
         Parameters
@@ -173,9 +177,7 @@ class Simulation:
         possible to load an already simulated directory without having to define it's idf or epw.
         """
         # store absolute: important for eplus commands
-        self._dir_abs_path = os.path.abspath(
-            base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
-        )
+        self._dir_abs_path = self.get_simulation_dir_path(base_dir_path, simulation_name=simulation_name)
 
         # check directory exists
         if not os.path.isdir(self._dir_abs_path):
