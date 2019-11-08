@@ -4,6 +4,8 @@
     m: minor
     p: patch
 
+## next
+
 ## 8.1.0
 * p: standard output non managed version format added
 * m: write-only comments added
