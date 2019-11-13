@@ -4,6 +4,8 @@
     m: minor
     p: patch
 
+## next
+
 ## 8.1.2
 * p: jenkins debug
 
