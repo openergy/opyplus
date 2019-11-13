@@ -4,7 +4,8 @@
     m: minor
     p: patch
 
-## next
+## 8.1.1
+* p: simulation debug
 
 ## 8.1.0
 * p: standard output non managed version format added
