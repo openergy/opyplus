@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## 8.1.2
+* p: jenkins debug
+
 ## 8.1.1
 * p: simulation debug
 
