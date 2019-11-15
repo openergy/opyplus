@@ -1,8 +1,4 @@
-import os
-
 from oplus import CONF
-
-RESOURCES_DIR_PATH = os.path.join(os.path.dirname(__file__), "resources")
 
 TESTED_EPLUS_VERSIONS = [
     (8, 5, 0),

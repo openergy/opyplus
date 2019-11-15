@@ -103,6 +103,14 @@ def check_status(*authorized):
 
 
 class Simulation:
+    """
+    Simulation output data has following characteristics:
+    - convention: left (00:00 is [00:00;01:00[ for an hourly series)
+    - clock: tzt
+
+    Left convention applies to datetime index. In data columns, start and end of period are given (=> user can choose to
+    work with one convention or another).
+    """
     EMPTY = EMPTY
     RUNNING = RUNNING
     FINISHED = FINISHED

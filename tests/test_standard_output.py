@@ -2,8 +2,9 @@ import os
 import unittest
 import datetime as dt
 
-from oplus import Simulation, CONF as CONFIG, get_eplus_base_dir_path
-from tests.util import iter_eplus_versions, RESOURCES_DIR_PATH
+from oplus import Simulation
+from tests.util import iter_eplus_versions
+from tests.resources import Resources
 
 
 class StandardOutputTest(unittest.TestCase):
@@ -14,9 +15,7 @@ class StandardOutputTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             eplus_version_str = "-".join([str(v) for v in eplus_version])
             simulation_path = os.path.join(
-                RESOURCES_DIR_PATH,
-                "simulations-outputs",
-                "one_zone_uncontrolled",
+                Resources.SimulationsOutputs.one_zone_uncontrolled,
                 eplus_version_str
             )
             s = Simulation(simulation_path)
@@ -44,9 +43,7 @@ class StandardOutputTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             eplus_version_str = "-".join([str(v) for v in eplus_version])
             simulation_path = os.path.join(
-                RESOURCES_DIR_PATH,
-                "simulations-outputs",
-                "one_zone_uncontrolled",
+                Resources.SimulationsOutputs.one_zone_uncontrolled,
                 eplus_version_str
             )
             s = Simulation(simulation_path)

@@ -83,7 +83,7 @@ class DataContainer:
                     f"({self.df['year'].iloc[0]}), can't switch to datetime instants."
                 )
 
-        # manage other datetime columns
+        # manage other datetime columns (defaults are used when column is not relevant for given freq)
         for col, default in (
                 ("month", 1),
                 ("day", 1),

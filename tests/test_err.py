@@ -2,7 +2,9 @@ import unittest
 import os
 
 from oplus import Simulation
-from tests.util import iter_eplus_versions, RESOURCES_DIR_PATH
+from tests.util import iter_eplus_versions
+from tests.resources import Resources
+
 
 
 class ErrTest(unittest.TestCase):
@@ -10,9 +12,7 @@ class ErrTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             version_str = "-".join([str(v) for v in eplus_version])
             s = Simulation(os.path.join(
-                RESOURCES_DIR_PATH,
-                "simulations-outputs",
-                "one_zone_uncontrolled",
+                Resources.SimulationsOutputs.one_zone_uncontrolled,
                 version_str
             ))
             self.assertIsNotNone(s.get_out_err())

@@ -114,6 +114,24 @@ class WeatherData:
         comments_1
         comments_2
         start_day_of_week
+
+
+        Notes
+        -----
+        *right/left convention*
+        Epw has right convention: on an hourly basis, "Hour 1 is 00:01 to 01:00".
+        An epw day goes from hour 1 to hour 24.
+        This convention is maintained in the columns year, month, day, hour. It also seems to be respected for minutes
+        ((hour, minute) (1, 0) seems to go from 00:01 to 01:00).
+
+        When we create a datetime instant, the index is in left convention: instant 00:00 is 00:00 to 00:59. There is
+        therefore a slight approximation while converting left convention to right convention.
+
+        For the moment, minutes are not taken into account, and we only parse hourly data.
+
+        *daylight savings*
+        Epw weather series are in tzt. Daylight savings will be taken into account in simulation if epw or
+        idf parameter is filled (schedules are converted to dst and outputs remain tzt)
         """
         # weather series
         self._weather_series = _sanitize_weather_series(weather_series)
@@ -273,30 +291,15 @@ class WeatherData:
         start_year: int or None, default None
             if given, will force year column with start_year (multi-year not supported for now)
         """
-        #todo [GL] improve code - index were incorrect (use shift)
-        self._weather_series["year_"] = self._weather_series["year"].shift(1)
-        self._weather_series["month_"] = self._weather_series["month"].shift(1)
-        self._weather_series["day_"] = self._weather_series["day"].shift(1)
-        self._weather_series["hour_"] = self._weather_series["hour"].shift(1)
-
-        #todo [GL] manage multi year ?
-        def _get_right_index(x, start_year):
-            if x.hour == 24:
-                year = int(x.year_) if start_year is None else start_year
-                month = int(x.month_)
-                day = int(x.day_)
-                hour = int(x.hour - 1)
-            else:
-                year = int(x.year) if start_year is None else start_year
-                month = int(x.month)
-                day = int(x.day)
-                hour = int(x.hour - 1)
-            return dt.datetime(year, month, day, hour)
-
         # create and set index
         self._weather_series.index = pd.DatetimeIndex(self._weather_series.apply(
             # we cast to ints because of a pandas bug on apply which returns floats
-            lambda x: _get_right_index(x, start_year),
+            lambda x: dt.datetime(
+                int(x.year) if start_year is None else start_year,
+                int(x.month),
+                int(x.day),
+                int(x.hour - 1)
+            ),
             axis=1
         ))
 
@@ -380,7 +383,7 @@ class WeatherData:
 
     # ------------------------------------------------- save/load ------------------------------------------------------
     @classmethod
-    def load(cls, buffer_or_path):
+    def load(cls, buffer_or_path) -> "WeatherData":
         """
         Parameters
         ----------
@@ -437,7 +440,7 @@ class WeatherData:
         )
 
         # generate content
-        epw_content = self._headers_to_epw() + df.to_csv(
+        epw_content = self._headers_to_epw(use_datetimes=use_datetimes) + df.to_csv(
             header=False,
             index=False,
             line_terminator="\n"

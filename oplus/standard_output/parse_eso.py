@@ -13,6 +13,9 @@ METER = "Meter"
 
 
 def parse_eso(file_like, print_function=lambda x: None):
+    """
+    start and end instants are given in eso. we only use start instant because we want to work in left convention
+    """
     # ----------------------- LOAD METERS
     # VERSION
     row_s = next(file_like)

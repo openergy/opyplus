@@ -3,6 +3,8 @@ import os
 from oplus import CONF, simulate, Epm, get_eplus_base_dir_path
 from tests.util import TESTED_EPLUS_VERSIONS
 
+from tests.resources import Resources
+
 
 def one_zone_pre_process(epm):
     # set simulation control
@@ -49,12 +51,7 @@ def generate_outputs():
             building_dir_name = simulation_case["dir_name"]
 
             # prepare base dir
-            building_path = os.path.realpath(os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "simulations-outputs",
-                building_dir_name)
-            )
+            building_path = getattr(Resources.SimulationsOutputs, building_dir_name)
             if not os.path.isdir(building_path):
                 os.mkdir(building_path)
 
