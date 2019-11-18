@@ -44,23 +44,25 @@ class EPlusWeatherData(unittest.TestCase):
         without_datetimes = wd.to_epw(use_datetimes=False)
 
         # check coherence with initial
+
+        # without datetimes
         sf_diff, other_diff = compare_sf(sf_content, without_datetimes)
-        with open("sf_diff.txt", "w") as f:
-            f.write(sf_diff)
-        with open("other_diff.txt", "w") as f:
-            f.write(other_diff)
         self.assertEqual(sf_diff, other_diff)
-        # self.assertEqual(without_datetimes, initial_epw_content)
+
+        # with datetimes
+        sf_diff, other_diff = compare_sf(sf_content, with_datetimes, datetimes_where_used=True)
+        self.assertEqual(sf_diff, other_diff)
 
 
-def compare_sf(sf_content, other_content):
-    return _SfToEpwComparator(sf_content, other_content).diffs
+def compare_sf(sf_content, other_content, datetimes_where_used=False):
+    return _SfToEpwComparator(sf_content, other_content, datetimes_where_used=datetimes_where_used).diffs
 
 
 class _SfToEpwComparator:
-    def __init__(self, sf_content, other_content):
+    def __init__(self, sf_content, other_content, datetimes_where_used=False):
         self._sf_content = sf_content
         self._other_content = other_content
+        self._datetimes_where_used = datetimes_where_used
         self.sf_diff = ""
         self.other_diff = ""
         self._compare()
@@ -69,9 +71,7 @@ class _SfToEpwComparator:
     def diffs(self):
         return self.sf_diff, self.other_diff
 
-    def _compare(self, years_must_match=True):
-        import time, math
-        start = time.time()
+    def _compare(self):
         rows_to_skip = (
             1,  # SF differs from documentation, and we don't want to spend time on understanding
             2,  # not used for calculations
@@ -88,16 +88,26 @@ class _SfToEpwComparator:
             # manage rows that we don't expect to be equal
             if i == 6:  # comments 2 (must strip)
                 sf_row = ",".join([s.strip() for s in sf_row.split(",")])
-            elif i == 7:  # data periods (useless Data field and must strip)
-                sf_row = sf_row.replace("Data", "")
+            elif i == 7:  # data periods (useless Data field, useless space)
+                sf_row_l = _normalize_data_row(sf_row)
+                sf_row_l[3] = ""
+                sf_row_l[5] = sf_row_l[5].replace(" ", "")
+                other_row_l = _normalize_data_row(other_row)
+
+                # if datetimes where used, remove start and end info
+                sf_row_l = sf_row_l[:4]
+                other_row_l = other_row_l[:4]
+
+                sf_row, other_row = ",".join(sf_row_l), ",".join(other_row_l)
+
             elif i >= 8:
                 sf_row_l = _normalize_data_row(sf_row)
                 other_row_l = _normalize_data_row(other_row)
 
-                if not years_must_match:
+                if self._datetimes_where_used:
                     sf_row_l, other_row_l = sf_row_l[1:], other_row_l[1:]
-                sf_row = ",".join(sf_row_l)
-                other_row = ",".join(other_row_l)
+
+                sf_row, other_row = ",".join(sf_row_l), ",".join(other_row_l)
 
             # strip newlines
             sf_row, other_row = sf_row.strip(), other_row.strip()
@@ -105,7 +115,6 @@ class _SfToEpwComparator:
             # check diff and register if relevant
             if sf_row != other_row:
                 self._register_difference(i, sf_row, other_row)
-        print(time.time()-start)
 
     def _register_difference(self, row_num, sf_row, other_row):
         self.sf_diff += f"{row_num}: {sf_row}\n"
@@ -113,4 +122,11 @@ class _SfToEpwComparator:
 
 
 def _normalize_data_row(row) -> list:
-    return [str(float(v)) if j != 5 else v for (j, v) in enumerate(row.split(","))]
+    return [_normalize_value(value) for value in row.split(",")]
+
+
+def _normalize_value(value):
+    try:
+        return str(float(value))
+    except ValueError:
+        return value.strip()

@@ -24,35 +24,35 @@ COLUMNS = collections.OrderedDict((  # name: (used, missing, dtype)
     ("hour", (True, None, int)),
     ("minute", (False, None, str)),
     ("datasource", (False, None, str)),
-    ("drybulb", (True, 99.9, float)),
-    ("dewpoint", (True, 99.9, float)),
-    ("relhum", (True, 999, float)),
-    ("atmos_pressure", (True, 999999, float)),
-    ("exthorrad", (False, 9999, float)),
-    ("extdirrad", (False, 9999, float)),
-    ("horirsky", (True, 9999, float)),
-    ("glohorrad", (False, 9999, float)),
-    ("dirnorrad", (True, 9999, float)),
-    ("difhorrad", (True, 9999, float)),
-    ("glohorillum", (False, 999999, float)),
-    ("dirnorillum", (False, 999999, float)),
-    ("difhorillum", (False, 999999, float)),
-    ("zenlum", (False, 9999, float)),
-    ("winddir", (True, 999, float)),
-    ("windspd", (True, 999, float)),
-    ("totskycvr", (False, 99, float)),
-    ("opaqskycvr", (False, 99, float)),
-    ("visibility", (False, 9999, float)),
-    ("ceiling_hgt", (False, 99999, float)),
-    ("presweathobs", (True, 9, float)),
-    ("presweathcodes", (True, 999999999, str)),
-    ("precip_wtr", (False, 999, float)),
-    ("aerosol_opt_depth", (False, 0.999, float)),
-    ("snowdepth", (True, 999, float)),
-    ("days_last_snow", (False, 99, float)),
-    ("Albedo", (False, 999, float)),
-    ("liq_precip_depth", (True, 999, float)),
-    ("liq_precip_rate", (False, 99, float)),
+    ("drybulb", (True, 99.9, float)),  # °C, instantaneous
+    ("dewpoint", (True, 99.9, float)),  # °C, instantaneous
+    ("relhum", (True, 999, float)),  # %, instantaneous
+    ("atmos_pressure", (True, 999999, float)),  # Pa, instantaneous
+    ("exthorrad", (False, 9999, float)),  # Wh/m2, sum
+    ("extdirrad", (False, 9999, float)),  # Wh/m2, sum
+    ("horirsky", (True, 9999, float)),  # Wh/m2, sum
+    ("glohorrad", (False, 9999, float)),  # Wh/m2, sum
+    ("dirnorrad", (True, 9999, float)),  # Wh/m2, sum
+    ("difhorrad", (True, 9999, float)),  # Wh/m2, sum
+    ("glohorillum", (False, 999999, float)),  # lux, average
+    ("dirnorillum", (False, 999999, float)),  # lux, average
+    ("difhorillum", (False, 999999, float)),  # lux, average
+    ("zenlum", (False, 9999, float)),  # Cd/m2, average
+    ("winddir", (True, 999, float)),  # °, instantaneous
+    ("windspd", (True, 999, float)),  # m/s, instantaneous
+    ("totskycvr", (False, 99, float)),  # tenths of coverage, instantaneous
+    ("opaqskycvr", (False, 99, float)),  # tenths of coverage, instantaneous
+    ("visibility", (False, 9999, float)),  # km, instantaneous
+    ("ceiling_hgt", (False, 99999, float)),  # m, ?
+    ("presweathobs", (True, 9, float)),  # not relevant
+    ("presweathcodes", (True, 999999999, str)),  # ?
+    ("precip_wtr", (False, 999, float)),  # mm, sum
+    ("aerosol_opt_depth", (False, 0.999, float)),  # thousands, ?
+    ("snowdepth", (True, 999, float)),  # cm, sum
+    ("days_last_snow", (False, 99, float)),  # days, ?
+    ("Albedo", (False, 999, float)),  # ?
+    ("liq_precip_depth", (True, 999, float)),  # mm, instantaneous
+    ("liq_precip_rate", (False, 99, float)),  # hr, ?
 ))
 
 
@@ -114,24 +114,6 @@ class WeatherData:
         comments_1
         comments_2
         start_day_of_week
-
-
-        Notes
-        -----
-        *right/left convention*
-        Epw has right convention: on an hourly basis, "Hour 1 is 00:01 to 01:00".
-        An epw day goes from hour 1 to hour 24.
-        This convention is maintained in the columns year, month, day, hour. It also seems to be respected for minutes
-        ((hour, minute) (1, 0) seems to go from 00:01 to 01:00).
-
-        When we create a datetime instant, the index is in left convention: instant 00:00 is 00:00 to 00:59. There is
-        therefore a slight approximation while converting left convention to right convention.
-
-        For the moment, minutes are not taken into account, and we only parse hourly data.
-
-        *daylight savings*
-        Epw weather series are in tzt. Daylight savings will be taken into account in simulation if epw or
-        idf parameter is filled (schedules are converted to dst and outputs remain tzt)
         """
         # weather series
         self._weather_series = _sanitize_weather_series(weather_series)
@@ -193,8 +175,8 @@ class WeatherData:
         ]
 
         # design conditions
-        # todo: [GL] understand why definition (Auxiliary programs differs from example files (one additionnal comma
-        #  in example file USA_FL_Tampa.Intl.AP.722110_TMY3.epw for example, after source)
+        #  todo-later: understand why definition (Auxiliary programs differs from example files (one additionnal comma
+        #   in example file USA_FL_Tampa.Intl.AP.722110_TMY3.epw for example, after source)
         design_conditions = [
             "DESIGN CONDITIONS",
             len(self._headers["design_conditions"]),
@@ -292,6 +274,9 @@ class WeatherData:
             if given, will force year column with start_year (multi-year not supported for now)
         """
         # create and set index
+
+        # 1. we change eplus hour from 1..24 to 0..23
+        # 2. we add one hour to stay in right convention
         self._weather_series.index = pd.DatetimeIndex(self._weather_series.apply(
             # we cast to ints because of a pandas bug on apply which returns floats
             lambda x: dt.datetime(
@@ -301,7 +286,7 @@ class WeatherData:
                 int(x.hour - 1)
             ),
             axis=1
-        ))
+        )) + pd.Timedelta(hours=1)
 
         # force frequency if needed
         if self._weather_series.index.freq != "H":
