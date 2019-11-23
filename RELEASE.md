@@ -5,7 +5,7 @@
     p: patch
 
 ## next
-* p: conventions where clarified, oplus is now right convention
+* M: conventions where clarified, oplus weather is now right convention
 
 ## 8.1.2
 * p: jenkins debug

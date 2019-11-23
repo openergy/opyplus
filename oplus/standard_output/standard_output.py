@@ -19,6 +19,9 @@ class StandardOutput:
 
         Initially, standard_output will have tuple instants (using 'year', 'month', 'day', 'hour', 'minute' columns),
             depending on given frequency). It is possible to create a datetime index afterwards.
+
+        StandardOutput datetime index respects left convention: instant 00:00 covers following range: [00:00, 01:00[.
+        !! this is not the same convention as in weather data chapter !!
         """
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)

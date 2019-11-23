@@ -55,3 +55,4 @@ Daylight savings will be taken into account in simulation if epw or idf paramete
  
 ## useful info
 * dirnorrad (direct normal radiation) is called BeamSolarRad in e+ source code (github EnergyPlus repo, tag v9.2.0, file src/EnergyPlus/WeatherManager.cc, :4208)
+* list of default weather data values if missing can be found here : InputOutputReference.pdf, page 2707-8 (Chapter 8 - Weather Data - 8.1 Missing Weather File Data)
