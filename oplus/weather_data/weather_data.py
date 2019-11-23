@@ -368,17 +368,21 @@ class WeatherData:
 
     # ------------------------------------------------- save/load ------------------------------------------------------
     @classmethod
-    def load(cls, buffer_or_path) -> "WeatherData":
+    def load(cls, buffer_or_path, create_datetime_instants=False, start_year=None) -> "WeatherData":
         """
         Parameters
         ----------
         buffer_or_path: buffer or path containing epw format.
+        create_datetime_instants: set datetime instants index after file was loaded
+        start_year: int or None, default None
+            only used if create_datetime_instants is True
+            if given, will force year column with start_year (multi-year not supported for now)
 
         Returns
         -------
         WeatherData instance.
         """
-        return cls.from_epw(buffer_or_path)
+        return cls.from_epw(buffer_or_path, create_datetime_instants=create_datetime_instants, start_year=start_year)
 
     def save(self, buffer_or_path=None, use_datetimes=True):
         """
@@ -398,14 +402,17 @@ class WeatherData:
 
     # ------------------------------------------- import/export --------------------------------------------------------
     @classmethod
-    def from_epw(cls, buffer_or_path):
+    def from_epw(cls, buffer_or_path, create_datetime_instants=False, start_year=None) -> "WeatherData":
         """
         see load
         """
         from .epw_parse import parse_epw
         _, buffer = to_buffer(buffer_or_path)
         with buffer as f:
-            return parse_epw(f)
+            weather_data = parse_epw(f)
+        if create_datetime_instants:
+            weather_data.create_datetime_instants(start_year=start_year)
+        return weather_data
 
     def to_epw(self, buffer_or_path=None, use_datetimes=True):
         """

@@ -243,14 +243,20 @@ class Simulation:
             logger.warning(f"called Simulation.from_input on a simulation directory that is not empty ({dir_path})")
 
         # epm
+        epm_path_was_given = False
         if isinstance(epm_or_buffer_or_path, Epm):
             epm = epm_or_buffer_or_path
         else:
-            epm = Epm.load(epm_or_buffer_or_path)
+            if isinstance(epm_or_buffer_or_path, str) and os.path.isfile(epm_or_buffer_or_path):
+                epm_path_was_given = True
+            epm = Epm.load(epm_or_buffer_or_path)  # we load epm (even if we will copy input file) to read e+ version
 
         # weather data
+        weather_data, weather_data_path_was_given = None, False
         if isinstance(weather_data_or_buffer_or_path, WeatherData):
             weather_data = weather_data_or_buffer_or_path
+        elif isinstance(weather_data_or_buffer_or_path, str) and os.path.isfile(weather_data_or_buffer_or_path):
+            weather_data_path_was_given = True
         else:
             weather_data = WeatherData.load(weather_data_or_buffer_or_path)
 
@@ -258,14 +264,22 @@ class Simulation:
         eplus_version = _get_eplus_version(epm)
 
         # store inputs
-        epm.save(os.path.join(
-            dir_path,
-            cls._get_resource_rel_path("idf", eplus_version)
-        ))
-        weather_data.save(os.path.join(
-            dir_path,
-            cls._get_resource_rel_path("epw", eplus_version)
-        ))
+        simulation_epm_path = os.path.join(
+                dir_path,
+                cls._get_resource_rel_path("idf", eplus_version)
+            )
+        if epm_path_was_given:
+            shutil.copy2(epm_or_buffer_or_path, simulation_epm_path)
+        else:
+            epm.save(simulation_epm_path)
+        simulation_weather_data_path = os.path.join(
+                dir_path,
+                cls._get_resource_rel_path("epw", eplus_version)
+            )
+        if weather_data_path_was_given:
+            shutil.copy2(weather_data_or_buffer_or_path, simulation_weather_data_path)
+        else:
+            weather_data.save(simulation_weather_data_path)
 
         # store info
         info = Info(EMPTY, eplus_version)

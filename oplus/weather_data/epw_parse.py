@@ -11,7 +11,7 @@ def _get_row_l(row):
     return [cell.strip() for cell in row.split(",")]
 
 
-def parse_epw(file_like):
+def parse_epw(file_like) -> WeatherData:
     # parse header
 
     # location
