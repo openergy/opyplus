@@ -81,7 +81,7 @@ class FieldDescriptor:
                 return None
 
             # make ASCII compatible
-            value = unidecode.unidecode(value)
+            value = unidecode.unidecode(value)  # todo: is this still useful ?
 
             # make lower case if not retaincase
             if "retaincase" not in self.tags:

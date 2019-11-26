@@ -423,7 +423,8 @@ class WeatherData:
 
         # if datetime index, force year
         if use_datetimes and self.has_datetime_instants:
-            df["year"] = self._weather_series.index.map(lambda x: x.year)
+            # (first go lefty convention)
+            df["year"] = self._weather_series.index.shift(-1).map(lambda x: x.year)
 
         # fill nans by default values
         df.fillna(
