@@ -4,7 +4,7 @@
     m: minor
     p: patch
 
-## next
+## 9.0.0
 * M: conventions where clarified, oplus weather is now right convention
 * m: weather_data.from_epw and .load have new kwargs (create_datetime_instants and start_year)
 * p: simulation now copies idf and epw files (instead of loading/saving) when file paths are provided
