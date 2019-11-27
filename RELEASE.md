@@ -5,6 +5,7 @@
     p: patch
 
 ## next
+* p: parse_eso debug
 
 ## 9.0.0
 * M: conventions where clarified, oplus weather is now right convention

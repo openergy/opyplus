@@ -34,8 +34,8 @@ def parse_eso(file_like, print_function=lambda x: None):
         raise RuntimeError(f"unknown version format: '{row_s}'")
     detailed_version = tuple(int(s) for s in match.group(1).split(".")) + (match.group(2),)
 
-    # for eplus >= 9, code 6 is for annual variables (did not exist before)
-    annual_code = None if detailed_version[0] < 9 else "6"
+    # for eplus >= 8.9.0, code 6 is for annual variables (did not exist before)
+    annual_code = None if detailed_version[:2] < (8, 9) else "6"
     max_data_dict_info_code_int = 5 if annual_code is None else int(annual_code)
 
     # variables
@@ -65,25 +65,30 @@ def parse_eso(file_like, print_function=lambda x: None):
             continue
 
         # split content and comment
-        content, comment = other.split(" !")
+        content, comment = other.split("!", 1)
 
         # parse content
-        try:
-            key_value, var_name = content.split(",")
-            key_value = key_value.lower()  # no retaincase
-            var_name, unit = var_name.split(" [")
-            unit = unit[:-1]
-        except ValueError:  # may only have one element (for example Custom:Meter)
-            key_value = content
+        content_l = content.split(",")
+        if len(content_l) == 2:
+            key_value, var_name = content_l
+            key_value = key_value.strip().lower()  # no retaincase
+            var_name, unit = var_name.split("[")
+            var_name = var_name.strip()
+            unit = unit.strip()[:-1]
+        elif len(content_l) == 1:  # may only have one element (for example Custom:Meter)
+            key_value = content.strip()
             var_name = METER
-            key_value, unit = key_value.split(" [")
-            unit = unit[:-1]
-            key_value = key_value.lower()  # no retaincase
+            key_value, unit = key_value.split("[")
+
+            key_value = key_value.strip().lower()  # no retaincase
+            unit = unit.strip()[:-1]
+        else:
+            raise RuntimeError(f"unknown syntax for row {row_num}: '{row}'")
 
         # parse comment
         if vars_num != 1:  # remove brackets if relevant
             comment = re.sub(comment_brackets_pattern, "", comment)
-        timestep_and_or_info = comment.split(" ,")
+        timestep_and_or_info = comment.split(",")
 
         # frequency
         frequency = timestep_and_or_info[0].lower().strip()  # no retaincase, we replace with _ for each_call
