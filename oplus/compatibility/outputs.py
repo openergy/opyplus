@@ -1,5 +1,7 @@
 from .util import make_enum, v_lookup, OS_NAME
 
+# todo: manage properly, has changed at 9.2.0 (for example weather base_name != idf base_name), see what we can do
+
 OUTPUT_FILES_LAYOUTS = make_enum(
     "eplusout",  # {simulation_dir_path}/eplusout.{extension}
     "simu",  # {simulation_dir_path}/{simulation_base_name}.{extension}
@@ -13,18 +15,21 @@ _layouts_matrix = {
     "windows": {
         "inputs": {
             (0, 0):  "simu",
-            (8, 2): "eplusout"
+            (8, 2): "eplusout",
+            (9, 2): "simu"  # todo: not sure about that
         },
         "table": {
             (0, 0): "simu_table",
             (8, 2): "eplustbl",
+            (9, 2): "simu"  # todo: not sure about that
         },
         "other": {
             (0, 0): "simu",
-            (8, 2): "eplusout"
+            (8, 2): "eplusout",
+            (9, 2): "simu"  # todo: not sure about that
         }
     },
-    "osx": {
+    "osx": {  # todo: manage >= 9.2
         "inputs": {
             (0, 0): "output_simu",
             (8, 2): "simu"
@@ -39,7 +44,7 @@ _layouts_matrix = {
             (8, 2): "eplusout"
         }
     },
-    "linux": {
+    "linux": {  # todo: manage >= 9.2
         "inputs": {
             (0, 0): "output_simu",
             (8, 5): "eplusout"

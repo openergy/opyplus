@@ -47,7 +47,7 @@ def _get_eplus_version(epm):
 
 
 class Info:
-    def __init__(self, status, eplus_version):
+    def __init__(self, status, eplus_version, model_name=None):
         """
         Parameters
         ----------
@@ -57,9 +57,11 @@ class Info:
             finished
             failed
         eplus_version: tuple
+        model_name: str
         """
         self._dev_status = status  # empty, running, finished, failed (a simulation necessarily has input files)
         self._dev_eplus_version = eplus_version
+        self._dev_model_name = model_name if model_name is None else model_name
 
     @classmethod
     def from_json(cls, path):
@@ -67,7 +69,8 @@ class Info:
             json_data = json.load(f)
         eplus_version = tuple(json_data["eplus_version"])
         status = json_data["status"]
-        return cls(status, eplus_version)
+        model_name = json_data.get("model_name", CONF.default_model_name)  # for retro compatibility
+        return cls(status, eplus_version, model_name=model_name)
 
     @property
     def status(self):
@@ -76,11 +79,16 @@ class Info:
     @property
     def eplus_version(self):
         return self._dev_eplus_version
+    
+    @property
+    def model_name(self):
+        return self._dev_model_name
 
     def to_json_data(self):
         return collections.OrderedDict((
             ("status", self.status),
-            ("eplus_version", self.eplus_version)
+            ("eplus_version", self.eplus_version),
+            ("model_name", self.model_name)
         ))
 
     def to_json(self, path):
@@ -117,10 +125,13 @@ class Simulation:
     FAILED = FAILED
 
     @classmethod
-    def _get_resource_rel_path(cls, ref, version):
+    def _get_resource_rel_path(cls, ref, version, model_name=None):        
         # manage info
         if ref == "info":
             return "#info.json"
+        
+        # prepare default model name if not given
+        model_name = model_name if model_name is None else model_name
 
         # manage eplus files
         if ref in ("idf", "epw"):
@@ -149,16 +160,16 @@ class Simulation:
             rel_path = f"eplusout.{ref}"
 
         if layout == OUTPUT_FILES_LAYOUTS.simu:
-            rel_path = f"{CONF.default_model_name}.{ref}"
+            rel_path = f"{model_name}.{ref}"
 
         if layout == OUTPUT_FILES_LAYOUTS.output_simu:
-            rel_path = os.path.join("Output", f"{CONF.default_model_name}.{ref}")
+            rel_path = os.path.join("Output", f"{model_name}.{ref}")
 
         if layout == OUTPUT_FILES_LAYOUTS.simu_table:
-            rel_path = f"{CONF.default_model_name}Table.csv"
+            rel_path = f"{model_name}Table.csv"
 
         if layout == OUTPUT_FILES_LAYOUTS.output_simu_table:
-            rel_path = os.path.join("Output", f"{CONF.default_model_name}Table.csv")
+            rel_path = os.path.join("Output", f"{model_name}Table.csv")
 
         if layout == OUTPUT_FILES_LAYOUTS.eplustbl:
             rel_path = "eplustbl.csv"
@@ -197,34 +208,43 @@ class Simulation:
         if not os.path.exists(self.get_resource_path("info")):
             logger.warning(
                 "Info file not found (info.json), creating one. "
-                "This can happen if simulation was probably not created by oplus.")
-
-            # todo: [AL] mutualise with layout code in _get_resource_rel_path
-            lookup_paths = [
-                os.path.join(self._dir_abs_path, rel_path) for rel_path in (
-                    "eplusout.idf",
-                    f"{CONF.default_model_name}.idf",
-                    os.path.join("Output", f"{CONF.default_model_name}.idf")
-            )]
-            for path in lookup_paths:
-                if os.path.isfile(path):
+                "This can happen if simulation was not created by oplus.")
+            
+            # find idf
+            # look in simulation dir
+            for name in os.listdir(self._dir_abs_path):
+                model_name, ext = os.path.splitext(name)
+                if ext == ".idf":
+                    idf_path = os.path.join(self._dir_abs_path, name)
                     break
             else:
-                raise RuntimeError(
-                    "idf file not found, can't create simulation object. Looked up paths:\n" +
-                    "\n - ".join(lookup_paths)
-                )
+                # look in simulation_dir/Output
+                output_dir_path = os.path.join(self._dir_abs_path, "Output")
+                for name in os.listdir(output_dir_path):
+                    model_name, ext = os.path.splitext(name)
+                    if ext == ".idf":
+                        idf_path = os.path.join(output_dir_path, name)
+                        break
+                else:
+                    raise RuntimeError(
+                        "Idf file not found, can't create simulation object. Looked up directories:\n"
+                        f"  - {self._dir_abs_path}\n"
+                        f"  - {output_dir_path}\n"
+                    )
 
             # find epm version
-            epm = Epm.load(path)
+            epm = Epm.load(idf_path)
             eplus_version = _get_eplus_version(epm)
 
             # find simulation status (we can't use get_resource_rel_path because no _info variable yet)
-            err_path = os.path.join(self._dir_abs_path, self._get_resource_rel_path("err", eplus_version))
+            err_path = os.path.join(
+                self._dir_abs_path,
+                self._get_resource_rel_path("err", eplus_version, model_name=model_name)
+            )
             status = _get_done_simulation_status(err_path)
 
             # create and dump info
-            info = Info(status=status, eplus_version=eplus_version)
+            info = Info(status=status, eplus_version=eplus_version, model_name=model_name)
             info.to_json(self.get_resource_path("info"))
 
         # load info file
@@ -301,13 +321,14 @@ class Simulation:
 
         # prepare useful variables
         version = self._info.eplus_version
+        model_name = self._info.model_name
 
         # inform running
         self._info._dev_status = RUNNING
         self._info.to_json(self.get_resource_path("info"))
 
         # copy epw if needed (depends on os/eplus version)
-        temp_epw_path = get_simulated_epw_path(version)
+        temp_epw_path = get_simulated_epw_path(version, model_name=model_name)
         if temp_epw_path is not None:
             _copy_without_read_only(self.get_resource_path("epw"), temp_epw_path)
 
@@ -318,7 +339,7 @@ class Simulation:
         # idf
         idf_command_style = get_simulation_input_command_style("idf", version)
         if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-            idf_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
+            idf_file_cmd = os.path.join(self._dir_abs_path, model_name)
         elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
             idf_file_cmd = self.get_resource_path("idf")
         else:
@@ -327,7 +348,7 @@ class Simulation:
         # epw
         epw_command_style = get_simulation_input_command_style("epw", version)
         if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
-            epw_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
+            epw_file_cmd = os.path.join(self._dir_abs_path, model_name)
         elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
             epw_file_cmd = self._get_resource_rel_path("epw", self._info.eplus_version)
         else:

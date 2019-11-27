@@ -3,7 +3,7 @@ from oplus import CONF
 TESTED_EPLUS_VERSIONS = [
     (8, 5, 0),
     (8, 6, 0),
-    (9, 0, 1)
+    (9, 0, 1)  # todo: manage 9.2.0
 ]
 
 
