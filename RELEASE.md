@@ -4,7 +4,7 @@
     m: minor
     p: patch
 
-## next
+## 9.0.1
 * p: parse_eso debug
 * p: output files layout management changed and improved
 
