@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONF
+from oplus.conf import CONF
 
 
 class Eio:

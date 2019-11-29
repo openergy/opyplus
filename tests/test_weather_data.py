@@ -5,7 +5,7 @@ import io
 
 import pandas as pd
 
-from oplus.configuration import CONF
+from oplus.conf import CONF
 from oplus import WeatherData
 from oplus.compatibility import get_eplus_base_dir_path
 from tests.util import assert_epw_equal, iter_eplus_versions  # todo: improve epw-equal and use it

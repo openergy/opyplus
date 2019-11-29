@@ -38,13 +38,25 @@ class MultiTableQueryset:
         return [g[0].get_table_ref() for g in self._querysets.values()] + list(self.__dict__)
 
     def __iter__(self):
-        return iter(self._querysets.values())
+        return iter(self._querysets)
 
     def __eq__(self, other):
-        return set(self) == set(other)
+        if not isinstance(other, self.__class__):
+            raise ValueError("can only compare a queryset with another queryset")
+        return set(self.iter_all_records()) == set(other.iter_all_records())
 
     def __len__(self):
         # works with 0 (checked)
         return len(self._querysets)
 
-# todo: !! [GL] adapt syntax to new obat syntax !!
+    def items(self):
+        return self._querysets.items()
+
+    def keys(self):
+        return self._querysets.keys()
+
+    def values(self):
+        return self._querysets.values()
+
+    def iter_all_records(self):
+        return itertools.chain(*self._querysets.values())

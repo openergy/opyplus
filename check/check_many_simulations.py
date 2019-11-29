@@ -1,7 +1,7 @@
 import tempfile
 import os
 
-from oplus.configuration import CONF
+from oplus.conf import CONF
 from oplus import simulate, Eio
 
 MAX_TESTS_NB = 500

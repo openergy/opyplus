@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from oplus.configuration import CONF
+from oplus.conf import CONF
 from oplus import Epm
 
 

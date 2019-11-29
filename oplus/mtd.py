@@ -1,7 +1,7 @@
 import os
 import re
 
-from oplus.configuration import CONF
+from oplus.conf import CONF
 
 
 class Mtd:

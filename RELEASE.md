@@ -6,7 +6,7 @@
 
 ## next
 * p: parse_eso debug
-* p: output files layout was adapted to 9.2.0
+* p: output files layout management changed and improved
 
 ## 9.0.0
 * M: conventions where clarified, oplus weather is now right convention

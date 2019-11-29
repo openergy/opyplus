@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 
-from oplus.configuration import CONF
+from oplus.conf import CONF
 
 
 def to_float_if_possible(s):

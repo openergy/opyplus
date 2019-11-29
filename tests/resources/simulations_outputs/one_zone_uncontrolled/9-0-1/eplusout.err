@@ -1,4 +1,4 @@
-Program Version,EnergyPlus, Version 9.0.1-bb7ca4f0da, YMD=2019.11.14 18:26,
+Program Version,EnergyPlus, Version 9.0.1-bb7ca4f0da, YMD=2019.11.29 09:33,
    ** Warning ** ManageSizing: For a zone sizing run, there must be at least 1 Sizing:Zone input object. SimulationControl Zone Sizing option ignored.
    ** Warning ** ManageSizing: For a plant sizing run, there must be at least 1 Sizing:Plant object input. SimulationControl Plant Sizing option ignored.
    ** Warning ** Weather file location will be used rather than entered (IDF) Location object.
@@ -21,4 +21,4 @@ Program Version,EnergyPlus, Version 9.0.1-bb7ca4f0da, YMD=2019.11.14 18:26,
    ************* Simulation Error Summary *************
    ************* EnergyPlus Warmup Error Summary. During Warmup: 0 Warning; 0 Severe Errors.
    ************* EnergyPlus Sizing Error Summary. During Sizing: 2 Warning; 0 Severe Errors.
-   ************* EnergyPlus Completed Successfully-- 5 Warning; 0 Severe Errors; Elapsed Time=00hr 00min  0.74sec
+   ************* EnergyPlus Completed Successfully-- 5 Warning; 0 Severe Errors; Elapsed Time=00hr 00min  0.58sec

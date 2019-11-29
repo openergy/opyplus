@@ -1,6 +1,7 @@
 import os
 
-from oplus import CONF, simulate, Epm, get_eplus_base_dir_path
+from oplus import simulate, Epm, get_eplus_base_dir_path
+from oplus.simulation.resources import ResourcesRefs, get_resource_ref
 from tests.util import TESTED_EPLUS_VERSIONS
 
 from tests.resources import Resources
@@ -37,7 +38,16 @@ to_simulate = [
         "idf": "1ZoneUncontrolled",
         "epw": "USA_FL_Tampa.Intl.AP.722110_TMY3",
         "pre_process": one_zone_pre_process,
-        "extensions": ("eio", "err", "eso", "json"),
+        # always keep idf and epw or oplus won't be able to read simulation
+        "keep_resources": (
+            ResourcesRefs.idf,
+            ResourcesRefs.epw,
+            ResourcesRefs.eio,
+            ResourcesRefs.err,
+            ResourcesRefs.eso,
+            ResourcesRefs.summary_table,
+            ResourcesRefs.info
+        )
     }
 ]
 
@@ -93,10 +103,8 @@ def generate_outputs():
 
             # remove unwanted extensions
             for file_name in os.listdir(dir_path):
-                file_path = os.path.join(dir_path, file_name)
-                _, ext = os.path.splitext(file_path)
-                if ext[1:] not in simulation_case["extensions"]:
-                    os.remove(file_path)
+                if get_resource_ref(file_name) not in simulation_case["keep_resources"]:
+                    os.remove(os.path.join(dir_path, file_name))
 
 
 if __name__ == "__main__":

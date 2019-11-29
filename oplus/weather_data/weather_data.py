@@ -10,7 +10,6 @@ from ..exceptions import DatetimeInstantsCreationError
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-# todo: [GL] change datetime api (see obat)
 
 # AuxiliaryPrograms, p25, 63
 # year is used, but only in E+>=9 if epm option runperiod:treat_weather_as_actual is activated. We consider it
@@ -170,7 +169,7 @@ class WeatherData:
             to_str(self._headers["wmo"]),
             to_str(self._headers["latitude"]),
             to_str(self._headers["longitude"]),
-            to_str(self._headers["timezone_offset"]).split(":")[0], #todo: [GL] clean it
+            to_str(self._headers["timezone_offset"]).split(":")[0],  # todo: [GL] clean it
             to_str(self._headers["elevation"])
         ]
 

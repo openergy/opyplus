@@ -17,8 +17,8 @@ pointed record (has tag 'reference'): object being pointed by another object
 import re
 import logging
 
+from ..conf import CONF
 from ..util import to_buffer, version_str_to_version
-from ..configuration import CONF
 from .idd_debug import correct_idd
 from .table_descriptor import TableDescriptor
 from .resources import get_idd_path

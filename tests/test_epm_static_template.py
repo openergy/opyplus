@@ -4,7 +4,7 @@ import os
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
 from oplus import Epm
-from oplus.configuration import CONF
+from oplus.conf import CONF
 from oplus.compatibility import get_eplus_base_dir_path
 
 schedule_test_record_str = """Schedule:Compact,
@@ -111,7 +111,7 @@ class StaticIdfTest(unittest.TestCase):
 
             # check number of pointing objects
             count = 0
-            for qs in z.get_pointing_records():
+            for qs in z.get_pointing_records().values():
                 count += len(qs)
             self.assertEqual(9, count)
 
