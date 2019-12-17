@@ -80,7 +80,7 @@ class StaticIdfTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             epm = self.epms_d[eplus_version]
             # get all building surfaces that have a zone with Z-Origin 0
-            simple_filter_l = [bsd for bsd in epm.BuildingSurface_Detailed if bsd.zone_name[4] == 0]
+            simple_filter_l = sorted([bsd for bsd in epm.BuildingSurface_Detailed if bsd.zone_name[4] == 0])
 
             multi_filter_l = list(
                 epm.BuildingSurface_Detailed.select(
