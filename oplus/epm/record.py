@@ -327,7 +327,7 @@ class Record:
         for i in range(common_length):
             # values
             self_value = self.get_serialized_value(i)
-            other_value = self.get_serialized_value(other)
+            other_value = other.get_serialized_value(i)
 
             # types
             self_type_level = get_type_level(self_value)
@@ -337,6 +337,10 @@ class Record:
             if self_type_level < other_type_level:
                 return True
             if self_type_level > other_type_level:
+                return False
+
+            # None, None
+            if self_value is None:
                 return False
 
             # different values

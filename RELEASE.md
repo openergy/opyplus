@@ -5,6 +5,7 @@
     p: patch
 
 ## next
+* p: record comparison debug
 
 ## 9.0.1
 * p: parse_eso debug
