@@ -24,12 +24,14 @@ steps:
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
-      pip install pytest-cov
-      pip install flake8
     displayName: 'Install dependencies'
 
   - script: |
-      pip install pytest pytest-azurepipelines
-      python -m pytest --cov=opyplus tests/
-      python -m flake8
+      pip install pytest pytest-azurepipelines pytest-cov
+      pytest --cov=opyplus  tests/
     displayName: 'pytest'
+
+  - script: |
+      pip install flake8
+      python -m flake8
+    displayName: 'flake8'
