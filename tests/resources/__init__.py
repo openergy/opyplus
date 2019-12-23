@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
         s += f"    class {_to_camel(_ext)}:\n"
         for _file_name in os.listdir(_dir_path):
-            _is_dir = ", is_dir=True" if  os.path.isdir(os.path.join(_dir_path, _file_name)) else ""
+            _is_dir = ", is_dir=True" if os.path.isdir(os.path.join(_dir_path, _file_name)) else ""
             _base, _ = os.path.splitext(_file_name)
             s += f'        {_base} = p("{_base}", "{_ext}"{_is_dir})\n'
         s += "\n"

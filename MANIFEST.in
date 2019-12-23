@@ -1,3 +1,2 @@
 include oplus/idd/resources/*
-include-recursive tests/resources *
 include LICENSE.txt

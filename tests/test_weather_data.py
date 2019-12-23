@@ -5,9 +5,9 @@ import io
 
 import pandas as pd
 
-from oplus.conf import CONF
-from oplus import WeatherData
-from oplus.compatibility import get_eplus_base_dir_path
+from opyplus.conf import CONF
+from opyplus import WeatherData
+from opyplus.compatibility import get_eplus_base_dir_path
 from tests.util import assert_epw_equal, iter_eplus_versions  # todo: improve epw-equal and use it
 
 from pandas.util.testing import assert_frame_equal
@@ -75,7 +75,7 @@ class _SfToEpwComparator:
         rows_to_skip = (
             1,  # SF differs from documentation, and we don't want to spend time on understanding
             2,  # not used for calculations
-            5  # comment 1 is changed by oplus
+            5  # comment 1 is changed by opyplus
         )
         for i, (sf_row, other_row) in enumerate(zip(io.StringIO(self._sf_content), io.StringIO(self._other_content))):
             # we skip if not interesting

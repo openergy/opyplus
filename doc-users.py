@@ -4,11 +4,11 @@ import tempfile
 temp_dir = tempfile.TemporaryDirectory()
 work_dir_path = temp_dir.name
 
-#@ # oplus
+#@ # opyplus
 #@
 #@ ## imports
 import os
-import oplus as op
+import opyplus as op
 
 ## ---------------------------------------------------------------------------------------------------------------------
 ## ------------------------------------------------- epm ---------------------------------------------------------------

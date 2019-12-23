@@ -1,4 +1,4 @@
-# oplus
+# opyplus
 
 A python package to work with EnergyPlus input and output.
 

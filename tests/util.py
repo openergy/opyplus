@@ -1,4 +1,4 @@
-from oplus import CONF
+from opyplus import CONF
 
 TESTED_EPLUS_VERSIONS = [
     (8, 5, 0),

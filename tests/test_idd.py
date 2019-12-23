@@ -1,6 +1,6 @@
 import unittest
 
-from oplus.idd.idd import Idd
+from opyplus.idd.idd import Idd
 
 from tests.util import iter_eplus_versions
 

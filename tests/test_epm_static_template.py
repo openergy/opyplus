@@ -3,9 +3,9 @@ import os
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
-from oplus import Epm
-from oplus.conf import CONF
-from oplus.compatibility import get_eplus_base_dir_path
+from opyplus import Epm
+from opyplus.conf import CONF
+from opyplus.compatibility import get_eplus_base_dir_path
 
 schedule_test_record_str = """Schedule:Compact,
     %s,  !- Name

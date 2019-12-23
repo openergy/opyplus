@@ -1,6 +1,6 @@
 import unittest
 
-import oplus as op
+import opyplus as op
 
 from tests.util import iter_eplus_versions
 
