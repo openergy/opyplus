@@ -27,11 +27,12 @@ steps:
     displayName: 'Install dependencies'
 
   - script: |
+      pip install flake8
+      python -m flake8
+    displayName: 'flake8'
+
+  - script: |
       pip install pytest pytest-azurepipelines pytest-cov
       pytest --cov=opyplus  tests/
     displayName: 'pytest'
 
-  - script: |
-      pip install flake8
-      python -m flake8
-    displayName: 'flake8'
