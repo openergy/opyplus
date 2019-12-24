@@ -24,22 +24,22 @@ pool:
 
 steps:
   - bash: |
-      wget https://github.com/NREL/EnergyPlus/releases/download/v8.5.0/EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
-      echo "y\r" | sudo ./EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
-      sudo rm ./EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
+      wget https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+      echo "y\r" | sudo ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+      sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
     displayName: 'Install EnergyPlus on Linux'
     condition: eq( variables['Agent.OS'], 'Linux' )
 
   - bash: |
-      wget https://github.com/NREL/EnergyPlus/releases/download/v8.5.0/EnergyPlus-8.5.0-c87e61b44b-Darwin-x86_64.dmg
-      sudo hdiutil attach ./EnergyPlus-8.5.0-c87e61b44b-Darwin-x86_64.dmg
-      sudo installer -pkg /Volumes/EnergyPlus-8.5.0-c87e61b44b-Darwin-x86_64/EnergyPlus-8.5.0-c87e61b44b-Darwin-x86_64.pkg -target /;
-      sudo rm ./EnergyPlus-8.5.0-c87e61b44b-Darwin-x86_64.dmg
+      wget https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
+      sudo hdiutil attach EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
+      sudo installer -pkg /Volumes/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.pkg -target /;
+      sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
     displayName: 'Install EnergyPlus on MacOS'
     condition: eq( variables['Agent.OS'], 'Darwin' )
 
   - powershell: |
-      curl https://github.com/NREL/EnergyPlus/releases/download/v8.7.0/EnergyPlus-8.7.0-78a111df4a-Windows-x86_64.exe -OutFile:$(Agent.TempDirectory)\eplus.exe
+      curl https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Windows-x86_64.exe -OutFile:$(Agent.TempDirectory)\eplus.exe
       & $(Agent.TempDirectory)\eplus.exe /S | Out-Null
     displayName: 'Install EnergyPlus on Windows'
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
