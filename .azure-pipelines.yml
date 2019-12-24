@@ -25,7 +25,7 @@ pool:
 steps:
   - bash: |
       wget https://github.com/NREL/EnergyPlus/releases/download/v8.5.0/EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
-      echo "y\r" | sudo bash /tmp/eplus.sh ./EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
+      echo "y\r" | sudo ./EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
       sudo rm ./EnergyPlus-8.5.0-c87e61b44b-Linux-x86_64.sh
     displayName: 'Install EnergyPlus on Linux'
     condition: eq( variables['Agent.OS'], 'Linux' )
@@ -41,7 +41,6 @@ steps:
   - powershell: |
       curl https://github.com/NREL/EnergyPlus/releases/download/v8.7.0/EnergyPlus-8.7.0-78a111df4a-Windows-x86_64.exe -OutFile:$(Agent.TempDirectory)\eplus.exe
       & $(Agent.TempDirectory)\eplus.exe /S | Out-Null
-      energyplus
     displayName: 'Install EnergyPlus on Windows'
     condition: eq( variables['Agent.OS'], 'Windows_NT' )
 
