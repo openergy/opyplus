@@ -24,14 +24,14 @@ pool:
 
 steps:
   - bash: |
-      wget https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
-      echo "y\r" | sudo ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+      wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+      echo "y\r" | sudo bash ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
       sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
     displayName: 'Install EnergyPlus on Linux'
     condition: eq( variables['Agent.OS'], 'Linux' )
 
   - bash: |
-      wget https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
+      wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
       sudo hdiutil attach EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
       sudo installer -pkg /Volumes/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.pkg -target /;
       sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
@@ -63,4 +63,3 @@ steps:
       pip install pytest pytest-azurepipelines pytest-cov
       pytest --cov=opyplus  tests/
     displayName: 'pytest'
-
