@@ -80,11 +80,11 @@ jobs:
         displayName: 'Build using setup.py'
 
       - task: TwineAuthenticate@1
-        displayName: 'Twine Authenticate'
-        inputs:
-          pythonUploadServiceConnection: test-pypi
+        displayName: 'Twine Authenticate'
+        inputs:
+          pythonUploadServiceConnection: test-pypi
 
       # Use command line script to 'twine upload', use -r to pass the repository name and --config-file to pass the environment variable set by the authenticate task.
       - script: |
-         python -m twine upload -r "pypitest" --config-file $(PYPIRC_PATH) dist/*.whl
+          python -m twine upload -r "pypitest" --config-file $(PYPIRC_PATH) dist/*.whl
         displayName: 'Publish to PyPi'
