@@ -2,22 +2,22 @@ jobs:
   - job: 'Test'
     strategy:
       matrix:
-        TestLinuxPython36:
+        LinuxPython36:
           imageName: 'ubuntu-latest'
           python.version: '3.6'
-        TestLinuxPython37:
+        LinuxPython37:
           imageName: 'ubuntu-latest'
           python.version: '3.7'
-        TestMacOSPython36:
+        MacOSPython36:
           imageName: 'macOS-latest'
           python.version: '3.6'
-        TestMacOSPython37:
+        MacOSPython37:
           imageName: 'macOS-latest'
           python.version: '3.7'
-        TestWindowsPython36:
+        WindowsPython36:
           imageName: 'windows-latest'
           python.version: '3.6'
-        TestWindowsPython37:
+        WindowsPython37:
           imageName: 'windows-latest'
           python.version: '3.7'
 
