@@ -100,7 +100,7 @@ jobs:
           pythonUploadServiceConnection: opyplus
 
       # Use command line script to 'twine upload', use -r to pass the repository name and --config-file to pass the environment variable set by the authenticate task.
-      - script: python -m twine upload -r "opyplus" --config-file $(PYPIRC_PATH) dist/*
+      - script: python -m twine upload -r "opyplus" --config-file $(PYPIRC_PATH) dist/* --verbose
         displayName: 'Publish to PyPi'
 
       - task: GitHubRelease@0
