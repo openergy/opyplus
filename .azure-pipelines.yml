@@ -82,6 +82,11 @@ jobs:
           python -c "print('##' + open('RELEASE.md').read().split('##')[1])" > release-notes.md
         displayName: 'get release notes'
 
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.7'
+        displayName: 'Use Python 3.7'
+
       - script: |
           python -m pip install --upgrade pip
           python -m pip install wheel twine
