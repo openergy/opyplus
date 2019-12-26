@@ -1,6 +1,9 @@
+![GitHub](https://img.shields.io/github/license/openergy/opyplus?color=brightgreen)
+
 [![Build Status](https://dev.azure.com/openergy/opyplus/_apis/build/status/openergy.opyplus?branchName=master)](https://dev.azure.com/zachariebrodard/opyplus/_build/latest?definitionId=1&branchName=master)
 
 ![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/openergy/opyplus/1)
+
 
 
 # opyplus
