@@ -99,9 +99,6 @@ jobs:
         inputs:
           pythonUploadServiceConnection: opyplus
 
-      - script: cat $(PYPIRC_PATH)
-        displayName: 'more debug info to PyPi'
-
       # Use command line script to 'twine upload', use -r to pass the repository name and --config-file to pass the environment variable set by the authenticate task.
       - script: python -m twine upload -r "opyplus" --config-file $(PYPIRC_PATH) dist/* --verbose
         displayName: 'Publish to PyPi'
@@ -109,7 +106,7 @@ jobs:
       - task: GitHubRelease@0
         inputs:
           gitHubConnection: 'zach-b'
-          repositoryName: 'opyplus'
+          repositoryName: 'openergy/opyplus'
           tagSource: manual
           tag: $(vtag)
           releaseNotesSource: 'file'

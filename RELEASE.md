@@ -4,7 +4,7 @@
     m: minor
     p: patch
 
-## 1.0.0.dev1
+## 1.0.0.dev2
 * p: integration to azure pipelines
 
 ## 1.0.0.dev0
