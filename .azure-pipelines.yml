@@ -71,7 +71,7 @@ jobs:
     displayName: 'Publish'
     dependsOn: 'Test'
     pool:
-      vmImage: $(imageName)
+      vmImage: 'ubuntu-latest'
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     steps:
       - bash: |
