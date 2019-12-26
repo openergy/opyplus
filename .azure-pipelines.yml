@@ -75,7 +75,7 @@ jobs:
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     steps:
       - bash: |
-          echo -e "$(cat test.py)\nprint('##vso[task.setvariable variable=vtag]v'+str(version))" | python
+          echo -e "$(cat opyplus/version.py)\nprint('##vso[task.setvariable variable=vtag]v'+str(version))" | python
         displayName: 'get version number'
 
       - bash: |
