@@ -1,8 +1,8 @@
 import tempfile
 import os
 
-from oplus.conf import CONF
-from oplus import simulate, Eio
+from opyplus.conf import CONF
+from opyplus import simulate
 
 MAX_TESTS_NB = 500
 START_FILE_NUM = 0
@@ -28,7 +28,6 @@ def check():
                              simulation_dir_path if DEBUG_SIMUL_DIR_PATH is None else
                              DEBUG_SIMUL_DIR_PATH)
                 if s.exists("eio"):
-                    eio = Eio(s.get_file_path("eio"))  # raise error if problem
                     test_num += 1
         if test_num == MAX_TESTS_NB:
             break

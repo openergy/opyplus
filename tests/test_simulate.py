@@ -3,9 +3,9 @@ import os
 import tempfile
 import io
 
-from oplus import simulate, Epm
+from opyplus import simulate, Epm
 from tests.util import iter_eplus_versions
-from oplus.compatibility import get_eplus_base_dir_path
+from opyplus.compatibility import get_eplus_base_dir_path
 
 
 class SimulateTest(unittest.TestCase):

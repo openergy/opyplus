@@ -3,7 +3,7 @@ import os
 
 from tests.util import iter_eplus_versions
 
-import oplus as op
+import opyplus as op
 
 
 # schedule_test_record_str = """Schedule:Compact,

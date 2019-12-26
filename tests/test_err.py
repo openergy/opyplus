@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from oplus import Simulation
+from opyplus import Simulation
 from tests.util import iter_eplus_versions
 from tests.resources import Resources
 

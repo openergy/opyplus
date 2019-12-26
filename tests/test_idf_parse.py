@@ -3,9 +3,9 @@ import os
 
 from tests.util import iter_eplus_versions
 
-from oplus.epm.parse_idf import parse_idf
-from oplus.compatibility import get_eplus_base_dir_path
-from oplus import CONF
+from opyplus.epm.parse_idf import parse_idf
+from opyplus.compatibility import get_eplus_base_dir_path
+from opyplus import CONF
 
 
 class IdfParseTest(unittest.TestCase):
