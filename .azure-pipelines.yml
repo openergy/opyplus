@@ -103,6 +103,9 @@ jobs:
       - script: python -m twine upload -r "opyplus" --config-file $(PYPIRC_PATH) dist/* --verbose
         displayName: 'Publish to PyPi'
 
+      - script: cat $(PYPIRC_PATH)
+        displayName: 'more debug info to PyPi'
+
       - task: GitHubRelease@0
         inputs:
           gitHubConnection: 'zach-b'
