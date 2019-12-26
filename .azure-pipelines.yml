@@ -1,72 +1,72 @@
 jobs:
-  - job: 'Test'
-    strategy:
-      matrix:
-        LinuxPython36:
-          imageName: 'ubuntu-latest'
-          python.version: '3.6'
-        LinuxPython37:
-          imageName: 'ubuntu-latest'
-          python.version: '3.7'
-        MacOSPython36:
-          imageName: 'macOS-latest'
-          python.version: '3.6'
-        MacOSPython37:
-          imageName: 'macOS-latest'
-          python.version: '3.7'
-        WindowsPython36:
-          imageName: 'windows-latest'
-          python.version: '3.6'
-        WindowsPython37:
-          imageName: 'windows-latest'
-          python.version: '3.7'
-
-    pool:
-      vmImage: $(imageName)
-
-    steps:
-      - bash: |
-          wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
-          echo "y\r" | sudo bash ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
-          sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
-        displayName: 'Install EnergyPlus on Linux'
-        condition: eq( variables['Agent.OS'], 'Linux' )
-
-      - bash: |
-          wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
-          sudo hdiutil attach EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
-          sudo installer -pkg /Volumes/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.pkg -target /;
-          sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
-        displayName: 'Install EnergyPlus on MacOS'
-        condition: eq( variables['Agent.OS'], 'Darwin' )
-
-      - powershell: |
-          curl https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Windows-x86_64.exe -OutFile:$(Agent.TempDirectory)\eplus.exe
-          & $(Agent.TempDirectory)\eplus.exe /S | Out-Null
-        displayName: 'Install EnergyPlus on Windows'
-        condition: eq( variables['Agent.OS'], 'Windows_NT' )
-
-      - task: UsePythonVersion@0
-        inputs:
-          versionSpec: '$(python.version)'
-        displayName: 'Use Python $(python.version)'
-
-      - script: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-        displayName: 'Install dependencies'
-
-      - script: |
-          pip install flake8
-          python -m flake8
-        displayName: 'flake8'
-
-      - script: |
-          pip install pytest pytest-azurepipelines pytest-cov
-          pytest --cov=opyplus --cov-report=html  tests/
-        displayName: 'pytest'
-
-
+#  - job: 'Test'
+#    strategy:
+#      matrix:
+#        LinuxPython36:
+#          imageName: 'ubuntu-latest'
+#          python.version: '3.6'
+#        LinuxPython37:
+#          imageName: 'ubuntu-latest'
+#          python.version: '3.7'
+#        MacOSPython36:
+#          imageName: 'macOS-latest'
+#          python.version: '3.6'
+#        MacOSPython37:
+#          imageName: 'macOS-latest'
+#          python.version: '3.7'
+#        WindowsPython36:
+#          imageName: 'windows-latest'
+#          python.version: '3.6'
+#        WindowsPython37:
+#          imageName: 'windows-latest'
+#          python.version: '3.7'
+#
+#    pool:
+#      vmImage: $(imageName)
+#
+#    steps:
+#      - bash: |
+#          wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+#          echo "y\r" | sudo bash ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+#          sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
+#        displayName: 'Install EnergyPlus on Linux'
+#        condition: eq( variables['Agent.OS'], 'Linux' )
+#
+#      - bash: |
+#          wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
+#          sudo hdiutil attach EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
+#          sudo installer -pkg /Volumes/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.pkg -target /;
+#          sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
+#        displayName: 'Install EnergyPlus on MacOS'
+#        condition: eq( variables['Agent.OS'], 'Darwin' )
+#
+#      - powershell: |
+#          curl https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Windows-x86_64.exe -OutFile:$(Agent.TempDirectory)\eplus.exe
+#          & $(Agent.TempDirectory)\eplus.exe /S | Out-Null
+#        displayName: 'Install EnergyPlus on Windows'
+#        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+#
+#      - task: UsePythonVersion@0
+#        inputs:
+#          versionSpec: '$(python.version)'
+#        displayName: 'Use Python $(python.version)'
+#
+#      - script: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#        displayName: 'Install dependencies'
+#
+#      - script: |
+#          pip install flake8
+#          python -m flake8
+#        displayName: 'flake8'
+#
+#      - script: |
+#          pip install pytest pytest-azurepipelines pytest-cov
+#          pytest --cov=opyplus --cov-report=html  tests/
+#        displayName: 'pytest'
+#
+#
   - job: 'Publish'
     displayName: 'Publish'
     dependsOn: 'Test'
