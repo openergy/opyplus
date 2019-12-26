@@ -2,7 +2,7 @@ import unittest
 import os
 import tempfile
 
-from oplus import Epm, simulate, get_eplus_base_dir_path
+from opyplus import Epm, simulate, get_eplus_base_dir_path
 from tests.util import iter_eplus_versions
 
 

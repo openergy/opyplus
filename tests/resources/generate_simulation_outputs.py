@@ -1,7 +1,7 @@
 import os
 
-from oplus import simulate, Epm, get_eplus_base_dir_path
-from oplus.simulation.resources import ResourcesRefs, get_resource_ref
+from opyplus import simulate, Epm, get_eplus_base_dir_path
+from opyplus.simulation.resources import ResourcesRefs, get_resource_ref
 from tests.util import TESTED_EPLUS_VERSIONS
 
 from tests.resources import Resources
@@ -38,7 +38,7 @@ to_simulate = [
         "idf": "1ZoneUncontrolled",
         "epw": "USA_FL_Tampa.Intl.AP.722110_TMY3",
         "pre_process": one_zone_pre_process,
-        # always keep idf and epw or oplus won't be able to read simulation
+        # always keep idf and epw or opyplus won't be able to read simulation
         "keep_resources": (
             ResourcesRefs.idf,
             ResourcesRefs.epw,

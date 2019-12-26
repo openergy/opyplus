@@ -1,8 +1,8 @@
 import os
 import tempfile
 
-from oplus.conf import CONF
-from oplus import Epm
+from opyplus.conf import CONF
+from opyplus import Epm
 
 
 idf = Epm(os.path.join(CONF.eplus_base_dir_path, "ExampleFiles", "1ZoneEvapCooler.idf"))

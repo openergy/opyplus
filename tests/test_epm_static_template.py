@@ -3,9 +3,9 @@ import os
 
 from tests.util import TESTED_EPLUS_VERSIONS, iter_eplus_versions
 
-from oplus import Epm
-from oplus.conf import CONF
-from oplus.compatibility import get_eplus_base_dir_path
+from opyplus import Epm
+from opyplus.conf import CONF
+from opyplus.compatibility import get_eplus_base_dir_path
 
 schedule_test_record_str = """Schedule:Compact,
     %s,  !- Name
@@ -80,7 +80,7 @@ class StaticIdfTest(unittest.TestCase):
         for eplus_version in iter_eplus_versions(self):
             epm = self.epms_d[eplus_version]
             # get all building surfaces that have a zone with Z-Origin 0
-            simple_filter_l = [bsd for bsd in epm.BuildingSurface_Detailed if bsd.zone_name[4] == 0]
+            simple_filter_l = sorted([bsd for bsd in epm.BuildingSurface_Detailed if bsd.zone_name[4] == 0])
 
             multi_filter_l = list(
                 epm.BuildingSurface_Detailed.select(
