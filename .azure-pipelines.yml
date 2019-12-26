@@ -69,7 +69,7 @@ jobs:
 #
   - job: 'Publish'
     displayName: 'Publish'
-    dependsOn: 'Test'
+#    dependsOn: 'Test'
     pool:
       vmImage: 'ubuntu-latest'
     condition: succeeded()  # and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
