@@ -72,7 +72,7 @@ jobs:
     dependsOn: 'Test'
     pool:
       vmImage: 'ubuntu-latest'
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    condition: succeeded()  # and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     steps:
       - bash: |
           echo -e "$(cat opyplus/version.py)\nprint('##vso[task.setvariable variable=vtag]v'+str(version))" | python
