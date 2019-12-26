@@ -71,36 +71,42 @@ jobs:
     displayName: 'Publish'
     dependsOn: 'Test'
     pool:
-      vmImage: $(imageName)
+      vmImage: 'ubuntu-latest'
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     steps:
       - bash: |
-          echo -e "$(cat test.py)\nprint('##vso[task.setvariable variable=vtag]v'+str(version))" | python
+          echo -e "$(cat opyplus/version.py)\nprint('##vso[task.setvariable variable=vtag]v'+str(version))" | python
         displayName: 'get version number'
 
       - bash: |
           python -c "print('##' + open('RELEASE.md').read().split('##')[1])" > release-notes.md
         displayName: 'get release notes'
 
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.7'
+        displayName: 'Use Python 3.7'
+
       - script: |
           python -m pip install --upgrade pip
           python -m pip install wheel twine
-          python setup.py bdist_wheel
+          python setup.py sdist bdist_wheel
+          python -m twine check dist/*
         displayName: 'Build using setup.py'
 
       - task: TwineAuthenticate@1
         displayName: 'Twine Authenticate'
         inputs:
-          pythonUploadServiceConnection: test-pypi
+          pythonUploadServiceConnection: opyplus
 
       # Use command line script to 'twine upload', use -r to pass the repository name and --config-file to pass the environment variable set by the authenticate task.
-      - script: python -m twine upload -r "pypitest" --config-file $(PYPIRC_PATH) dist/*.whl
+      - script: python -m twine upload -r "opyplus" --config-file $(PYPIRC_PATH) dist/* --verbose
         displayName: 'Publish to PyPi'
 
       - task: GitHubRelease@0
         inputs:
           gitHubConnection: 'zach-b'
-          repositoryName: 'opyplus'
+          repositoryName: 'openergy/opyplus'
           tagSource: manual
           tag: $(vtag)
           releaseNotesSource: 'file'
