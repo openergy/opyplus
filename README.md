@@ -1,3 +1,6 @@
+[![Build Status](https://dev.azure.com/zachariebrodard/opyplus/_apis/build/status/openergy.opyplus?branchName=master)](https://dev.azure.com/zachariebrodard/opyplus/_build/latest?definitionId=1&branchName=master)
+
+
 # opyplus
 
 A python package to work with EnergyPlus input and output.

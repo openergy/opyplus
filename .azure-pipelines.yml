@@ -63,7 +63,7 @@ jobs:
 
       - script: |
           pip install pytest pytest-azurepipelines pytest-cov
-          pytest --cov=opyplus  tests/
+          pytest --cov=opyplus --cov-report=html  tests/
         displayName: 'pytest'
 
   - job: 'Publish'
