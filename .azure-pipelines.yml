@@ -66,6 +66,7 @@ jobs:
           pytest --cov=opyplus --cov-report=html  tests/
         displayName: 'pytest'
 
+
   - job: 'Publish'
     displayName: 'Publish'
     dependsOn: 'Test'
@@ -73,6 +74,14 @@ jobs:
       vmImage: $(imageName)
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     steps:
+      - bash: |
+          echo -e "$(cat test.py)\nprint('##vso[task.setvariable variable=vtag]v'+str(version))" | python
+        displayName: 'get version number'
+
+      - bash: |
+          python -c "print('##' + open('RELEASE.md').read().split('##')[1])" > release-notes.md
+        displayName: 'get release notes'
+
       - script: |
           python -m pip install --upgrade pip
           python -m pip install wheel twine
@@ -87,3 +96,13 @@ jobs:
       # Use command line script to 'twine upload', use -r to pass the repository name and --config-file to pass the environment variable set by the authenticate task.
       - script: python -m twine upload -r "pypitest" --config-file $(PYPIRC_PATH) dist/*.whl
         displayName: 'Publish to PyPi'
+
+      - task: GitHubRelease@0
+        inputs:
+          gitHubConnection: 'zach-b'
+          repositoryName: 'opyplus'
+          tagSource: manual
+          tag: $(vtag)
+          releaseNotesSource: 'file'
+          releaseNotesFile: 'release-notes.md'
+        displayName: 'Create Github Release'
