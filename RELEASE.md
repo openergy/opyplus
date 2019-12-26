@@ -4,5 +4,8 @@
     m: minor
     p: patch
 
+## 1.0.0.dev1
+* p: integration to azure pipelines
+
 ## 1.0.0.dev0
 * M: changed name to opyplus, prepare to publish
