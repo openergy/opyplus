@@ -1,10 +1,8 @@
 trigger:
-  tags:
-    include:
-    - 'v*'
   branches:
     include:
-    - '*'
+    - 'master'
+    - '/refs/tags/v*'
 
 jobs:
   - job: 'Test'
@@ -80,7 +78,7 @@ jobs:
     dependsOn: 'Test'
     pool:
       vmImage: 'ubuntu-latest'
-    condition: and(succeeded(), startswith(variables['Build.SourceBranch'], 'refs/tags/v'))
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
     steps:
       - bash: |
           python -c "print('##' + open('RELEASE.md').read().split('##')[1])" > release-notes.md
