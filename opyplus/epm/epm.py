@@ -208,7 +208,7 @@ class Epm:
             plural = "" if records_nb == 1 else "s"
             s += f"  {table.get_name()}: {records_nb} record{plural}\n"
 
-        return s
+        return s.strip()
 
     def __getattr__(self, item):
         try:

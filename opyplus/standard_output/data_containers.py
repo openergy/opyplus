@@ -25,7 +25,7 @@ class DataContainer:
     def __str__(self):
         msg = "DataContainer\n"
         msg += f"  freq: {self.freq}\n"
-        return msg
+        return msg.strip()
 
     def register_instant(self, *args):
         v = {c: args[i] for (i, c) in enumerate(self.instant_columns)}

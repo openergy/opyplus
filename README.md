@@ -6,7 +6,7 @@
 
 # opyplus
 
-opyplus is a python package is a package that can be used to work with EnergyPlus in Python.
+opyplus is a package allowing to work with EnergyPlus in Python.
 
 More specifically, it allows to:
 * Parse, query and modify idf files efficiently, with a number of checks ensure that your idf file remains correct
@@ -15,8 +15,13 @@ throughout your work
 * Launch simulations on EnergyPlus
 * Parse EnergyPlus output files
 
+## Install
+
+To install opyplus, run: `pip install opyplus` or `conda install -c conda-forge opyplus`
+
 ## Documentation
 
+Documentation is available at https://opyplus.readthedocs.io
 
 ## Compatibility
 

@@ -72,6 +72,13 @@ jobs:
           pytest --cov=opyplus --cov-report=html  tests/
         displayName: 'pytest'
 
+      - script: |
+          pip install sphinx autodoc
+          cd docs
+          make doctest
+          make html
+        displayName: 'docs'
+
 
   - job: 'Publish'
     displayName: 'Publish'
