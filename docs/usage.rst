@@ -485,7 +485,7 @@ standard output
     csv_dir_path = os.path.join(work_dir_path, "standard-output")
     eso.to_csv(csv_dir_path)
     print("standard-output content:")
-    for name in os.listdir(csv_dir_path):
+    for name in sorted(os.listdir(csv_dir_path)):
         print(f"  {name}")
 
 
@@ -553,9 +553,9 @@ standard output
     2014-01-01 04:00:00                                         -2.000000
 
     standard-output content:
-      2#runperiod-1#hourly.csv
       0#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
       1#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
+      2#runperiod-1#hourly.csv
 
 Weather data
 ------------
