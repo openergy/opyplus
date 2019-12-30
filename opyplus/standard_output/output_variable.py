@@ -20,3 +20,4 @@ class OutputVariable:
         msg += f"  unit: {self.unit}\n"
         if self.info != "":
             msg += f"  info: {self.info}\n"
+        return msg.strip()

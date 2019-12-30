@@ -1,9 +1,9 @@
- # oplus
+ # opyplus
 
  ## imports
 
 	import os
-	import oplus as op
+	import opyplus as op
 
 
  ## epm (Energy Plus Model)
@@ -425,20 +425,20 @@
 	print("pointing on sch:")
 	for _pointing in sch.get_pointing_records():
 	    print(_pointing)
-	# todo: explore by table
+	# todo: [GL] explore by table
 	setpoint = pointing.ThermostatSetpoint_SingleHeating[0]
 	print("pointed by setpoint:")
 	for _pointed in setpoint.get_pointed_records():
 	    print(_pointed)
-	# todo: explore by table
+	# todo: [GL] explore by table
 
 
 *out:*
 
 	pointing on sch:
-	<Queryset of ThermostatSetpoint_SingleHeating: 1 records>
+	thermostatsetpoint_singleheating
 	pointed by setpoint:
-	<Queryset of Schedule_Compact: 1 records>
+	schedule_compact
 
  ### case management
 
@@ -624,12 +624,12 @@
 	info: 
 	 Standard output
 	  environments
-	    denver centennial ann htg 99.6% condns db (0)
+	    denver centennial ann clg 1% condns db=>mwb (0)
 	      latitude: 39.74
 	      longitude: -105.18
 	      timezone_offset: -7.0
 	      elevation: 1829.0
-	    denver centennial ann clg 1% condns db=>mwb (1)
+	    denver centennial ann htg 99.6% condns db (1)
 	      latitude: 39.74
 	      longitude: -105.18
 	      timezone_offset: -7.0
@@ -661,7 +661,7 @@
 	      relief air outlet node,System Node Temperature (395)
  
 
-	environments:  OrderedDict([('denver centennial ann htg 99.6% condns db', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000022306A95DA0>), ('denver centennial ann clg 1% condns db=>mwb', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000022305C0F668>), ('runperiod 1', <oplus.standard_output.output_environment.OutputEnvironment object at 0x0000022305D4F828>)]) 
+	environments:  OrderedDict([('denver centennial ann clg 1% condns db=>mwb', <opyplus.standard_output.output_environment.OutputEnvironment object at 0x7fc43fbe9c70>), ('denver centennial ann htg 99.6% condns db', <opyplus.standard_output.output_environment.OutputEnvironment object at 0x7fc43fbe90a0>), ('runperiod 1', <opyplus.standard_output.output_environment.OutputEnvironment object at 0x7fc43fbe90d0>)]) 
 
 	variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
 
@@ -682,9 +682,9 @@
 	2014-01-01 04:00:00                                         -2.000000 
 
 	standard-output content:
-	  0#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
-	  1#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
 	  2#runperiod-1#hourly.csv
+	  0#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
+	  1#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
 
  ### weather data
 

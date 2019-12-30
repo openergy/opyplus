@@ -224,9 +224,9 @@ class Record:
 
     def __str__(self):
         if self._table is None:
-            return repr(self)
+            return repr(self).strip()
 
-        return self.to_idf()
+        return self.to_idf().strip()
 
     def __getitem__(self, item):
         """
