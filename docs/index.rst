@@ -1,25 +1,21 @@
 Opyplus Documentation
 =====================
 
-|Licence|
+|Licence| |Build Status| |Azure DevOps Coverage| |PyPi - Python Version| |PyPI|
 
 .. |Licence| image:: https://img.shields.io/github/license/openergy/opyplus?color=brightgreen
     :target: https://www.mozilla.org/en-US/MPL/2.0/
 
-|Build Status|
 
 .. |Build Status| image:: https://dev.azure.com/openergy/opyplus/_apis/build/status/openergy.opyplus?branchName=master
     :target: https://dev.azure.com/zachariebrodard/opyplus/_build/latest?definitionId=1&branchName=master
 
-|Azure DevOps Coverage|
 
 .. |Azure DevOps Coverage| image:: https://img.shields.io/azure-devops/coverage/openergy/opyplus/1
 
-|PyPi - Python Version|
 
 .. |PyPi - Python Version| image:: https://img.shields.io/pypi/pyversions/opyplus
 
-|PyPI|
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/opyplus
 
