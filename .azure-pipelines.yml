@@ -73,7 +73,7 @@ jobs:
         displayName: 'pytest'
 
       - script: |
-          pip install sphinx autodoc
+          pip install --file docs/requirements.txt
           cd docs
           make doctest
           make html
