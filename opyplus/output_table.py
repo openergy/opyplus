@@ -1,3 +1,5 @@
+"""Module to work with E+ output tables."""
+
 import os
 
 import pandas as pd
@@ -6,6 +8,17 @@ from opyplus.conf import CONF
 
 
 def to_float_if_possible(s):
+    """
+    Convert to float if possible.
+
+    Parameters
+    ----------
+    s: str
+
+    Returns
+    -------
+    float or None
+    """
     try:
         return float(s)
     except ValueError:
@@ -16,6 +29,15 @@ def to_float_if_possible(s):
 
 
 class OutputTable:
+    """
+    Class describing an E+ output table.
+
+    Parameters
+    ----------
+    path: str
+        Path of the E+ output table file.
+    """
+
     def __init__(self, path):
         if not os.path.isfile(path):
             raise FileNotFoundError("No file at given path: '%s'." % path)
@@ -97,6 +119,16 @@ class OutputTable:
 
     # ---------------------------------------- public api --------------------------------------------------------------
     def get_table(self, table_name, report_name=None):
+        """
+        Get table.
+
+        # TODO [GL]: fill docstring (including Returns section)
+
+        Parameters
+        ----------
+        table_name: str
+        report_name: str
+        """
         if report_name is None:
             for rp_name, tables_d in self._reports_d.items():
                 if table_name in tables_d:

@@ -1,3 +1,5 @@
+"""Opyplus package, a tool to work with EnergyPlus in python."""
+
 __all__ = ["__version__", "CONF", "Eio", "Mtd", "Err", "SummaryTable", "OutputTable", "DatetimeInstantsCreationError",
            "FieldValidationError", "MultipleRecordsReturnedError", "RecordDoesNotExistError", "StandardOutput",
            "get_eplus_base_dir_path", "WeatherData", "FileContent", "Epm", "default_external_files_dir_name",

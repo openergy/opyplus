@@ -1,3 +1,5 @@
+"""Module to work with EnergyPlus .mtd files."""
+
 import os
 import re
 
@@ -5,6 +7,15 @@ from opyplus.conf import CONF
 
 
 class Mtd:
+    """
+    Class describing an EnergyPlus .mtd file.
+
+    Parameters
+    ----------
+    path: str
+        Path to the EnergyPlus .mtd file
+    """
+
     def __init__(self, path):
         if not os.path.isfile(path):
             raise FileNotFoundError("No file at given path: '%s'." % path)
@@ -70,13 +81,47 @@ class Mtd:
 
     # ---------------------------------------- public api --------------------------------------------------------------
     def get_variable_refs(self, meter_ref):
+        """
+        Get variable refs corresponding to a certain meter reference.
+
+        Parameters
+        ----------
+        meter_ref: str
+            The meter reference
+
+        Returns
+        -------
+        list of str
+        """
         return [v.table_ref for v in self._meters_d[meter_ref].variables_l]
 
     def has_meter(self, meter_ref):
+        """
+        Check whether the mtd file has a certain meter.
+
+        Parameters
+        ----------
+        meter_ref: str
+            Ref of the meter
+
+        Returns
+        -------
+        bool
+        """
         return meter_ref in self._meters_d
 
 
 class Meter:
+    """
+    Class describing an E+ mtd meter.
+
+    Parameters
+    ----------
+    ref: str
+    unit: str
+    kwargs: dict
+    """
+
     def __init__(self, ref, unit, **kwargs):
         self.ref = ref
         self.unit = unit
@@ -85,12 +130,29 @@ class Meter:
         self.variables_l = []
 
     def link_variable(self, variable):
+        """
+        Add variable to this meter.
+
+        Parameters
+        ----------
+        variable: str
+        """
         if variable in self.variables_l:
             raise RuntimeError("Variable already linked.")
         self.variables_l.append(variable)
 
 
 class Variable:
+    """
+    Class representing an E+ mtd variable.
+
+    Parameters
+    ----------
+    ref: str
+    variable_id: int
+    unit: str
+    """
+
     def __init__(self, ref, variable_id, unit):
         self.ref = ref
         self.variable_id = variable_id
@@ -99,6 +161,14 @@ class Variable:
         self.meters_l = []
 
     def link_meter(self, meter):
+        """
+        Add meter to this variable.
+
+        Parameters
+        ----------
+        meter: str
+        """
+        # TODO [GL]: this method does nothing, why ?
         if meter in self.meters_l:
             raise RuntimeError("Meter already linked.")
         self.meters_l = []

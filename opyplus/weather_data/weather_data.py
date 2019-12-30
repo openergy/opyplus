@@ -60,6 +60,11 @@ def to_str(value):
 
 
 class WeatherData:
+    """
+    >>> print(0)
+    0
+
+    """
     def __init__(
             self,
             weather_series,  # dataframe

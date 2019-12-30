@@ -1,9 +1,4 @@
-"""
-Summary table
----------------
-
-
-"""
+"""module to work with E+ summary table files."""
 
 import os
 import re
@@ -15,6 +10,15 @@ from opyplus.conf import CONF
 
 
 class SummaryTable:
+    """
+    Class describing an E+ summary table.
+
+    Parameters
+    ----------
+    path: str
+        Path to the summary table file.
+    """
+
     def __init__(self, path):
         if not os.path.isfile(path):
             raise FileNotFoundError("No file at given path: '%s'." % path)
@@ -112,12 +116,42 @@ class SummaryTable:
 
     # -------------------------------------------- public api ----------------------------------------------------------
     def get_report_keys(self):
+        """
+        Get report table keys.
+
+        Returns
+        -------
+        list of str
+        """
         return list(self.report_tables_ref.keys())
 
     def get_table_report_list(self, report_key):
+        """
+        Get table report list for a given report key.
+
+        Parameters
+        ----------
+        report_key: str
+
+        TODO [GL]: complete Returns section
+        """
         return self.report_tables_ref[report_key]["TableListName"]
 
     def get_table_df(self, report_key, table_report):
+        """
+        Get table as a data frame.
+
+        Parameters
+        ----------
+        report_key: str
+        table_report:
+
+        TODO [GL] complete Parameters section
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
         content_bytes = open(self.path, "rb").read()
         content = content_bytes.decode(CONF.encoding).encode("ascii", "ignore")
         f = io.BytesIO(content)
