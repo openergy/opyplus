@@ -1,4 +1,6 @@
 """
+Module to handle idf files as python objects (EnergyPlus Model).
+
 create/update/delete framework methods (see methods documentation):
  - epm._dev_populate_from_json_data
  - table.batch_add
@@ -27,9 +29,15 @@ from .util import json_data_to_json, multi_mode_write
 
 def default_external_files_dir_name(model_name):
     """
+    Get default dir name for external files.
+
     Parameters
     ----------
     model_name: with or without extension
+
+    Returns
+    -------
+    str
     """
     name, ext = os.path.splitext(model_name)
     return name + CONF.external_files_suffix
@@ -40,39 +48,39 @@ logger = logging.getLogger(__name__)
 
 class Epm:
     """
-    Energyplus model
+    Energyplus model.
+
+    An Epm is an Energy Plus Model.
+    It can come from and idf, a epjson (not coded yet), or a json.
+    It can be transformed in an idf, an epjson (not coded yet) or a json.
+
+    Parameters
+    ----------
+    json_data: json serializable object, default None
+        if provided, Epm will be filled with given objects
+    check_length: boolean, default True
+        If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
+    check_required: boolean, default True
+        If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+    idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
+        directly provide an IDD object.
+
+    Notes
+    -----
+    Eplus version behaviour:
+        - if idd_or_version is provided, required idd will be used (may trigger a warning if it is not
+            coherent with json_data version, if any)
+        - else if json_data is provided: will use proper idd (according to version field) or trigger a warning
+            if idd is not available and will choose the closest
+        - else will use default eplus version used in conf, which is initially set to latest available idd version
+
     """
+
     _dev_record_cls = Record  # for subclassing
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
     def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
-        """
-        An Epm is an Energy Plus Model.
-        It can come from and idf, a epjson (not coded yet), or a json.
-        It can be transformed in an idf, an epjson (not coded yet) or a json.
-
-        Parameters
-        ----------
-        json_data: json serializable object, default None
-            if provided, Epm will be filled with given objects
-        check_length: boolean, default True
-            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        check_required: boolean, default True
-            If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
-            directly provide an IDD object.
-
-        Notes
-        -----
-        Eplus version behaviour:
-            - if idd_or_version is provided, required idd will be used (may trigger a warning if it is not
-                coherent with json_data version, if any)
-            - else if json_data is provided: will use proper idd (according to version field) or trigger a warning
-                if idd is not available and will choose the closest
-            - else will use default eplus version used in conf, which is initially set to latest available idd version
-
-        """
         # prepare idd
         self._dev_idd = None
         if isinstance(idd_or_version, Idd):
@@ -149,10 +157,7 @@ class Epm:
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
     def _dev_populate_from_json_data(self, json_data):
-        """
-        !! Must only be called once, when empty !!
-        """
-
+        """!! Must only be called once, when empty !!."""
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
@@ -196,9 +201,23 @@ class Epm:
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
     def __repr__(self):
+        """
+        Repr.
+
+        Returns
+        -------
+        {'<Epm>'}
+        """
         return "<Epm>"
 
     def __str__(self):
+        """
+        Str representation of Epm, with the number of records per tables.
+
+        Returns
+        -------
+        str
+        """
         s = "Epm\n"
 
         for table in self._tables.values():
@@ -211,33 +230,85 @@ class Epm:
         return s.strip()
 
     def __getattr__(self, item):
+        """
+        Getattr: returns table with corresponding ref if it exists, else raises AttributeError.
+
+        Parameters
+        ----------
+        item: str
+
+        Returns
+        -------
+        Table
+
+        Raises
+        ------
+        AttributeError
+        """
         try:
             return self._tables[item.lower()]
         except KeyError:
             raise AttributeError(f"No table with reference '{item}'.")
 
     def __eq__(self, other):
+        """
+        Compare two epm by comparing their json-serializable dict.
+
+        Parameters
+        ----------
+        other: Epm
+
+        Returns
+        -------
+        bool
+        """
         return self.to_json_data() != other.to_json_data()
 
     def __iter__(self):
+        """
+        Iterate through the tables of this Epm.
+
+        Returns
+        -------
+        typing.Iterator[Table]
+        """
         return iter(self._tables.values())
 
     def __dir__(self):
+        """Attributes available for auto-completion: add the tables ref."""
         return [t.get_ref() for t in self._tables.values()] + list(self.__dict__)
 
     # get info
     def get_comment(self):
+        """
+        Get comment.
+
+        Returns
+        -------
+        str
+        """
         return self._comment
 
     # get idd info
     def get_info(self):
+        """
+        Get info.
+
+        Returns
+        -------
+        str
+        """
         return "Energy plus model\n" + "\n".join(
             f"  {table._dev_descriptor.table_ref}" for table in self._tables.values()
         )
 
     def get_external_files(self):
         """
-        An external file manages file paths.
+        Get a list of external files available.
+
+        Returns
+        -------
+        list of opyplus.epm.external_file.ExternalFile
         """
         external_files = []
         for table in self._tables.values():
@@ -247,31 +318,41 @@ class Epm:
 
     # construct
     def set_comment(self, comment):
+        """
+        Set comment.
+
+        Parameters
+        ----------
+        comment: str
+        """
         if comment is None:
             comment = ""
         self._comment = str(comment)
 
     def set_defaults(self):
-        """
-        All fields of Epm with a default value and that are null will be set to their default value.
-        """
+        """All fields of Epm with a default value and that are null will be set to their default value."""
         for table in self._tables.values():
             for r in table:
                 r.set_defaults()
 
-    def dump_external_files(self, target_dir_path=None):
+    def dump_external_files(self, target_dir_path):
         """
+        Dump external files.
+
         Parameters
         ----------
-        target_dir_path
+        target_dir_path: str
         """
-        self._dev_external_files_manager.dump_external_files(target_dir_path=target_dir_path)
+        self._dev_external_files_manager.dump_external_files(target_dir_path)
 
     def to_json_data(self):
         """
+        Dump the Epm to a json-serializable dict.
+
         Returns
         -------
-        A dictionary of serialized data.
+        dict
+            A dictionary of serialized data.
         """
         # create data
         d = collections.OrderedDict((t.get_ref(), t.to_json_data()) for t in self._tables.values())
@@ -290,19 +371,28 @@ class Epm:
             idd_or_version=None
     ):
         """
+        Load Epm from a file.
+
         Parameters
         ----------
-        buffer_or_path: idf buffer or path
-        check_required: boolean, default True
-            If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        check_length: boolean, default True
-            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
-            directly provide an IDD object.
+        buffer_or_path: str or typing.StringIO
+            idf buffer or path
+        check_required: bool
+            If True (default), will raise an exception if a required field is missing.
+            If False, do not perform any checks.
+        check_length: bool
+            If True (default), will raise an exception if a field has a bigger length than authorized.
+            If False, will not check.
+
+        Other Parameters
+        ----------------
+        idd_or_version: tuple or Idd
+            If you want to use a specific idd, you can require a specific version (x.x.x),
+            or directly provide an IDD object.
 
         Returns
         -------
-        An Epm instance.
+        Epm
         """
         return cls().from_idf(
             buffer_or_path,
@@ -313,16 +403,19 @@ class Epm:
 
     def save(self, buffer_or_path=None, dump_external_files=True):
         """
+        Save Epm to a file.
+
         Parameters
         ----------
-        buffer_or_path: buffer or path, default None
+        buffer_or_path: typing.StringIO or str or None
             output to write into. If None, will return a json string.
         dump_external_files: boolean, default True
             if True, external files will be dumped in external files directory
 
         Returns
         -------
-        None, or an idf string (if buffer_or_path is None).
+        str or None
+            None, or an idf string (if buffer_or_path is None).
         """
         return self.to_idf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
 
@@ -336,9 +429,7 @@ class Epm:
             check_length=True,
             idd_or_version=None
     ):
-        """
-        see load
-        """
+        """See load."""
         return cls._create_from_buffer_or_path(
             parse_idf,
             buffer_or_path,
@@ -348,9 +439,7 @@ class Epm:
         )
 
     def to_idf(self, buffer_or_path=None, dump_external_files=True):
-        """
-        see save
-        """
+        """See save."""
         # prepare comment
         comment = get_multi_line_copyright_message()
         if self._comment != "":
@@ -394,19 +483,28 @@ class Epm:
             idd_or_version=None
     ):
         """
+        Create Epm from a json file.
+
         Parameters
         ----------
-        buffer_or_path: json buffer or path
-        check_required: boolean, default True
-            If True, will raise an exception if a required field is missing. If False, not not perform any checks.
-        check_length: boolean, default True
-            If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
-        idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
-            directly provide an IDD object.
+        buffer_or_path: io.StringIO or str
+            json buffer or path
+        check_required: bool
+            If True (default), will raise an exception if a required field is missing.
+            If False, not not perform any checks.
+        check_length: bool
+            If True (default), will raise an exception if a field has a bigger length than authorized.
+            If False, will not check.
+
+        Other Parameters
+        ----------------
+        idd_or_version: Idd or tuple
+            if you want to use a specific idd, you can require a specific version (x.x.x), or directly provide an IDD
+            object.
 
         Returns
         -------
-        An Epm instance.
+        Epm
         """
         return cls._create_from_buffer_or_path(
             json.load,
@@ -418,16 +516,19 @@ class Epm:
 
     def to_json(self, buffer_or_path=None, indent=2):
         """
+        Save to json.
+
         Parameters
         ----------
-        buffer_or_path: buffer or path, default None
-            output to write into. If None, will return a json string.
-        indent: int, default 2
-            Defines the indentation of the json
+        buffer_or_path: io.StringIO or str or None
+            output to write into. If None (default), will return a json string.
+        indent: int
+            Defines the indentation of the json, default 2
 
         Returns
         -------
-        None, or a json string (if buffer_or_path is None).
+        str or None
+            None, or a json string (if buffer_or_path is None).
         """
         # return json
         return json_data_to_json(

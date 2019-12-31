@@ -1,3 +1,5 @@
+"""Opyplus compatibility package, allows to handle different versions of EnergyPlus on different platforms."""
+
 __all__ = ["get_eplus_base_dir_path", "APPS_DIR_PATH", "EPLUS_AVAILABLE_VERSIONS", "EPLUS_DIR_PATTERN",
            "get_simulated_epw_path", "get_simulation_base_command", "get_simulation_command_style",
            "get_simulation_input_command_style", "SIMULATION_COMMAND_STYLES", "SIMULATION_INPUT_COMMAND_STYLES"]

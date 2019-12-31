@@ -1,26 +1,29 @@
+"""Epm table module."""
+
 from .record import Record
 from .queryset import Queryset
 from ..exceptions import FieldValidationError, RecordDoesNotExistError
 
 
-def get_documented_add(self, record_descriptors):
-    """
-    this hack is used to document add function
-    a methods __doc__ attribute is read-only (or must use metaclasses, what I certainly don't want to do...)
-    we therefore create a function (who's __doc__ attribute is read/write), and will bind it to Table in __init__
-    """
+# TODO [GL] [ZB] see how we deal with this dynamically generated docstring for our documentation...
+def _get_documented_add(self, record_descriptors):
+    # This hack is used to document add function.
+    # a methods __doc__ attribute is read-only (or must use metaclasses, what I certainly don't want to do...)
+    # we therefore create a function (who's __doc__ attribute is read/write), and will bind it to Table in __init__
     def add(data=None, **or_data):
         """
-        Parameters
-        ----------
-        data: dictionary containing field lowercase names or index as keys, and field values as values (dict syntax)
-        or_data: keyword arguments containing field names as keys (kwargs syntax)
+        Add a record to this table.
 
         A lowercase name is the lowercase EnergyPlus name, for which all non alpha-numeric characters have been replaced
         by underscores. All multiple consecutive underscores are then replaced by one unique underscore.
 
         The two syntaxes are not meant to cohabit. The kwargs syntax is nicer, but does not enable to use indexes
         instead of names.
+
+        Parameters
+        ----------
+        data: dictionary containing field lowercase names or index as keys, and field values as values (dict syntax)
+        or_data: keyword arguments containing field names as keys (kwargs syntax)
 
         Examples
         --------
@@ -54,6 +57,15 @@ def get_documented_add(self, record_descriptors):
 
 
 class Table:
+    """
+    Table class, each table contains a specific kind of EnergyPlus object.
+
+    Parameters
+    ----------
+    table_descriptor: opyplus.idd.table_descriptor.TableDescriptor
+    epm: opyplus.Epm
+    """
+
     def __init__(self, table_descriptor, epm):
         self._dev_descriptor = table_descriptor
         self._epm = epm
@@ -66,7 +78,7 @@ class Table:
         )
 
         # monkey-patch add
-        self.add = get_documented_add(self, self._dev_descriptor.field_descriptors)
+        self.add = _get_documented_add(self, self._dev_descriptor.field_descriptors)
 
         # register table hooks
         table_hooks_references = self._dev_descriptor.field_descriptors[0].tags.get("reference-class-name")
@@ -88,9 +100,7 @@ class Table:
         self._records[new_id] = record
 
     def _dev_add_inert(self, records_data):
-        """
-        inert: hooks and links are not activated
-        """
+        # Inert: hooks and links are not activated.
         added_records = []
         for r_data in records_data:
             # create record
@@ -113,9 +123,23 @@ class Table:
 
     # --------------------------------------------- public api ---------------------------------------------------------
     def __repr__(self):
+        """
+        Repr of table, including its name.
+
+        Returns
+        -------
+        str
+        """
         return f"<Table {self.get_name()}>"
 
     def __str__(self):
+        """
+        Get str, including list of records.
+
+        Returns
+        -------
+        str
+        """
         header = f"Table {self.get_name()} ({self.get_ref()})"
         if self._dev_no_pk:
             return header.strip()
@@ -123,82 +147,120 @@ class Table:
 
     def __getitem__(self, item):
         """
+        Get record by index.
+
         Parameters
         ----------
-        item: index or slice
+        item: int or slice
             record(s) position(s) (records are ordered by their content, not by creation order)
 
         Returns
         -------
-        Record instance or list of records
+        Record or typing.List[Record]
         """
         return self.select()[item]
 
     def __iter__(self):
+        """
+        Iterate through table records.
+
+        Returns
+        -------
+        typing.Iterator[Record]
+        """
         # !! we create a list before transforming to an iterator. If we don't do this, user may modify self._record key
         # (by changing the pk field key if any), which will not raise an error (surprisingly, it only raises if dict
         # changes size), but will continue iteration in values of new key (although already itered) !!
         return iter(tuple(self._records.values()))
 
     def __len__(self):
+        """
+        Get number of records in the Table.
+
+        Returns
+        -------
+        int
+        """
         return len(self._records)
 
     # get context
     def get_ref(self):
         """
+        Get table ref.
+
         The table ref is the converted name, in order to be compatible with Python variable rules (so we can access
-        table from Epm using __getattr__.
+        table from Epm using __getattr__).
         Conversion rule: all non alphanumeric characters are transformed to underscores.
         Example: 'Schedule_Compact'
+
+        Returns
+        -------
+        str
         """
         return self._dev_descriptor.table_ref
 
     def get_name(self):
         """
+        Get table name.
+
         The table name is the name given by EnergyPlus.
         Example: 'Schedule:Compact'
         """
         return self._dev_descriptor.table_name
 
     def get_epm(self):
+        """
+        Get epm to which this table belongs.
+
+        Returns
+        -------
+        opyplus.Epm
+        """
         return self._epm
 
     # explore
     def select(self, filter_by=None):
         """
+        Select records from Table by applying a filter.
+
         Parameters
         ----------
-        filter_by: callable, default None
+        filter_by: typing.Callable or None
             Callable must take one argument (a record of table), and return True to keep record, or False to skip it.
             Example : .select(lambda x: x.name == "my_name").
-            If None, records are not filtered.
+            If None (default), records are not filtered.
 
         Returns
         -------
-        Queryset instance, containing all selected records.
+        Queryset
         """
         records = self._records.values() if filter_by is None else filter(filter_by, self._records.values())
         return Queryset(self, records=records)
 
     def one(self, filter_by=None):
         """
+        Get a single record from the Table by applying a filter. If we get more than one record, raise.
+
         Parameters
         ----------
-        filter_by: callable or str, default None
+        filter_by: typing.Callable or str
             if str: record id
             if callable: a callable must take one argument (a record of table), and return True to keep record,
             or False to skip it. Example : .one(lambda x: x.name == "my_name").
-            if None: records are not filtered.
+            if None (default): records are not filtered.
 
         Returns
         -------
-        Record instance if one and only one record is found. Else raises.
+        Record
 
         Raises
         ------
-        TypeError if id search on a table that does not have a pk
-        RecordDoesNotExistError if no record is found
-        MultipleRecordsReturnedError if multiple records are found
+        TypeError
+            if id search on a table that does not have a pk
+        RecordDoesNotExistError
+            if no record is found
+        MultipleRecordsReturnedError
+            if multiple records are found
         """
         if isinstance(filter_by, str):
             if self._dev_no_pk:
@@ -217,16 +279,19 @@ class Table:
 
     def batch_add(self, records_data):
         """
+        Add records as batch.
+
         Parameters
         ----------
-        records_data: list of dictionaries containing records data. Keys of dictionary may be field names and/or field
+        records_data: typing.List[typing.Dict[typing.Union[str, int], dict]]
+            list of dictionaries containing records data. Keys of dictionary may be field names and/or field
             indexes
 
         Returns
         -------
-        Queryset instance of added records
+        Queryset
+            added records
         """
-
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
@@ -253,18 +318,25 @@ class Table:
 
     # delete
     def delete(self):
-        """
-        Deletes all records of table.
-        """
+        """Delete all records of table."""
         self.select().delete()
 
     # get idd info
     def get_info(self):
+        """
+        Get table info.
+
+        Returns
+        -------
+        str
+        """
         return self._dev_descriptor.get_info()
 
     # ------------------------------------------- export ---------------------------------------------------------------
     def to_json_data(self):
         """
+        Get Table as a json-serializable dict.
+
         Returns
         -------
         A dictionary of serialized data.

@@ -1,3 +1,5 @@
+"""Functions allowing to launch simulations on different platform and energyplus versions."""
+
 import os
 from .util import v_lookup, make_enum, OS_NAME, APPS_DIR_PATH, EPLUS_DIR_PATTERN
 
@@ -21,6 +23,18 @@ _simulation_base_command_matrix = {
 
 
 def get_simulation_base_command(version):
+    """
+    Get energyplus simulation command.
+
+    Parameters
+    ----------
+    version: tuple of int
+
+    Returns
+    -------
+    str
+        command to run energyplus
+    """
     commands = _simulation_base_command_matrix[OS_NAME]
     return v_lookup(version, commands)
 
@@ -65,6 +79,22 @@ _simulation_input_command_matrix = {
 
 
 def get_simulation_input_command_style(extension, version):
+    """
+    Get simulation input command style ('simu_dir' or 'file_path').
+
+    Parameters
+    ----------
+    extension: {'idf', 'epw'}
+    version: tuple of int
+
+    Returns
+    -------
+    {'simu_dir', 'file_path'}
+
+    Raises
+    ------
+    ValueError
+    """
     if extension not in ("idf", "epw"):
         raise ValueError(f"unknown extension: {extension}")
     styles = _simulation_input_command_matrix[OS_NAME][extension]
@@ -94,6 +124,17 @@ _simulation_command_styles_matrix = {
 
 
 def get_simulation_command_style(version):
+    """
+    Get simulation command style ('args' or 'kwargs').
+
+    Parameters
+    ----------
+    version: tuple of int
+
+    Returns
+    -------
+    {'args', 'kwargs'}
+    """
     return v_lookup(version, _simulation_command_styles_matrix[OS_NAME])
 
 
@@ -107,6 +148,22 @@ for file_name in os.listdir(APPS_DIR_PATH):
 
 
 def get_eplus_base_dir_path(version):
+    """
+    Get EnergyPlus base dir path.
+
+    Parameters
+    ----------
+    version: tuple of int
+
+    Returns
+    -------
+    str
+        EnergyPlus base dir path
+
+    Raises
+    ------
+    KeyError
+    """
     _major, _minor, _patch = version
     try:
         return EPLUS_AVAILABLE_VERSIONS[(_major, _minor)]
