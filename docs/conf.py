@@ -33,7 +33,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx_rtd_theme',
-    'm2r'
+    'm2r',
+    'numpydoc'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

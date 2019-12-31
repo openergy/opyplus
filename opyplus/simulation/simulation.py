@@ -3,6 +3,7 @@
 import os
 import logging
 import shutil
+from functools import wraps
 
 from opyplus import Epm, WeatherData, CONF
 from opyplus.util import version_str_to_version, run_subprocess, LoggerStreamWriter, PrintFunctionStreamWriter
@@ -39,6 +40,7 @@ def check_status(*authorized):
         list of authorized status
     """
     def method_generator(method):
+        @wraps(method)
         def new_method(self, *args, **kwargs):
             if self.get_status() not in authorized:
                 raise RuntimeError(
