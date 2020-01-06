@@ -1,3 +1,5 @@
+"""Utilities functions for the compatibility package."""
+
 import collections
 import platform
 import re
@@ -26,12 +28,11 @@ else:
 
 def v_lookup(version, d):
     """
-    Finds the value depending in current eplus version.
-
+    Find the value depending of current eplus version.
 
     Parameters
     ----------
-    version
+    version: tuple of int
     d: dict
         {(0, 0): value, (x, x): value, ...}
         for version v, current value is the value of version lv such as lv <= v < lv+1
@@ -43,5 +44,16 @@ def v_lookup(version, d):
 
 
 def make_enum(*keys):
+    """
+    Create Enum from keys.
+
+    Parameters
+    ----------
+    keys
+
+    Returns
+    -------
+    Enum
+    """
     Enum = collections.namedtuple("Enum", keys)
     return Enum(**dict([(k, k) for k in keys]))

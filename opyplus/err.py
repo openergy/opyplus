@@ -1,3 +1,4 @@
+"""Class Err to serialize EnergyPlus ".err" output."""
 import os
 import pandas as pd
 
@@ -5,6 +6,21 @@ from . import CONF
 
 
 class Err:
+    """Class to serialize EnergyPlus ".err" output.
+
+    Parameters
+    ----------
+    path: str
+        Path of the .err file
+
+    Attributes
+    ----------
+    path: str
+        Path of the .err file
+    info: dict
+        General info contained in the .err file
+    """
+
     WARNING = "Warning"
     FATAL = "Fatal"
     SEVERE = "Severe"
@@ -116,15 +132,32 @@ class Err:
 
     # ------------------------------------------ public api ------------------------------------------------------------
     def get_content(self):
+        """
+        Get the content of the file as text.
+
+        Returns
+        -------
+        str
+            content of the file as a string
+        """
         with open(self.path, encoding=CONF.encoding) as f:
             return f.read()
 
     def get_data(self, simulation_step=None, error_category=None):
         """
+        Get error data as a DataFrame.
+
         Parameters
         ----------
-        simulation_step: if not given, returns a raw report
-        error_category: if only one argument is specified, swaps dataframe report
+        simulation_step: str
+            if not given, returns a raw report
+        error_category: str
+            if only one argument is specified, swaps dataframe report
+
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with the corresponding error data
         """
         if simulation_step is None and error_category is None:
             return self._df.dropna(axis="rows", how="all")

@@ -1,3 +1,5 @@
+"""Epm record module."""
+
 import uuid
 import os
 import collections
@@ -13,7 +15,7 @@ TAB_LEN = 4
 COMMENT_COLUMN_START = 35
 
 
-def get_type_level(value):
+def _get_type_level(value):
     if value is None:  # lowest type
         return 0
 
@@ -27,16 +29,19 @@ def get_type_level(value):
 
 
 class Record:
+    """
+    Record class. A record represents an EnergyPlus object in opyplus.
+
+    Parameters
+    ----------
+    table: opyplus.epm.table.Table
+    data: dict or None
+        if dict, key: index_or_ref, value: raw value or value
+    """
+
     _initialized = False  # used by __setattr__
 
     def __init__(self, table, data=None):
-        """
-        Parameters
-        ----------
-        table
-        data: dict, default {}
-            key: index_or_ref, value: raw value or value
-        """
         self._table = table  # when record is deleted, __init__ fields are set to None
         self._data = {}
 
@@ -88,9 +93,7 @@ class Record:
                     f"Field is required (it is a pk). {field_descriptor.get_error_location_message()}")
 
     def _update_value_inert(self, index, value):
-        """
-        is only called by _update_inert
-        """
+        # Is only called by _update_inert.
         # get field descriptor
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
@@ -214,6 +217,13 @@ class Record:
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
     def __repr__(self):
+        """
+        Get record repr, including its table name and id.
+
+        Returns
+        -------
+        str
+        """
         if self._table is None:
             return "<Record (deleted)>"
 
@@ -223,6 +233,13 @@ class Record:
         return f"<Record {self.get_table().get_name()} '{self.id}'>"
 
     def __str__(self):
+        """
+        Get record str, which is the corresponding idf object.
+
+        Returns
+        -------
+        str
+        """
         if self._table is None:
             return repr(self).strip()
 
@@ -230,13 +247,17 @@ class Record:
 
     def __getitem__(self, item):
         """
+        Get field value.
+
         Parameters
         ----------
-        item: field lowercase name or index
+        item: str or int
+            field lowercase name or index
 
         Returns
         -------
-        Field value
+        value
+            Field value
         """
         # prepare item
         item = self._field_key_to_index(item)
@@ -259,28 +280,39 @@ class Record:
 
     def __setitem__(self, key, value):
         """
+        Set field value.
+
         Parameters
         ----------
-        key: field lowercase name or index
-        value: value to set
+        key: str or int
+            field lowercase name or index
+        value
+            value to set
         """
         self.update({key: value})
 
     def __getattr__(self, item):
         """
+        Get field value by name.
+
         Parameters
         ----------
-        item: field name
+        item: str
+            field name
         """
         index = self._table._dev_descriptor.get_field_index(item)
         return self[index]
 
     def __setattr__(self, name, value):
         """
+        Set field value.
+
         Parameters
         ----------
-        name: field lowercase name
-        value: value to set
+        name: str
+            field lowercase name
+        value
+            value to set
         """
         if name in self.__dict__ or not self._initialized:
             super().__setattr__(name, value)
@@ -288,12 +320,26 @@ class Record:
         self.update({name: value})
 
     def __dir__(self):
+        """
+        Get list of fields for auto-completion.
+
+        Returns
+        -------
+        list of str
+        """
         return [
             f"f{i}" if fd.ref is None else fd.ref for
             (i, fd) in enumerate(self._table._dev_descriptor.field_descriptors)
         ] + list(self.__dict__)
 
     def __len__(self):
+        """
+        Get number of fields in this record.
+
+        Returns
+        -------
+        int
+        """
         biggest_index = -1 if (len(self._data) == 0) else max(self._data)
 
         # manage extensible
@@ -310,6 +356,17 @@ class Record:
         )
 
     def __lt__(self, other):
+        """
+        Compare two records.
+
+        Parameters
+        ----------
+        other: Record
+
+        Returns
+        -------
+        bool
+        """
         # compare tables
         self_ref = self.get_table_ref()
         other_ref = other.get_table_ref()
@@ -330,8 +387,8 @@ class Record:
             other_value = other.get_serialized_value(i)
 
             # types
-            self_type_level = get_type_level(self_value)
-            other_type_level = get_type_level(other_value)
+            self_type_level = _get_type_level(self_value)
+            other_type_level = _get_type_level(other_value)
 
             # different types
             if self_type_level < other_type_level:
@@ -355,36 +412,65 @@ class Record:
     @property
     def id(self):
         """
+        Get record id.
+
         Returns
         -------
-        If record has a name, returns its name, else returns record's python id.
+        str
+            If record has a name, returns its name, else returns record's python id.
         """
         return id(self) if self._table._dev_no_pk else self[0]
 
     # get context
     def get_epm(self):
+        """
+        Get the epm this record belongs to.
+
+        Returns
+        -------
+        opyplus.Epm
+        """
         return self._table.get_epm()
 
     def get_table(self):
+        """
+        Get the table this record belongs to.
+
+        Returns
+        -------
+        opyplus.epm.table.Table
+        """
         return self._table
 
     def get_table_ref(self):
+        """
+        Get the ref of the table this record belongs to.
+
+        Returns
+        -------
+        str
+        """
         return self._table.get_ref()
 
     # explore specific info
     def get_comment(self):
+        """
+        Get comment.
+
+        Returns
+        -------
+        str
+        """
         return self._comment
 
     def get_serialized_value(self, ref_or_index, model_name=None):
         """
+        Get serialized value.
+
         Parameters
         ----------
-        ref_or_index
-        external_files_mode: str, default 'path'
-            'path', 'pointer'
-        model_file_path: str, default None
-            if external files are asked in a relative fashion, relative path will be calculated relatively to
-            model_file_path if given, else current directory
+        ref_or_index: str or int
+        model_name: str or None
 
         Returns
         -------
@@ -409,39 +495,49 @@ class Record:
 
     def get_pointed_records(self):
         """
+        Get records pointed by this record.
+
         Returns
         -------
-        MultiTableQueryset of all records pointing on record.
+        MultiTableQueryset
+            all records pointing on record.
         """
-        return self.get_epm()._dev_relations_manager.get_pointed_from(self)
+        return self.get_epm()._dev_relations_manager.get_pointed_by(self)
 
     def get_pointing_records(self):
         """
+        Get records pointing on this record.
+
         Returns
         -------
-        MultiTableQueryset of all records pointed by record.
+        MultiTableQueryset
+            all records pointed by record.
         """
         return self.get_epm()._dev_relations_manager.get_pointing_on(self)
 
     def get_external_files(self):
         """
+        Get external files.
+
         Returns
         -------
-        List of ExternalFiles instances contained by record.
+        list of opyplus.epm.external_file.ExternalFile
+            external files contained by record.
         """
         return [v for v in self._data.values() if isinstance(v, ExternalFile)]
 
     # construct
     def update(self, data=None, **or_data):
         """
-        Updates simultaneously all given fields.
+        Update simultaneously all given fields.
 
         Parameters
         ----------
-        data: dictionary containing field lowercase names or index as keys, and field values as values (dict syntax)
-        or_data: keyword arguments containing field names as keys (kwargs syntax)
+        data: dict
+            dictionary containing field lowercase names or index as keys, and field values as values (dict syntax)
+        or_data: dict
+            keyword arguments containing field names as keys (kwargs syntax)
         """
-
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
@@ -461,19 +557,30 @@ class Record:
         self._dev_activate_external_files()
 
     def set_comment(self, comment):
+        """
+        Set comment.
+
+        Parameters
+        ----------
+        comment: str
+        """
         # todo-later: manage properly (for the moment only used in to_idf)
         self._comment = comment
 
     def copy(self, new_name=None):
         """
+        Copy record.
+
         Parameters
         ----------
-        new_name: str, default None
-            record's new name (if table has a name). If None although record has a name, a random uuid will be given.
+        new_name: str or None
+            record's new name (if table has a name).
+            If None (default) although record has a name, a random uuid will be given.
 
         Returns
         -------
-        Copied record.
+        Record
+            copied record
         """
         # todo: [GL] check this really works, !! must not use same link, hook, external_file, ... for different records
         # no pk tables can just be copied
@@ -486,9 +593,7 @@ class Record:
         return self._table.add(new_data)
 
     def set_defaults(self):
-        """
-        sets all empty fields for which a default value is defined to default value
-        """
+        """Set all empty fields for which a default value is defined to default value."""
         defaults = {}
         for i in range(len(self)):
             if i in self._data:
@@ -502,8 +607,7 @@ class Record:
     # construct extensible fields
     def add_fields(self, *args):
         """
-        This method only works for extensible fields. It allows to add values without precising their fields' names
-        or indexes.
+        Add values without precising their fields' names or indexes. This method only works for extensible fields.
 
         Parameters
         ----------
@@ -521,17 +625,16 @@ class Record:
 
     def pop(self, index=None):
         """
-        This method only works for extensible fields. It allows to remove a value and shift all other values to fill
-        the gap.
+        Remove a value and shift all other values to fill the gap. This method only works for extensible fields.
 
         Parameters
         ----------
-        index: int, default None
-            index of field to remove.
+        index: int or None
+            index of field to remove, default None.
 
         Returns
         -------
-        serialize value of popped field
+        serialized value of popped field
         """
         # prepare index (will check for extensible)
         index = self._prepare_pop_insert_index(index=index)
@@ -552,13 +655,14 @@ class Record:
 
     def insert(self, index, value):
         """
-        This method only works for extensible fields. It allows to insert a value, and shifts all other following
-        values.
+        Insert a value, and shift all other following values. Only works for extensible fields.
 
         Parameters
         ----------
-        index: position of insertion
-        value: value to insert
+        index: int
+            position of insertion
+        value
+            value to insert
         """
         # prepare index (will check for extensible)
         index = self._prepare_pop_insert_index(index=index)
@@ -574,20 +678,20 @@ class Record:
 
     def clear_extensible_fields(self):
         """
+        Clear extensible fields.
+
         Returns
         -------
-        list of cleared fields (serialized)
+        list of str
+            list of cleared fields (serialized)
         """
         if not self.is_extensible():
             raise TypeError("Can't use add_fields on a non extensible record.")
         cycle_start, cycle_len, patterns = self.get_extensible_info()
         return [self.get_serialized_value(i) for i in range(cycle_start, len(self))]
 
-    # delete
     def delete(self):
-        """
-        Deletes record, and removes it from database.
-        """
+        """Delete record, and remove it from database."""
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
@@ -614,6 +718,8 @@ class Record:
     # get idd info
     def get_field_descriptor(self, ref_or_index):
         """
+        Get field descriptor.
+
         Parameters
         ----------
         ref_or_index: str or int
@@ -621,7 +727,8 @@ class Record:
 
         Returns
         -------
-        Field descriptor (info contained in Idd)
+        opyplus.idd.field_descriptor.FieldDescriptor
+            Info about the field contained in the Idd file
         """
         if isinstance(ref_or_index, int):
             index = ref_or_index
@@ -630,13 +737,31 @@ class Record:
         return self._table._dev_descriptor.get_field_descriptor(index)
 
     def get_info(self):
+        """
+        Get info.
+
+        Returns
+        -------
+        str
+        """
         return self._table._dev_descriptor.get_info()
 
     def is_extensible(self):
+        """
+        Return whether this record is extensible.
+
+        Returns
+        -------
+        bool
+        """
         return self.get_extensible_info() is not None
 
     def get_extensible_info(self):
         """
+        Get extensible info.
+
+        # TODO [GL] fill in docstring about cycle start and so on...
+
         Returns
         -------
         cycle_start, cycle_len, patterns
@@ -645,18 +770,28 @@ class Record:
 
     # --------------------------------------------- export -------------------------------------------------------------
     def to_dict(self):
+        """
+        Get record as dict.
+
+        Returns
+        -------
+        dict
+        """
         return collections.OrderedDict(sorted(self._data.items()))
 
     def to_json_data(self, model_name=None):
         """
+        Get record as a json-serializable dict.
+
         Parameters
         ----------
-        model_name: str, default None
+        model_name: str or None
             if given, will be used as external file directory base name
 
         Returns
         -------
-        A dictionary of serialized data.
+        dict
+            A dictionary of serialized data.
         """
         return collections.OrderedDict(
             [("_comment", self._comment)]
@@ -665,14 +800,16 @@ class Record:
 
     def to_idf(self, model_name=None):
         """
+        Get record as an idf string.
+
         Parameters
         ----------
-         model_name: str, default None
+         model_name: str or None
             if given, will be used as external file directory base name
 
         Returns
         -------
-        idf string
+        str
         """
         json_data = self.to_json_data(model_name=model_name)
 

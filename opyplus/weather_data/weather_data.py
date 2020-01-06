@@ -1,3 +1,4 @@
+"""module to use to work with E+ weather data."""
 import collections
 import datetime as dt
 
@@ -56,10 +57,50 @@ COLUMNS = collections.OrderedDict((  # name: (used, missing, dtype)
 
 
 def to_str(value):
+    """
+    Convert to string.
+
+    Returns
+    -------
+    str
+    """
     return "" if value is None else str(value)
 
 
 class WeatherData:
+    """
+    Class describing E+ weather data.
+
+    For more information on following concepts, see EnergyPlus documentation :
+    AuxiliaryPrograms.pdf: Weather Converter Program/EnergyPlus Weather File (EPW) Data Dictionary
+
+    Parameters
+    ----------
+    weather_series: pandas.DataFrame
+        * containing epw columns (some may be missing)
+        * missing values may be None or E+ missing value
+    latitude
+    longitude
+    timezone_offset
+    elevation
+    city
+    state_province_region
+    country
+    source
+    wmo
+    design_conditions_source
+    design_conditions
+    typical_extreme_periods
+    ground_temperatures
+    leap_year_observed
+    daylight_savings_start_day
+    daylight_savings_end_day
+    holidays
+    comments_1
+    comments_2
+    start_day_of_week
+    """
+
     def __init__(
             self,
             weather_series,  # dataframe
@@ -84,36 +125,6 @@ class WeatherData:
             comments_2="",
             start_day_of_week=None
     ):
-        """
-        For more information on following concepts, see EnergyPlus documentation :
-            AuxiliaryPrograms.pdf: Weather Converter Program/EnergyPlus Weather File (EPW) Data Dictionary
-
-        Parameters
-        ----------
-        weather_series: dataframe
-            * containing epw columns (some may be missing)
-            * missing values may be None or E+ missing value
-        latitude
-        longitude
-        timezone_offset
-        elevation
-        city
-        state_province_region
-        country
-        source
-        wmo
-        design_conditions_source
-        design_conditions
-        typical_extreme_periods
-        ground_temperatures
-        leap_year_observed
-        daylight_savings_start_day
-        daylight_savings_end_day
-        holidays
-        comments_1
-        comments_2
-        start_day_of_week
-        """
         # weather series
         self._weather_series = _sanitize_weather_series(weather_series)
 
@@ -263,10 +274,19 @@ class WeatherData:
     # ------------------------------------------------ public api ------------------------------------------------------
     @property
     def has_datetime_instants(self):
+        """
+        Check if datetime instants have been created.
+
+        Returns
+        -------
+        bool
+        """
         return isinstance(self._weather_series.index, pd.DatetimeIndex)
 
     def create_datetime_instants(self, start_year=None):
         """
+        Add a datetime index to the weather series data frame.
+
         Parameters
         ----------
         start_year: int or None, default None
@@ -319,20 +339,30 @@ class WeatherData:
 
     def get_weather_series(self):
         """
+        Get the weather series dataframe.
+
         Returns
         -------
-        weather series dataframe, which contains all the timeseries data. Will be a datetime series or a tuple instants
-        series depending on current mode.
+        pandas.DataFrame
+            weather series dataframe, which contains all the timeseries data.
+            Will be a datetime series or a tuple instants series depending on current mode.
         """
         return self._weather_series.copy()
 
     def get_bounds(self, use_datetimes=True):
         """
+        Get datetime instants of beginning and end of data. If no data, will be: (None, None).
+
+        Parameters
+        ----------
+        use_datetimes: bool
+
         Returns
         -------
-        (start, end)
-
-        Datetime instants of beginning and end of data. If no data, will be: (None, None).
+        datetime.datetime or None
+            start
+        datetime.datetime or None
+            end
         """
         start, end = None, None
         if len(self._weather_series) == 0:
@@ -354,6 +384,13 @@ class WeatherData:
         return start, end
 
     def get_info(self):
+        """
+        Get WeatherData info.
+
+        Returns
+        -------
+        str
+        """
         start, end = self.get_bounds()
         if start is None:
             start, end = "no data", "no data"
@@ -369,11 +406,15 @@ class WeatherData:
     @classmethod
     def load(cls, buffer_or_path, create_datetime_instants=False, start_year=None) -> "WeatherData":
         """
+        Load weather data from an epw file.
+
         Parameters
         ----------
-        buffer_or_path: buffer or path containing epw format.
-        create_datetime_instants: set datetime instants index after file was loaded
-        start_year: int or None, default None
+        buffer_or_path: str or typing.StringIO
+            buffer or path containing epw format.
+        create_datetime_instants: bool
+            set datetime instants index after file was loaded
+        start_year: int or None
             only used if create_datetime_instants is True
             if given, will force year column with start_year (multi-year not supported for now)
 
@@ -385,26 +426,26 @@ class WeatherData:
 
     def save(self, buffer_or_path=None, use_datetimes=True):
         """
+        Save weather data as an epw file.
+
         Parameters
         ----------
-        buffer_or_path: buffer or path, default None
+        buffer_or_path: str or typing.StringIO
             Buffer or path to write into. If None, will return a string containing epw info.
-        use_datetimes: bool, default True
+        use_datetimes: bool
             if True and datetime index was created, will use this index to generate epw (start day and data)
             else: will use instant columns information
 
         Returns
         -------
-        None or a string if buffer_or_path is None.
+        str or None
         """
         return self.to_epw(buffer_or_path=buffer_or_path, use_datetimes=use_datetimes)
 
     # ------------------------------------------- import/export --------------------------------------------------------
     @classmethod
     def from_epw(cls, buffer_or_path, create_datetime_instants=False, start_year=None) -> "WeatherData":
-        """
-        see load
-        """
+        """See load."""
         from .epw_parse import parse_epw
         _, buffer = to_buffer(buffer_or_path)
         with buffer as f:
@@ -414,9 +455,7 @@ class WeatherData:
         return weather_data
 
     def to_epw(self, buffer_or_path=None, use_datetimes=True):
-        """
-        see save
-        """
+        """See save."""
         # copy (will be modified)
         df = self._weather_series.copy()
 

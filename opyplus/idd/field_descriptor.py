@@ -1,3 +1,4 @@
+"""Idd field_descriptor module."""
 import re
 import unidecode
 
@@ -15,15 +16,36 @@ not_python_var_pattern = re.compile(r"(^[^\w]+)|([^\w\d]+)")
 multiple_underscores_pattern = re.compile(r"[_]{2,}")
 
 
-def var_name_to_ref(name):
+def _var_name_to_ref(name):
     ref = re.sub(not_python_var_pattern, "_", name.lower())
     return re.sub(multiple_underscores_pattern, "_", ref)
 
 
 class FieldDescriptor:
     """
+    Idd field descriptor class.
+
+    Parameters
+    ----------
+    table_descriptor: opyplus.idd.table_descriptor.TableDescriptor
+    index: int
+    field_basic_type: {"A", "N"}
+    name: str or None
+
+    Attributes
+    ----------
+    table_descriptor: opyplus.idd.table_descriptor.TableDescriptor
+    index: int
+    field_basic_type: {"A", "N"}
+    name: str or None
+    ref: str or None
+    tags: dict
+
+    Notes
+    -----
     No checks implemented (idd is considered as ok).
     """
+
     BASIC_FIELDS = ("integer", "real", "alpha", "choice", "node", "external-list")
 
     def __init__(self, table_descriptor, index, field_basic_type, name=None):
@@ -33,7 +55,7 @@ class FieldDescriptor:
         self.index = index
         self.basic_type = field_basic_type  # A -> alphanumeric, N -> numeric
         self.name = name
-        self.ref = None if name is None else var_name_to_ref(name)
+        self.ref = None if name is None else _var_name_to_ref(name)
         self.tags = {}
 
         # used for error messages on extensible fields
@@ -42,6 +64,14 @@ class FieldDescriptor:
 
     # construct
     def append_tag(self, ref, value=None):
+        """
+        Append a tag.
+
+        Parameters
+        ----------
+        ref: str
+        value
+        """
         if ref not in self.tags:
             self.tags[ref] = []
 
@@ -52,11 +82,31 @@ class FieldDescriptor:
         self.tags[ref].append(value)
 
     def set_extensible_info(self, cycle_start, cycle_len, cycle_pattern):
+        """
+        Set the extensible info.
+
+        Parameters
+        ----------
+        cycle_start: int
+        cycle_len: int
+        cycle_pattern: int
+        """
         self._extensible_info = (cycle_start, cycle_len, cycle_pattern)
 
     # deserialize
     def deserialize(self, value, index, check_length=True):
         """
+        Deserialize.
+
+        Parameters
+        ----------
+        value
+        index: int
+        check_length: bool
+            default True
+
+        Notes
+        -----
         index is used for extensible fields error messages (if given)
         """
         # -- serialize if not raw type
@@ -168,26 +218,52 @@ class FieldDescriptor:
     # get info
     @property
     def is_required(self):
+        """
+        Return whether field is required.
+
+        Returns
+        -------
+        bool
+        """
         return "required-field" in self.tags
 
     @property
     def is_file_name(self):
+        """
+        Return whether field is a file name.
+
+        Returns
+        -------
+        bool
+        """
         # we don't add this to detailed_type because can be a file name and something else (for example object-list)
         return "file_name" in self.ref
 
     def check_not_required(self):
+        """
+        Check that the field is not required.
+
+        Raises
+        ------
+        FieldValidationError
+            if field is required
+        """
         if self.is_required:
             raise FieldValidationError(f"Field is required. {self.get_error_location_message()}")
 
     @property
     def detailed_type(self):
         """
-        Uses EPlus double approach of type ('type' tag, and/or 'key', 'object-list', 'external-list', 'reference' tags)
-        to determine detailed type.
+        Get the detailed type.
 
         Returns
         -------
         "integer", "real", "alpha", "choice", "reference", "object-list", "external-list", "node"
+
+        Notes
+        -----
+        Uses EPlus double approach of type ('type' tag, and/or 'key', 'object-list', 'external-list', 'reference' tags)
+        to determine detailed type.
         """
         if self._detailed_type is None:
             if ("reference" in self.tags) or ("reference-class-name" in self.tags):
@@ -209,6 +285,18 @@ class FieldDescriptor:
         return self._detailed_type
 
     def get_error_location_message(self, value=None, index=None):
+        """
+        Get the error location message.
+
+        Parameters
+        ----------
+        value
+        index: int or None
+
+        Returns
+        -------
+        str
+        """
         # manage extensible field ref if relevant
         if (index is not None) and (self._extensible_info is not None) and (index >= self._extensible_info[0]):
             cycle_num = (index - self._extensible_info[0]) // self._extensible_info[1] + 1

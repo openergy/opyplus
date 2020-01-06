@@ -1,3 +1,4 @@
+"""Work with EnergyPlus external file."""  # TODO [GL] describe this module properly
 import os
 import logging
 
@@ -8,14 +9,47 @@ logger = logging.getLogger(__name__)
 
 
 def get_external_files_dir_name(model_name=None):
+    """
+    Get the external files directory name.
+
+    Parameters
+    ----------
+    model_name: str or None
+
+    Returns
+    -------
+    str
+    """
     if model_name is None:
         model_name = CONF.default_model_name
     return model_name + CONF.external_files_suffix
 
 
 class ExternalFile:
+    # TODO [GL]: fill in the docstring
+    """
+    Class describing an EnergyPlus external file.
+
+    Parameters
+    ----------
+    ref: str
+    content: str
+        content of the file
+    """
+
     @classmethod
     def deserialize(cls, value):
+        """
+        Create an ExternalFile object from a given value.
+
+        Parameters
+        ----------
+        value: FileContent or str or None
+
+        Returns
+        -------
+        ExternalFile
+        """
         if value is None:
             return NONE_EXTERNAL_FILE
 
@@ -62,21 +96,56 @@ class ExternalFile:
         self._external_file_manager.unregister(self)
 
     def __repr__(self):
+        """
+        Get representation including external file ref.
+
+        Returns
+        -------
+        str
+        """
         return f"<ExternalFile: {self._ref}>"
 
     @property
     def ref(self):
+        """
+        Get external file ref.
+
+        Returns
+        -------
+        str
+        """
         return self._ref
 
     @property
     def naive_short_ref(self):
+        """
+        Get external file naive short ref.
+
+        Returns
+        -------
+        str
+        """
         return self._naive_short_ref
 
     @property
     def short_ref(self):
+        """
+        Get external file short ref.
+
+        Returns
+        -------
+        str
+        """
         return self._external_file_manager.short_refs[self.ref]
 
     def get_content(self):
+        """
+        Get external file content.
+
+        Returns
+        -------
+        str
+        """
         return self._external_file_manager.get_content(self._ref)
 
 

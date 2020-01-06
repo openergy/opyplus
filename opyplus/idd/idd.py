@@ -1,6 +1,4 @@
 """
-Idd
----
 Manages the EPlus idd file.
 
 Definitions
@@ -12,7 +10,6 @@ field descriptor: descriptor of a field of a record
 
 pointing records (has tag 'object-list'): object that points towards another object
 pointed record (has tag 'reference'): object being pointed by another object
-
 """
 import re
 import logging
@@ -30,6 +27,21 @@ _IDD_CACHE = {}  # {(major, minor): idd,... stores standard idds to prevent from
 
 
 class Idd:
+    """
+    Class representing an EnergyPlus Idd file.
+
+    Parameters
+    ----------
+    version_or_buffer_or_path: tuple or typing.StringIO or str or None
+    apply_corrections: bool
+
+    Attributes
+    ----------
+    path: str or None
+    buffer: typing.StringIO or None
+    table_descriptors: dict
+    """
+
     version = None
     build = None
 

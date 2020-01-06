@@ -1,3 +1,4 @@
+"""Functions to parse epw files."""
 import pandas as pd
 
 from opyplus import CONF
@@ -12,6 +13,18 @@ def _get_row_l(row):
 
 
 def parse_epw(file_like) -> WeatherData:
+    """
+    Parse an epw file.
+
+    Parameters
+    ----------
+    file_like: typing.StringIO
+        epw file to parse
+
+    Returns
+    -------
+    WeatherData
+    """
     # parse header
 
     # location

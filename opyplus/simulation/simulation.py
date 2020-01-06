@@ -1,6 +1,9 @@
+"""opyplus simulation module."""
+
 import os
 import logging
 import shutil
+from functools import wraps
 
 from opyplus import Epm, WeatherData, CONF
 from opyplus.util import version_str_to_version, run_subprocess, LoggerStreamWriter, PrintFunctionStreamWriter
@@ -25,7 +28,19 @@ logger = logging.getLogger(__name__)
 
 
 def check_status(*authorized):
+    """
+    Check simulation status decorator.
+
+    When applied to a simulation method, will raise if the method is called and the simulation status is not one of
+    authorized.
+
+    Parameters
+    ----------
+    authorized: list of str
+        list of authorized status
+    """
     def method_generator(method):
+        @wraps(method)
         def new_method(self, *args, **kwargs):
             if self.get_status() not in authorized:
                 raise RuntimeError(
@@ -40,13 +55,27 @@ def check_status(*authorized):
 
 class Simulation:
     """
+    Class describing an E+ simulation.
+
     Simulation output data has following characteristics:
     - convention: left (00:00 is [00:00;01:00[ for an hourly series)
     - clock: tzt
 
     Left convention applies to datetime index. In data columns, start and end of period are given (=> user can choose to
     work with one convention or another).
+
+    A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
+    possible to load an already simulated directory without having to define it's idf or epw.
+
+    Parameters
+    ----------
+    base_dir_path: str
+        simulation dir path
+    simulation_name: str or None
+        if provided, simulation will be looked for in {base_dir_path}/{simulation_name}
+        else, simulation will be looked for in {base_dir_path}
     """
+
     _info = None
     _resource_map = None
 
@@ -57,20 +86,21 @@ class Simulation:
 
     @classmethod
     def get_simulation_dir_path(cls, base_dir_path, simulation_name=None):
+        """
+        Get simulation dir path from base path and name.
+
+        Parameters
+        ----------
+        base_dir_path: str
+        simulation_name: str or None
+
+        Returns
+        -------
+        str
+        """
         return base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
 
     def __init__(self, base_dir_path, simulation_name=None):
-        """
-        Parameters
-        ----------
-        base_dir_path: simulation dir path
-        simulation_name: str, default None
-            if provided, simulation will be looked for in {base_dir_path}/{simulation_name}
-            else, simulation will be looked for in {base_dir_path}
-
-        A simulation is not characterized by it's input files but by it's base_dir_path. This approach makes it
-        possible to load an already simulated directory without having to define it's idf or epw.
-        """
         # store absolute: important for eplus commands
         self._dir_abs_path = os.path.abspath(
             self.get_simulation_dir_path(base_dir_path, simulation_name=simulation_name)
@@ -125,6 +155,20 @@ class Simulation:
     # ------------------------------------ public api ------------------------------------------------------------------
     @classmethod
     def from_inputs(cls, base_dir_path, epm_or_buffer_or_path, weather_data_or_buffer_or_path, simulation_name=None):
+        """
+        Create a simulation from input data: Epm (idf) and WeatherData (epw).
+
+        Parameters
+        ----------
+        base_dir_path: str
+        epm_or_buffer_or_path: Epm or str or typing.StringIO
+        weather_data_or_buffer_or_path: WeatherData or str or typing.StringIO
+        simulation_name: str
+
+        Returns
+        -------
+        Simulation
+        """
         # create dir if needed
         dir_path = base_dir_path if simulation_name is None else os.path.join(base_dir_path, simulation_name)
         if not os.path.isdir(dir_path):
@@ -178,6 +222,16 @@ class Simulation:
 
     @check_status(EMPTY)
     def simulate(self, print_function=None, beat_freq=None):
+        """
+        Run this simulation on E+.
+
+        Parameters
+        ----------
+        print_function: typing.Callable or None
+            Function to print current status
+        beat_freq: float or None:
+            If set, will print a message to print_function every beat_freq seconds while E+ is running.
+        """
         # manage defaults
         if print_function is not None:
             std_out_err = PrintFunctionStreamWriter(print_function)
@@ -251,9 +305,32 @@ class Simulation:
         self._info.to_json(self.get_resource_path("info"))
 
     def get_dir_path(self):
+        """
+        Get simulation dir path.
+
+        Returns
+        -------
+        str
+        """
         return self._dir_abs_path
 
     def get_resource_path(self, ref, raise_if_not_found=False):
+        """
+        Get simulation resource path from ref.
+
+        Parameters
+        ----------
+        ref: str
+        raise_if_not_found: bool
+
+        Returns
+        -------
+        str
+
+        Raises
+        ------
+        FileNotFoundError
+        """
         rel_path = self._resource_map[ref]
         if rel_path is None:
             if raise_if_not_found:
@@ -262,10 +339,23 @@ class Simulation:
         return os.path.join(self._dir_abs_path, rel_path)
 
     def check_exists(self, ref):
+        """
+        Check if resource exist from ref.
+
+        Parameters
+        ----------
+        ref: str
+
+        Returns
+        -------
+        bool
+        """
         return os.path.exists(self.get_resource_path(ref))
 
     def get_status(self):
         """
+        Get simulation status.
+
         Returns
         -------
         empty, success, error
@@ -273,28 +363,86 @@ class Simulation:
         return self._info.status
 
     def get_info(self):
+        """
+        Get simulation info.
+
+        Returns
+        -------
+        Info
+        """
         return self._info
 
     def get_in_epm(self):
+        """
+        Get simulation input Epm (idf).
+
+        Returns
+        -------
+        Epm
+        """
         return Epm.load(self.get_resource_path(ResourcesRefs.idf))
 
     def get_in_weather_data(self):
+        """
+        Get simulation input WeatherData (epw).
+
+        Returns
+        -------
+        WeatherData
+        """
         return WeatherData.load(self.get_resource_path(ResourcesRefs.epw))
 
     @check_status(FINISHED, FAILED)
     def get_out_err(self):
+        """
+        Get simulation out_err (E+ .err file).
+
+        Returns
+        -------
+        Err
+        """
         return Err(self.get_resource_path(ResourcesRefs.err, raise_if_not_found=True))
 
     @check_status(FINISHED, FAILED)
     def get_out_epm(self):
+        """
+        Get simulation output epm (idf).
+
+        # TODO[GL]: explain the difference between input/output epm
+
+        Returns
+        -------
+        Epm
+        """
         return Epm.load(self.get_resource_path(ResourcesRefs.idf, raise_if_not_found=True))
 
     @check_status(FINISHED, FAILED)
     def get_out_weather_data(self):
+        """
+        Get output weather data (epw).
+
+        # TODO[GL]: explain the difference between input/output WeatherData
+
+        Returns
+        -------
+        WeatherData
+        """
         return WeatherData.load(self.get_resource_path(ResourcesRefs.epw, raise_if_not_found=True))
 
     @check_status(FINISHED)
     def get_out_eso(self, print_function=lambda x: None):
+        """
+        Get simulation output eso.
+
+        Parameters
+        ----------
+        print_function: typing.Callable
+            print function, default does not do anything
+
+        Returns
+        -------
+        StandardOutput
+        """
         return StandardOutput(
             self.get_resource_path(ResourcesRefs.eso, raise_if_not_found=True),
             print_function=print_function
@@ -302,23 +450,58 @@ class Simulation:
 
     @check_status(FINISHED)
     def get_out_eio(self):
+        """
+        Get simulation output eio.
+
+        Returns
+        -------
+        Eio
+        """
         return Eio(self.get_resource_path(ResourcesRefs.eio, raise_if_not_found=True))
 
     @check_status(FINISHED)
     def get_out_mtr(self):
+        """
+        Get simulation output mtr.
+
+        Returns
+        -------
+        StandardOutput
+        """
         return StandardOutput(self.get_resource_path(ResourcesRefs.mtr, raise_if_not_found=True))
 
     @check_status(FINISHED)
     def get_out_mtd(self):
+        """
+        Get simulation output mtd.
+
+        Returns
+        -------
+        Mtd
+        """
         return Mtd(self.get_resource_path(ResourcesRefs.mtd, raise_if_not_found=True))
 
     @check_status(FINISHED)
     def get_out_mdd(self):
+        """
+        Get simulation output mdd.
+
+        Returns
+        -------
+        str
+        """
         with open(self.get_resource_path(ResourcesRefs.mdd, raise_if_not_found=True)) as f:
             return f.read()
 
     @check_status(FINISHED)
     def get_out_summary_table(self):
+        """
+        Get simulation output summary table.
+
+        Returns
+        -------
+        SummaryTable
+        """
         return SummaryTable(self.get_resource_path(ResourcesRefs.summary_table, raise_if_not_found=True))
 
 
@@ -331,23 +514,26 @@ def simulate(
         beat_freq=None
 ):
     """
+    Run a simulation from inputs.
+
     Parameters
     ----------
-    epm_or_buffer_or_path
-    weather_data_or_buffer_or_path
-    base_dir_path: simulation dir path
-    simulation_name: str, default None
+    epm_or_buffer_or_path: Epm or typing.StringIO or str
+    weather_data_or_buffer_or_path: WeatherData or typing.StringIO or str
+    base_dir_path: str
+        simulation dir path
+    simulation_name: str or None
         if provided, simulation will be done in {base_dir_path}/{simulation_name}
         else, simulation will be done in {base_dir_path}
-    print_function:
+    print_function: typing.Callable or None
         interface fct(message): do what you want with message
-    beat_freq: float, default None
+    beat_freq: float or None
         if provided, subprocess in which EnergyPlus is run will write at given frequency in standard output. May
         be used to monitor subprocess state.
 
     Returns
     -------
-    Simulation instance
+    Simulation
     """
     # create simulation from input
     s = Simulation.from_inputs(

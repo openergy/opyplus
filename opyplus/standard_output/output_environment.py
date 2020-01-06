@@ -1,3 +1,5 @@
+# TODO [GL]: fill in the docstring
+"""Output Environment module."""
 from .data_containers import DataContainer
 
 # frequencies
@@ -69,6 +71,28 @@ container_characteristics = {
 
 
 class OutputEnvironment:
+    # TODO [GL]: fill in the docstring
+    """
+    Output Environment class.
+
+    Parameters
+    ----------
+    title: str
+    latitude: float
+    longitude: float
+    timezone_offset: float
+    elevation: float
+    variables_by_freq: dict
+
+    Attributes
+    ----------
+    title: str
+    latitude: float
+    longitude: float
+    timezone_offset: float
+    elevation: float
+    """
+
     def __init__(self, title, latitude, longitude, timezone_offset, elevation, variables_by_freq):
         self.title = title
         self.latitude = latitude
@@ -119,15 +143,16 @@ class OutputEnvironment:
     # --------------------------------------------- public api ---------------------------------------------------------
     def get_data(self, frequency=None):
         """
+        Get output environment data as a pandas DataFrame.
+
         Parameters
         ----------
-        frequency: str, default None
-            each_call, timestep, hourly, daily, monthly, annual, run_period
-            if None, will take the first found in the list above
+        frequency: {'each_call', 'timestep', 'hourly', 'daily', 'monthly', 'annual', 'run_period', None}
+            if None (default), will take the first found in the list above
 
         Returns
         -------
-        dataframe
+        pandas.DataFrame
         """
         # find first non null frequency if not given
         if frequency is None:
@@ -146,6 +171,17 @@ class OutputEnvironment:
         return self._data_containers_by_freq[frequency].df
 
     def get_info(self, env_num=None):
+        """
+        Get output environment info.
+
+        Parameters
+        ----------
+        env_num: int or None
+
+        Returns
+        -------
+        str
+        """
         num_info = "" if env_num is None else f" ({env_num})"
         msg = f"{self.title}{num_info}\n"
         for var in ("latitude", "longitude", "timezone_offset", "elevation"):

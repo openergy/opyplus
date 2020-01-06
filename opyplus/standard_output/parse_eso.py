@@ -1,3 +1,4 @@
+"""Functions to parse EnergyPlus eso files."""
 import collections
 import re
 import time
@@ -14,6 +15,16 @@ METER = "Meter"
 
 def parse_eso(file_like, print_function=lambda x: None):
     """
+    Parse an eso file.
+
+    Parameters
+    ----------
+    file_like: typing.StringIO
+    print_function: typing.Callable
+        function used to print progress while parsing the eso. By default does nothing.
+
+    Notes
+    -----
     start and end instants are given in eso. we only use start instant because we want to work in left convention
     """
     # ----------------------- LOAD METERS

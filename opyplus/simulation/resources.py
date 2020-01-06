@@ -1,3 +1,5 @@
+"""Module containing useful functions to work with simulation resources (E+ input/output files)."""
+
 import os
 import logging
 
@@ -9,6 +11,23 @@ INFO_FILE_NAME = "#opyplus.info"
 
 
 class ResourcesRefs:
+    """
+    Class describing all the available resources.
+
+    Attributes
+    ----------
+    idf: str
+    epw: str
+    eio: str
+    eso: str
+    mtr: str
+    mtd: str
+    mdd: str
+    err: str
+    summary_table: str
+    info: str
+    """
+
     # eplus
     idf = "idf"
     epw = "epw"
@@ -25,10 +44,28 @@ class ResourcesRefs:
 
     @classmethod
     def values(cls):
+        """
+        Get a list of all resources refs.
+
+        Returns
+        -------
+        list of str
+        """
         return [k for k, v in cls.__dict__.items() if isinstance(v, str) and k[0] != "_"]
 
 
 def get_resource_ref(file_name):
+    """
+    Get resource ref from file name.
+
+    Parameters
+    ----------
+    file_name: str
+
+    Returns
+    -------
+    str or None
+    """
     base_name, ext = os.path.splitext(file_name)
     ref = ext[1:]
 
@@ -64,6 +101,17 @@ def get_resource_ref(file_name):
 
 
 def create_resources_map(dir_path):
+    """
+    Create a map of resources in a given dir path.
+
+    Parameters
+    ----------
+    dir_path: str
+
+    Returns
+    -------
+    dict
+    """
     # check dir exists
     if not os.path.isdir(dir_path):
         raise NotADirectoryError(f"directory not found: {dir_path}")
@@ -103,6 +151,24 @@ def create_resources_map(dir_path):
 
 
 def get_opyplus_path(simulation_path, ref):
+    """
+    Get resource path from simulation path and resource ref.
+
+    Parameters
+    ----------
+    simulation_path: str
+    ref: str
+        ref of the resource.
+
+    Returns
+    -------
+    str
+
+    Raises
+    ------
+    ValueError
+        if ref is irrelevant.
+    """
     if ref == ResourcesRefs.info:
         return os.path.join(simulation_path, INFO_FILE_NAME)
     if ref in (ResourcesRefs.idf, ResourcesRefs.epw):
