@@ -68,12 +68,11 @@ class Epm:
     Notes
     -----
     Eplus version behaviour:
-        - if idd_or_version is provided, required idd will be used (may trigger a warning if it is not
-            coherent with json_data version, if any)
-        - else if json_data is provided: will use proper idd (according to version field) or trigger a warning
-            if idd is not available and will choose the closest
-        - else will use default eplus version used in conf, which is initially set to latest available idd version
-
+    - if idd_or_version is provided, required idd will be used (may trigger a warning if it is not
+    coherent with json_data version, if any)
+    - else if json_data is provided: will use proper idd (according to version field) or trigger a warning
+    if idd is not available and will choose the closest
+    - else will use default eplus version used in conf, which is initially set to latest available idd version
     """
 
     _dev_record_cls = Record  # for subclassing
