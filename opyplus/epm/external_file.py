@@ -1,4 +1,5 @@
-"""Work with EnergyPlus external file."""  # TODO [GL] describe this module properly
+"""This modules manages external files, which are all user files that complete the EnergyPlus model file
+(for example a csv schedule)"""
 import os
 import logging
 
@@ -26,13 +27,14 @@ def get_external_files_dir_name(model_name=None):
 
 
 class ExternalFile:
-    # TODO [GL]: fill in the docstring
     """
-    Class describing an EnergyPlus external file.
+    Class describing an EnergyPlus external file, which is a file that completes an EnergyPlus model file (for example a
+    csv schedule).
 
     Parameters
     ----------
     ref: str
+        unique identifier (in the concerned epm namespace) of the file
     content: str
         content of the file
     """

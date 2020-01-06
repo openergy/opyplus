@@ -7,12 +7,10 @@ class TypicalExtremePeriod:
 
     Parameters
     ----------
-    name
-    period_type
-    start_day
-    end_day
-
-    # TODO[GL] fill docstring
+    name: str
+    period_type: str
+    start_day: date
+    end_day: date
 
     Attributes
     ----------

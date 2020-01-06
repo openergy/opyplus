@@ -403,32 +403,6 @@ class Simulation:
         """
         return Err(self.get_resource_path(ResourcesRefs.err, raise_if_not_found=True))
 
-    @check_status(FINISHED, FAILED)
-    def get_out_epm(self):
-        """
-        Get simulation output epm (idf).
-
-        # TODO[GL]: explain the difference between input/output epm
-
-        Returns
-        -------
-        Epm
-        """
-        return Epm.load(self.get_resource_path(ResourcesRefs.idf, raise_if_not_found=True))
-
-    @check_status(FINISHED, FAILED)
-    def get_out_weather_data(self):
-        """
-        Get output weather data (epw).
-
-        # TODO[GL]: explain the difference between input/output WeatherData
-
-        Returns
-        -------
-        WeatherData
-        """
-        return WeatherData.load(self.get_resource_path(ResourcesRefs.epw, raise_if_not_found=True))
-
     @check_status(FINISHED)
     def get_out_eso(self, print_function=lambda x: None):
         """

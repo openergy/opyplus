@@ -1,4 +1,3 @@
-# TODO [GL]: fill in the docstring
 """Output Environment module."""
 from .data_containers import DataContainer
 
@@ -71,9 +70,8 @@ container_characteristics = {
 
 
 class OutputEnvironment:
-    # TODO [GL]: fill in the docstring
     """
-    Output Environment class.
+    Output Environment class (represents an EnergyPlus output environment).
 
     Parameters
     ----------

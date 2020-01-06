@@ -1,23 +1,25 @@
-"""Opyplus epm package record_hook module."""  # TODO [GL]: fill in the docstring
+"""Opyplus epm package record_hook module.
+
+A record hook is a record's field on which another record can point.
+"""
 
 
 class RecordHook:
-    # TODO [GL] fill the docstring for this class
     """
     RecordHook class.
 
     Parameters
     ----------
-    references: TODO
-    index: TODO
-    value: TODO
+    references: EnergyPlus fields references
+    index: field index
+    value: field value
 
     Attributes
     ----------
-    references: TODO
-    target_index: TODO
-    target_value: TODO
-    target_record: TODO
+    references: EnergyPlus fields references
+    target_index: field index
+    target_value: field value
+    target_record: owner of the hook
     """
 
     def __init__(self, references, index, value):
@@ -29,13 +31,13 @@ class RecordHook:
 
     @property
     def keys(self):
-        # TODO [GL]: fill in the docstring
         """
         Get this record_hook keys.
+        A key is the couple (reference, target_value).
 
         Returns
         -------
-        list of (str, ?)
+        list of (str, target_value)
         """
         return ((ref, self.target_value) for ref in self.references)
 
@@ -51,9 +53,10 @@ class RecordHook:
         return self.target_record.get_epm()._dev_relations_manager
 
     def activate(self, target_record):
-        # TODO [GL]: fill in the docstring
         """
         Activate the record hook.
+
+        Attaches given record as owner of the hook, and registers hook in it's relations manager.
 
         Parameters
         ----------
@@ -83,8 +86,7 @@ class RecordHook:
         self.relations_manager.record_hook_value_was_updated(self, old_keys)
 
     def unregister(self):
-        # TODO [GL]: fill in the docstring
-        """Unregister this record hook."""
+        """Unregisters this record hook and remove all it's pointing links."""
         self.relations_manager.unregister_record_hook(self)
 
     def serialize(self):

@@ -9,7 +9,7 @@ class ExternalFilesManager:
     """
     External Files Manager class.
 
-    An external file is ... # TODO [GL] explain what an external file is here
+    Each Epm has an external file manager that manages its pool of external files.
 
     Parameters
     ----------

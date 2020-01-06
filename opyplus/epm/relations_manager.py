@@ -83,7 +83,7 @@ class RelationsManager:
         Parameters
         ----------
         hook: opyplus.epm.record_hook.RecordHook
-        old_keys: list of str
+        old_keys: iterable of str
         """
         # remove old keys
         for key in old_keys:
