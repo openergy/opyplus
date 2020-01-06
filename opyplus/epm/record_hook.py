@@ -33,6 +33,7 @@ class RecordHook:
     def keys(self):
         """
         Get this record_hook keys.
+
         A key is the couple (reference, target_value).
 
         Returns

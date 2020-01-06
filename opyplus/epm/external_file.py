@@ -1,5 +1,4 @@
-"""This modules manages external files, which are all user files that complete the EnergyPlus model file
-(for example a csv schedule)"""
+"""Manage external files."""
 import os
 import logging
 
@@ -28,8 +27,9 @@ def get_external_files_dir_name(model_name=None):
 
 class ExternalFile:
     """
-    Class describing an EnergyPlus external file, which is a file that completes an EnergyPlus model file (for example a
-    csv schedule).
+    Class describing an EnergyPlus external file.
+
+    An external file is a file that completes an EnergyPlus model file (for example a csv schedule).
 
     Parameters
     ----------
