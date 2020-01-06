@@ -25,7 +25,7 @@ More specifically, it allows to:
     :maxdepth: 3
 
     usage
-    reference/index
+    api_reference
     contribute
     changelog
 
