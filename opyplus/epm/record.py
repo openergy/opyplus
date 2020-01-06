@@ -502,7 +502,7 @@ class Record:
         MultiTableQueryset
             all records pointing on record.
         """
-        return self.get_epm()._dev_relations_manager.get_pointed_from(self)
+        return self.get_epm()._dev_relations_manager.get_pointed_by(self)
 
     def get_pointing_records(self):
         """

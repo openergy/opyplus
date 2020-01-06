@@ -1,9 +1,19 @@
+"""Relation managers allow to handle links between different Epm records (idf objects)."""
+
 from .multi_table_queryset import MultiTableQueryset
 from ..exceptions import FieldValidationError
 
 
 class RelationsManager:
     """
+    Relation manager class to handle links between different Epm records (idf objects).
+
+    Parameters
+    ----------
+    epm: opyplus.Epm
+
+    Notes
+    -----
     record: add hook field
         record
             create inert hook
@@ -37,6 +47,7 @@ class RelationsManager:
         relations_manager
             unregister link
     """
+
     def __init__(self, epm):
         self._epm = epm
         self._table_hooks = {}  # {(hook_ref, table_lower_name): table, ...}
@@ -46,6 +57,14 @@ class RelationsManager:
 
     def register_record_hook(self, hook):
         """
+        Register a record hook.
+
+        Parameters
+        ----------
+        hook: opyplus.epm.record_hook.RecordHook
+
+        Notes
+        -----
         target record must have been set
         """
         for key in hook.keys:
@@ -58,6 +77,14 @@ class RelationsManager:
             self._record_hooks[key] = hook
 
     def record_hook_value_was_updated(self, hook, old_keys):
+        """
+        Handle record_hook value update.
+
+        Parameters
+        ----------
+        hook: opyplus.epm.record_hook.RecordHook
+        old_keys: list of str
+        """
         # remove old keys
         for key in old_keys:
             del self._record_hooks[key]
@@ -66,12 +93,28 @@ class RelationsManager:
         self.register_record_hook(hook)
 
     def register_table_hook(self, references, table):
+        """
+        Register a new table hook.
+
+        Parameters
+        ----------
+        references: list of str
+        table: opyplus.epm.table.Table
+        """
         table_lower_name = table.get_name().lower()
         for ref in references:
             self._table_hooks[(ref, table_lower_name)] = table
 
     def register_link(self, link):
         """
+        Register a new link.
+
+        Parameters
+        ----------
+        link: opyplus.epm.link.Link
+
+        Notes
+        -----
         source record and index must have been set
         """
         keys = tuple((ref, link.initial_hook_value) for ref in link.hook_references)
@@ -107,6 +150,13 @@ class RelationsManager:
         self._links_by_target[link.target].add(link)
 
     def unregister_record_hook(self, hook):
+        """
+        Unregister a record hook.
+
+        Parameters
+        ----------
+        hook: opyplus.epm.record_hook.RecordHook
+        """
         # find records pointing on record hook
         for link in self._links_by_target.get(hook.target_record, set()).copy():
             # set link field to none on source record
@@ -120,6 +170,13 @@ class RelationsManager:
             self._record_hooks.pop(key)
 
     def unregister_link(self, link):
+        """
+        Unregister a link.
+
+        Parameters
+        ----------
+        link: opyplus.epm.link.Link
+        """
         self._links_by_target[link.target].remove(link)
         if len(self._links_by_target[link.target]) == 0:
             del self._links_by_target[link.target]
@@ -129,12 +186,34 @@ class RelationsManager:
             del self._links_by_source[link.source_record]
 
     def get_pointing_on(self, target_record_or_table):
+        """
+        Get records pointing on a given table or record.
+
+        Parameters
+        ----------
+        target_record_or_table: opyplus.epm.record.Record or opyplus.epm.table.Table
+
+        Returns
+        -------
+        MultiTableQueryset
+        """
         return MultiTableQueryset(
             self._epm,
             (l.source_record for l in self._links_by_target.get(target_record_or_table, set()))
         )
 
-    def get_pointed_from(self, source_record):
+    def get_pointed_by(self, source_record):
+        """
+        Get records pointed by a given record.
+
+        Parameters
+        ----------
+        source_record: opyplus.epm.record.Record
+
+        Returns
+        -------
+        MultiTableQueryset
+        """
         return MultiTableQueryset(
             self._epm,
             (l.target_record for l in self._links_by_source.get(source_record, set()))

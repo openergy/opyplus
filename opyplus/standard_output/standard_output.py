@@ -1,3 +1,5 @@
+"""Module to work with EnergyPlus standard output (eso file)."""
+
 import logging
 import os
 import textwrap
@@ -11,18 +13,25 @@ logger = logging.getLogger(__name__)
 
 
 class StandardOutput:
+    """
+    Class describing an EnergyPlus Standard Output (eso file).
+
+    Parameters
+    ----------
+    buffer_or_path: typing.StringIO or str
+    start_year: int or None
+    print_function: typing.Callable
+
+    Notes
+    -----
+    Initially, standard_output will have tuple instants (using 'year', 'month', 'day', 'hour', 'minute' columns),
+        depending on given frequency). It is possible to create a datetime index afterwards.
+
+    StandardOutput datetime index respects left convention: instant 00:00 covers following range: [00:00, 01:00[.
+    !! this is not the same convention as in weather data chapter !!
+    """
+
     def __init__(self, buffer_or_path, start_year=None, print_function=lambda x: None):
-        """
-        Parameters
-        ----------
-        buffer_or_path
-
-        Initially, standard_output will have tuple instants (using 'year', 'month', 'day', 'hour', 'minute' columns),
-            depending on given frequency). It is possible to create a datetime index afterwards.
-
-        StandardOutput datetime index respects left convention: instant 00:00 covers following range: [00:00, 01:00[.
-        !! this is not the same convention as in weather data chapter !!
-        """
         self._path = None
         self._path, buffer = to_buffer(buffer_or_path)
         self._start_year = None
@@ -33,20 +42,27 @@ class StandardOutput:
 
     # --------------------------------------------- public api ---------------------------------------------------------
     def create_datetime_index(self, start_year):
+        """
+        Create the datetime index for a given start_year.
+
+        Parameters
+        ----------
+        start_year: int
+        """
         for env in self._environments_by_title.values():
             env._dev_create_datetime_index(start_year)
         self._start_year = start_year
 
     def get_data(self, environment_title_or_num=-1, frequency=None):
         """
+        Get eso data as a pandas data frame.
+
         Parameters
         ----------
-        environment_title_or_num
-        frequency: 'str', default None
-            'timestep', 'hourly', 'daily', 'monthly', 'annual', 'run_period'
+        environment_title_or_num  # TODO [GL]: explain what this parameter does.
+        frequency: {'timestep', 'hourly', 'daily', 'monthly', 'annual', 'run_period', None}
             If None, will look for the smallest frequency of environment.
         """
-
         # manage environment num
         if isinstance(environment_title_or_num, int):
             if len(self._environments_by_title) < (environment_title_or_num + 1):
@@ -67,12 +83,33 @@ class StandardOutput:
         return self._environments_by_title[environment_title].get_data(frequency=frequency)
 
     def get_environments(self):
+        """
+        Get eso output environments.
+
+        Returns
+        -------
+        typing.Dict[str, opyplus.standard_output.output_environment.OutputEnvironment]
+        """
         return self._environments_by_title.copy()
 
     def get_variables(self):
+        """
+        Get eso variables.
+
+        Returns
+        -------
+        typing.Dict[str, typing.List[opyplus.standard_output.output_variable.OutputVariable]]
+        """
         return self._variables_by_freq.copy()
 
     def get_info(self):
+        """
+        Get eso info.
+
+        Returns
+        -------
+        str
+        """
         msg = "Standard output\n"
 
         # environments
@@ -90,6 +127,18 @@ class StandardOutput:
         return msg
 
     def to_csv(self, dir_path, sep=";", decimal=","):
+        # TODO [GL], should we change the default to the US convention ?
+        """
+        Write eso data to csv files (one per (env, freq)).
+
+        Parameters
+        ----------
+        dir_path: str
+        sep: str
+            csv separator (default ";")
+        decimal: str
+            csv decimal (default ",")
+        """
         # create dir path if needed
         if not os.path.isdir(dir_path):
             os.mkdir(dir_path)

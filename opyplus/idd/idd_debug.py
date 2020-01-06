@@ -1,4 +1,15 @@
+"""Useful functions to debug idd."""
+
+
 def correct_idd(idd):
+    # TODO [GL]: fill in the docstring
+    """
+    Correct a given idd.
+
+    Parameters
+    ----------
+    idd: opyplus.idd.idd.Idd
+    """
     # MaterialProperty:GlazingSpectralData extensible info
     # begin-extensible should appear at field 1 but it appears a lot later
     td = idd.table_descriptors["materialproperty_glazingspectraldata"]

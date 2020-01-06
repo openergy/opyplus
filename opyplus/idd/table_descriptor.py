@@ -1,3 +1,4 @@
+"""Idd table descriptor module."""
 import logging
 import re
 
@@ -9,8 +10,20 @@ logger = logging.getLogger(__name__)
 
 class TableDescriptor:
     """
-    Describes a EPlus record (see idd).
+    Class describing an EPlus record (see idd).
+
+    Parameters
+    ----------
+    table_name: str
+    group_name: str or None
+
+    Attributes
+    ----------
+    table_name: str
+    table_ref: str
+    group_name: str or None
     """
+
     def __init__(self, table_name, group_name=None):
         self.table_name = table_name
         self.table_ref = table_name_to_ref(table_name)
@@ -25,19 +38,54 @@ class TableDescriptor:
 
     @property
     def field_descriptors(self):
+        """
+        Get the field descriptors.
+
+        Returns
+        -------
+        list of FieldDescriptor
+        """
         return self._field_descriptors
 
     @property
     def tags(self):
+        """
+        Get the tags.
+
+        Returns
+        -------
+        dict
+        """
         return self._tags
 
     def add_tag(self, tag_ref, value=None):
+        """
+        Add a tag.
+
+        Parameters
+        ----------
+        tag_ref: str
+        value
+            default None
+        """
         if tag_ref not in self._tags:
             self._tags[tag_ref] = []
         if value is not None:
             self._tags[tag_ref].append(value)
 
     def add_field_descriptor(self, fieldd_type, name=None):
+        """
+        Add a field descriptor.
+
+        Parameters
+        ----------
+        fieldd_type: {"A", "N"}
+        name: str or None
+
+        Returns
+        -------
+        FieldDescriptor
+        """
         # create
         field_descriptor = FieldDescriptor(self, len(self._field_descriptors), fieldd_type, name=name)
 
@@ -48,6 +96,10 @@ class TableDescriptor:
 
     def prepare_extensible(self):
         """
+        Prepare extensible.
+
+        Notes
+        -----
         This function finishes initialization, must be called once all field descriptors and tag have been filled.
         """
         # see if extensible and store cycle len
@@ -93,11 +145,30 @@ class TableDescriptor:
     @property
     def base_fields_nb(self):
         """
+        Get the number of base fields.
+
+        Returns
+        -------
+        int
+
+        Notes
+        -----
         base fields: without extensible
         """
         return len(self._field_descriptors) if self.extensible_info is None else self.extensible_info[0]
 
     def get_field_index(self, ref):
+        """
+        Get field index.
+
+        Parameters
+        ----------
+        ref: str
+
+        Returns
+        -------
+        int
+        """
         # general case
         for pattern_num in range(self.base_fields_nb):
             field_descriptor = self._field_descriptors[pattern_num]
@@ -126,6 +197,18 @@ class TableDescriptor:
 
     def get_field_reduced_index(self, index):
         """
+        Get field reduced index.
+
+        Parameters
+        ----------
+        index: int
+
+        Returns
+        -------
+        int
+
+        Notes
+        -----
         reduced index: modulo of extensible has been applied
         """
         # return index if not extensible
@@ -143,10 +226,33 @@ class TableDescriptor:
         return cycle_start + ((index - cycle_start) % cycle_len)
 
     def get_field_descriptor(self, index):
+        """
+        Get field descriptor.
+
+        Parameters
+        ----------
+        index: int
+
+        Returns
+        -------
+        FieldDescriptor
+        """
         return self._field_descriptors[self.get_field_reduced_index(index)]
 
     def get_extended_name(self, index):
         """
+        Get extended name.
+
+        Parameters
+        ----------
+        index: int
+
+        Returns
+        -------
+        str
+
+        Notes
+        -----
         manages extensible names
         """
         field_descriptor = self.get_field_descriptor(index)
@@ -157,6 +263,13 @@ class TableDescriptor:
         return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num))
 
     def get_info(self):
+        """
+        Get idd info as str.
+
+        Returns
+        -------
+        str
+        """
         header = f"{self.table_name} ({self.table_ref})"
 
         msg = f"{header}\n"

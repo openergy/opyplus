@@ -1,13 +1,24 @@
+"""Useful functions for parsing idf files."""
 from ..util import get_multi_line_copyright_message
 from ..idd.util import table_name_to_ref
 
 
 def parse_idf(file_like):
     """
+    Parse an idf file.
+
     Records are created from string.
     They are not attached to idf yet.
     in idf: header comment, chapter comments, records
     in record: head comment, field comments, tail comment
+
+    Parameters
+    ----------
+    file_like: typing.StringIO
+
+    Returns
+    -------
+    dict
     """
     # todo-later: manage record comments
     tables_data = {}

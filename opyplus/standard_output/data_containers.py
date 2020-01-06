@@ -1,3 +1,4 @@
+"""Data container module."""
 import datetime as dt
 
 import pandas as pd
@@ -5,38 +6,83 @@ from pandas.util.testing import assert_index_equal
 
 
 class DataContainer:
+    # TODO [GL]: fill in the docstring
+    """
+    Data Container class.
+
+    Parameters
+    ----------
+    variables: typing.Iterable
+    freq: str
+    instant_columns: typing.Iterable
+    pandas_freq: str or None,
+        pandas freq, or '?' (for timestep), or None (default, for each call and run period)
+
+    Attributes
+    ----------
+    freq: str
+    instant_columns: typing.Iterable
+    variables_by_code: dict
+    pandas_freq: str or None
+    values: list
+    df: pd.DataFrame or None
+    """
+
     def __init__(self, variables, freq, instant_columns, pandas_freq=None):
-        """
-        Parameters
-        ----------
-        variables
-        instant_columns
-        pandas_freq: str or None, default None
-            pandas freq, or '?' (for timestep), or None (for each call and run period)
-        """
         self.freq = freq
         self.instant_columns = instant_columns
         self.variables_by_code = {variable.code: variable for variable in variables}
         self.pandas_freq = pandas_freq
         self.values = []
-        self.current_row = None
+        self._current_row = None
         self.df = None
 
     def __str__(self):
+        """
+        Cast to string, including freq.
+
+        Returns
+        -------
+        str
+        """
         msg = "DataContainer\n"
         msg += f"  freq: {self.freq}\n"
         return msg.strip()
 
     def register_instant(self, *args):
+        # TODO [GL]: fill in the docstring
+        """
+        Register an instant.
+
+        Parameters
+        ----------
+        args: list
+        """
         v = {c: args[i] for (i, c) in enumerate(self.instant_columns)}
         # v.update({code: None for code in self.variables_by_code})
         self.values.append(v)
-        self.current_row = v
+        self._current_row = v
 
     def register_value(self, code, value):
-        self.current_row[code] = value
+        # TODO [GL]: fill in the docstring
+        """
+        Register a value.
+
+        Parameters
+        ----------
+        code: str
+        value
+        """
+        self._current_row[code] = value
 
     def build_df(self):
+        """
+        Build the corresponding pandas data frame.
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
         # create dataframe
         self.df = pd.DataFrame.from_records(
             self.values,
@@ -53,10 +99,18 @@ class DataContainer:
         )
         # remove creation data (for memory usage)
         self.values = None
-        self.current_row = None
+        self._current_row = None
 
     def create_datetime_index(self, start_year):
         """
+        Create the datetime index with a given start_year.
+
+        Parameters
+        ----------
+        start_year: int
+
+        Notes
+        -----
         works for all except run period
         """
         # manage year
