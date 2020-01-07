@@ -22,7 +22,7 @@ More specifically, it allows to:
 
 .. toctree::
     :glob:
-    :maxdepth: 3
+    :maxdepth: 2
 
     usage
     api_reference
