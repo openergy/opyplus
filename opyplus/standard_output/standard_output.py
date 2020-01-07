@@ -59,7 +59,8 @@ class StandardOutput:
 
         Parameters
         ----------
-        environment_title_or_num  # TODO [GL]: explain what this parameter does.
+        environment_title_or_num: str or int
+            title or number of the simulated environment. If empty, last environment will be used.
         frequency: {'timestep', 'hourly', 'daily', 'monthly', 'annual', 'run_period', None}
             If None, will look for the smallest frequency of environment.
         """

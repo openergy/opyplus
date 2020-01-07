@@ -2,9 +2,8 @@
 
 
 class Link:
-    # TODO [GL] not clear when the target is a table/record ?
     """
-    Link class, describing a link between two Epm records (IDF objects).
+    Link class, describing a link between two Epm records (IDF objects), or between an Epm record and an Epm table.
 
     Parameters
     ----------
@@ -20,6 +19,11 @@ class Link:
     source_record: opyplus.epm.record.Record or None
     target_record: opyplus.epm.record.Record or None
     target_table: opyplus.epm.table.Table or None
+
+    Notes
+    -----
+    If target_table is None: target_record is necessarily not None and the link describes a record pointing on a table.
+    If target_table is not None: target_record is necessarily None and the link describes a record pointing on a record.
     """
 
     def __init__(self, hook_references, hook_value, source_index):

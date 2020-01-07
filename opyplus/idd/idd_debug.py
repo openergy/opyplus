@@ -2,9 +2,10 @@
 
 
 def correct_idd(idd):
-    # TODO [GL]: fill in the docstring
     """
-    Correct a given idd.
+    Repair a given idd.
+
+    Some versions of idd have mistakes. The following function repairs the idd in memory.
 
     Parameters
     ----------
