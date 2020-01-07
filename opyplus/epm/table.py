@@ -5,7 +5,8 @@ from .queryset import Queryset
 from ..exceptions import FieldValidationError, RecordDoesNotExistError
 
 
-# TODO [GL] [ZB] see how we deal with this dynamically generated docstring for our documentation...
+# TODO [GL] [ZB] see how we deal with this dynamically generated docstring for our documentation... We could make a
+#  dummy add function (only for documentation) and monkey-patch the new one.
 def _get_documented_add(self, record_descriptors):
     # This hack is used to document add function.
     # a methods __doc__ attribute is read-only (or must use metaclasses, what I certainly don't want to do...)

@@ -6,9 +6,10 @@ from pandas.util.testing import assert_index_equal
 
 
 class DataContainer:
-    # TODO [GL]: fill in the docstring
     """
     Data Container class.
+
+    A Data Container stores all outputs of same frequency for a given EnergyPlus output environment.
 
     Parameters
     ----------
@@ -50,9 +51,8 @@ class DataContainer:
         return msg.strip()
 
     def register_instant(self, *args):
-        # TODO [GL]: fill in the docstring
         """
-        Register an instant.
+        Register an instant when found in output file.
 
         Parameters
         ----------
@@ -64,9 +64,8 @@ class DataContainer:
         self._current_row = v
 
     def register_value(self, code, value):
-        # TODO [GL]: fill in the docstring
         """
-        Register a value.
+        Register a value when found in output file.
 
         Parameters
         ----------

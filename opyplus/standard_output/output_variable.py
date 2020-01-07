@@ -2,9 +2,8 @@
 
 
 class OutputVariable:
-    # TODO [GL]: fill in the docstring
     """
-    Output variable class.
+    Output variable class (represents an EnergyPlus output variable).
 
     Parameters
     ----------

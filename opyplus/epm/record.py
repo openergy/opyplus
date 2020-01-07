@@ -758,13 +758,18 @@ class Record:
 
     def get_extensible_info(self):
         """
-        Get extensible info.
-
-        # TODO [GL] fill in docstring about cycle start and so on...
+        Get extensible info (EnergyPlus extensible field characteristics).
 
         Returns
         -------
-        cycle_start, cycle_len, patterns
+        cycle_start: int
+            position of the first extensible field
+        cycle_len: int
+            length of one extensible cycle (1 if 1 field is repeated, 2 if 2 fields are repeated, ...)
+        patterns: tuple
+            Tuple of length cycle_length containing regular expressions.
+            The nth regular expression should match any field name of the nth field of one cycle.
+            Each regular expression has one capture group which should return the cycle number of matching field.
         """
         return self._table._dev_descriptor.extensible_info
 

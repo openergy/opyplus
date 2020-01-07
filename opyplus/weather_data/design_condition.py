@@ -8,13 +8,12 @@ class DesignCondition:
     Parameters
     ----------
     name: str
-    values
-    # TODO [GL] fill in docstring
+    values: list
 
     Attributes
     ----------
     name: str
-    values
+    values: list
     """
 
     def __init__(self, name, values):
