@@ -31,10 +31,5 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering :: Physics",
     ],
-    tests_require=[
-        'pytest',
-        'pytest-cov',
-        'pytest-sugar'
-    ],
     include_package_data=True
 )

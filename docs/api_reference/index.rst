@@ -1,5 +1,5 @@
-opyplus
-=======
+API Reference
+=============
 
 .. automodule:: opyplus
 

@@ -24,9 +24,10 @@ More specifically, it allows to:
     :glob:
     :maxdepth: 2
 
-    usage
-    api_reference
-    contribute
+    quickstart/index
+    examples/index
+    user_guide/index
+    api_reference/index
     changelog
 
 
