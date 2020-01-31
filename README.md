@@ -64,7 +64,7 @@ At the root of the repository, run pytest: `python -m pytest`.
 
 We use flake8 for style enforcement, including docstrings.
 
-To run it, install flake8 and flake8-docstring using pip or conda.
+To run it, install flake8 and flake8-docstrings using pip or conda.
 
 At the root of the repository, run flake8: `python -m flake8 opyplus/`
 

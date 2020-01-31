@@ -5,6 +5,7 @@
     p: patch
 
 ## 1.0.0.dev6
+* p: add parametric simulation examples
 * p: improved documentation
 * p: added docstring to all public function/module/class
 
