@@ -4,6 +4,10 @@
     m: minor
     p: patch
 
+## 1.0.0
+* p: debug problems with weather data string columns (present_weather_codes)
+* p: support pandas 1.0
+
 ## 1.0.0.dev6
 * p: improved documentation
 * p: added docstring to all public function/module/class
