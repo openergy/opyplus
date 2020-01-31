@@ -466,12 +466,12 @@ class WeatherData:
 
         # fill nans by default values
         df.fillna(
-            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None and v[2] is not str},  # pandas does not like None fills
+            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None and v[2] is not str},
             inplace=True
         )
         df.replace(
             to_replace="",
-            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None and v[2] is str},  # pandas does not like None fills
+            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None and v[2] is str},
             inplace=True
         )
 
