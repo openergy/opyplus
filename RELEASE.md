@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## 1.0.1
+* p: use pandas.testing instead of deprecated pandas.util.testing
+
 ## 1.0.0
 * p: debug problems with weather data string columns (present_weather_codes)
 * p: support pandas 1.0
