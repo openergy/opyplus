@@ -74,7 +74,6 @@ jobs:
         condition: always()
 
       - script: |
-          pytest --doctest-modules opyplus/
           pip install -r docs/requirements.txt
           cd docs
           make doctest

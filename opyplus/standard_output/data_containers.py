@@ -2,7 +2,7 @@
 import datetime as dt
 
 import pandas as pd
-from pandas.util.testing import assert_index_equal
+from pandas.testing import assert_index_equal
 
 
 class DataContainer:

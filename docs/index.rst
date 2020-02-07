@@ -22,11 +22,12 @@ More specifically, it allows to:
 
 .. toctree::
     :glob:
-    :maxdepth: 3
+    :maxdepth: 2
 
-    usage
-    reference/index
-    contribute
+    quickstart/index
+    examples/index
+    user_guide/index
+    api_reference/index
     changelog
 
 

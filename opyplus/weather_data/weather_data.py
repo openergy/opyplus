@@ -4,7 +4,7 @@ import datetime as dt
 
 import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_index_equal
+from pandas.testing import assert_index_equal
 
 from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 from ..exceptions import DatetimeInstantsCreationError
@@ -466,7 +466,12 @@ class WeatherData:
 
         # fill nans by default values
         df.fillna(
-            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None},  # pandas does not like None fills
+            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None and v[2] is not str},
+            inplace=True
+        )
+        df.replace(
+            to_replace="",
+            value={k: v[1] for k, v in COLUMNS.items() if v[1] is not None and v[2] is str},
             inplace=True
         )
 
@@ -498,9 +503,14 @@ def _sanitize_weather_series(df):
 
     # replace all missing values by nans
     df.replace(
-        to_replace={k: v[1] for k, v in COLUMNS.items()},
+        to_replace={k: v[1] for k, v in COLUMNS.items() if v[2] is not str},
         value=np.nan,
-        inplace=True
+        inplace=True,
+    )
+    df.replace(
+        to_replace={k: v[1] for k, v in COLUMNS.items() if v[2] is str},
+        value="",
+        inplace=True,
     )
 
     # check that all used columns with no missing value aren't null
@@ -511,10 +521,7 @@ def _sanitize_weather_series(df):
         )
 
     # force dtypes
-    df.astype(
-        {k: v[2] for k, v in COLUMNS.items()},
-        copy=False
-    )
+    df = df.astype({k: v[2] for k, v in COLUMNS.items()})
 
     # return
     return df
