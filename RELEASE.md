@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## next
+* p: add parametric simulation examples
+
 ## 1.0.1
 * p: use pandas.testing instead of deprecated pandas.util.testing
 
@@ -12,7 +15,6 @@
 * p: support pandas 1.0
 
 ## 1.0.0.dev6
-* p: add parametric simulation examples
 * p: improved documentation
 * p: added docstring to all public function/module/class
 
