@@ -181,7 +181,7 @@ Run your study
 
     result_d = {}
     for parameter in sensibility_plan.keys():
-        for value in sensibility_plan[k]:
+        for value in sensibility_plan[parameter]:
 
             epm = op.Epm.load(example_idf_path)
 
@@ -205,9 +205,7 @@ Imports
 
 .. testcode::
 
-    from plotly.offline import plot, iplot, init_notebook_mode
     import plotly.graph_objs as go
-    init_notebook_mode()
     import pandas as pd
 
 Plot
