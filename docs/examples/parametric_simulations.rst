@@ -1,7 +1,7 @@
 Parametric simulations
 ======================
 
-This example present an simulation sensibility study.
+This example shows how to do a sensibility study using opyplus.
 
 Imports
 -------
@@ -47,10 +47,10 @@ Define your Study Plan
         }
 
 
-Create a function modyfing your model
+Create a function modifying your model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this function we define each method modifying model depending on study parameter
+We define a function modifying the EnergyPlus model according the study input parameters
 
 .. testcode::
 
@@ -100,6 +100,7 @@ In this function we define each method modifying model depending on study parame
                         7: "until: 24:00",
                         8: "16",
                     })
+
             elif value == "schedule_heavy":
                 heating_setpoint_temperature_list = []
                 for th_ds in epm.ThermostatSetpoint_DualSetpoint:
@@ -122,7 +123,6 @@ In this function we define each method modifying model depending on study parame
                         8: "16",
                     })
 
-
         elif parameter == "heating_setpoint":
             ### change upper schedule value
             heating_setpoint_temperature_list = []
@@ -137,10 +137,10 @@ In this function we define each method modifying model depending on study parame
                         hsch[i] = str(float(schedule_dict[i]) + value)
 
 
-Create a function to run model and select the study result
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create a function to run your model and select the study result
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example we will add specifics outputs variables in model, simulate and return consumptions
+In this example we will add specific output variables to the model, simulate and return consumptions
 
 .. testcode::
 
@@ -195,13 +195,13 @@ Run your study
             result_d[name]["Electric"] = (conso_electric-baseline_electric)/baseline_electric
             result_d[name]["Sensible"] = (conso_sensible-baseline_sensible)/baseline_sensible
 
-See result
-----------
+Visualize the result
+--------------------
 
-For this part you need to install plotly package
+We use the plotly package to visualize the results.
 
 Imports
--------
+^^^^^^^
 
 .. testcode::
 
@@ -211,7 +211,7 @@ Imports
     import pandas as pd
 
 Plot
-----
+^^^^
 
 .. testcode::
 
@@ -226,6 +226,14 @@ Plot
 
     fig.show()
 
+.. figure:: logo-dark.png
+    :scale: 80 %
+    :alt: Openergy logo
+    :align: center
+
+    Openergy's logo
+
+.. testcode::
 
     fig = go.Figure(
         data=[go.Bar(
