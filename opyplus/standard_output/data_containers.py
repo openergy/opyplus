@@ -34,8 +34,7 @@ class DataContainer:
         self.instant_columns = instant_columns
         self.variables_by_code = {variable.code: variable for variable in variables}
         self.pandas_freq = pandas_freq
-        self.values = []
-        self._current_row = None
+        self.values = {c: [] for c in list(self.instant_columns) + list(self.variables_by_code)}
         self.df = None
 
     def __str__(self):
@@ -58,10 +57,10 @@ class DataContainer:
         ----------
         args: list
         """
-        v = {c: args[i] for (i, c) in enumerate(self.instant_columns)}
-        # v.update({code: None for code in self.variables_by_code})
-        self.values.append(v)
-        self._current_row = v
+        for i, c in enumerate(self.instant_columns):
+            self.values[c].append(args[i])
+        for c in self.variables_by_code.keys():
+            self.values[c].append(None)
 
     def register_value(self, code, value):
         """
@@ -72,16 +71,10 @@ class DataContainer:
         code: str
         value
         """
-        self._current_row[code] = value
+        self.values[code][-1] = value
 
     def build_df(self):
-        """
-        Build the corresponding pandas data frame.
-
-        Returns
-        -------
-        pandas.DataFrame
-        """
+        """Build the corresponding pandas data frame."""
         # create dataframe
         self.df = pd.DataFrame.from_records(
             self.values,
@@ -96,6 +89,7 @@ class DataContainer:
             columns=dict((var.code, f"{var.key_value.lower()},{var.name}") for var in self.variables_by_code.values()),
             inplace=True
         )
+
         # remove creation data (for memory usage)
         self.values = None
         self._current_row = None
