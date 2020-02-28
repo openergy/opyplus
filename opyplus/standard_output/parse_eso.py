@@ -56,7 +56,7 @@ def parse_eso(file_like, print_function=lambda x: None):
     start = time.time()
     row_num = 1
     while True:
-        if time.time() - start > 60:
+        if time.time() - start > 30:
             start = time.time()
             print_function(f"parsing E+ eso, row: {row_num}")
 
@@ -142,8 +142,14 @@ def parse_eso(file_like, print_function=lambda x: None):
     env = None
 
     # loop
+    start = time.time()
     while True:
+        if time.time() - start > 30:
+            start = time.time()
+            print_function(f"parsing E+ eso, row: {row_num}")
+
         row = next(file_like).strip()
+        row_num += 1
 
         # leave if finished
         if row == "End of Data":
@@ -227,5 +233,4 @@ def parse_eso(file_like, print_function=lambda x: None):
     for env in environments_by_title.values():
         env._dev_build_dfs()
 
-    # return
     return environments_by_title, variables_by_freq
