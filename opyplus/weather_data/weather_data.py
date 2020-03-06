@@ -1,5 +1,6 @@
 """module to use to work with E+ weather data."""
 import collections
+import copy
 import datetime as dt
 
 import numpy as np
@@ -10,7 +11,6 @@ from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 from ..exceptions import DatetimeInstantsCreationError
 
 WEEK_DAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-
 
 # AuxiliaryPrograms, p25, 63
 # year is used, but only in E+>=9 if epm option runperiod:treat_weather_as_actual is activated. We consider it
@@ -125,19 +125,9 @@ class WeatherData:
             comments_2="",
             start_day_of_week=None
     ):
-        # weather series
-        self._weather_series = _sanitize_weather_series(weather_series)
-
-        # start day of week
-        if start_day_of_week is None:
-            date = dt.date(
-                self._weather_series["year"].iloc[0],
-                self._weather_series["month"].iloc[0],
-                self._weather_series["day"].iloc[0]
-            )
-            self._start_day_of_week = WEEK_DAYS[date.weekday()]
-        else:
-            self._start_day_of_week = start_day_of_week
+        # set weather series
+        self._weather_series, self.start_day_of_week = None, None
+        self.set_weather_series(weather_series, start_day_of_week=start_day_of_week)
 
         # headers
         # todo: [GL] check headers
@@ -349,6 +339,31 @@ class WeatherData:
         """
         return self._weather_series.copy()
 
+    def set_weather_series(self, weather_series, start_day_of_week=None):
+        """
+        Sets a new weather series dataframe.
+
+        Parameters
+        ----------
+        weather_series: pandas.DataFrame
+            weather series dataframe, which contains all the timeseries data.
+        start_day_of_week: str, default None
+            "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+        """
+        # weather series
+        self._weather_series = _sanitize_weather_series(weather_series)
+
+        # start day of week
+        if start_day_of_week is None:
+            date = dt.date(
+                self._weather_series["year"].iloc[0],
+                self._weather_series["month"].iloc[0],
+                self._weather_series["day"].iloc[0]
+            )
+            self._start_day_of_week = WEEK_DAYS[date.weekday()]
+        else:
+            self._start_day_of_week = start_day_of_week
+
     def get_bounds(self, use_datetimes=True):
         """
         Get datetime instants of beginning and end of data. If no data, will be: (None, None).
@@ -373,7 +388,7 @@ class WeatherData:
 
         for i in (0, -1):
             row = self._weather_series.iloc[i, :]
-            instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"]-1)
+            instant = dt.datetime(row["year"], row["month"], row["day"], row["hour"] - 1)
 
             # store
             if i == 0:
