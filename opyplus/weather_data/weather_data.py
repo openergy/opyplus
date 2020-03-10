@@ -4,7 +4,7 @@ import datetime as dt
 
 import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_index_equal
+from pandas.testing import assert_index_equal
 
 from ..util import multi_mode_write, get_mono_line_copyright_message, to_buffer
 from ..exceptions import DatetimeInstantsCreationError

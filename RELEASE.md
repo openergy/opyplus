@@ -4,6 +4,13 @@
     m: minor
     p: patch
 
+## 1.0.2
+* p: improve printing when parsing output (every 30 seconds instead of 60, and was missing in the second loop)
+* p: improve output parsing memory and time efficiency by storing data in lists instead of dicts
+
+## 1.0.1
+* p: use pandas.testing instead of deprecated pandas.util.testing
+
 ## 1.0.0
 * p: debug problems with weather data string columns (present_weather_codes)
 * p: support pandas 1.0
