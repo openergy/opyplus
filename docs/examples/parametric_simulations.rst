@@ -86,7 +86,7 @@ We define a function modifying the EnergyPlus model according the study input pa
                 #### loop on and replace value
                 for hsch in set(heating_setpoint_temperature_list):
                     #### clear values
-                    hsch.update({ i:None for i in range(2,len(hsch))})
+                    hsch.clear_extensible_fields()
                     #### update
                     hsch.update({
                         0: hsch[0],
@@ -111,7 +111,7 @@ We define a function modifying the EnergyPlus model according the study input pa
                 #### loop on and replace value
                 for hsch in set(heating_setpoint_temperature_list):
                     #### clear values
-                    hsch.update({ i:None for i in range(2,len(hsch))})
+                    hsch.clear_extensible_fields()
                     #### update
                     hsch.update({
                         0: hsch[0],
