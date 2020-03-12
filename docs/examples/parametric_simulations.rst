@@ -180,6 +180,14 @@ Run your study
 .. testcode::
 
     result_d = {}
+
+    epm = op.Epm.load(example_idf_path)
+    simulation_path_name = "baseline"
+    baseline_electric, baseline_sensible = simulate_and_get_result(
+                                                 epm,
+                                                 example_epw_path,
+                                                 os.path.join(work_dir_path, simulation_path_name)
+                                            )
     for parameter in sensibility_plan.keys():
         for value in sensibility_plan[parameter]:
 
@@ -189,11 +197,15 @@ Run your study
 
             simulation_path_name = f"{parameter}-{str(value)}"
 
-            conso_sensible, conso_electric = simulate_and_get_result(epm, example_epw_path, simulation_path_name)
+            conso_sensible, conso_electric = simulate_and_get_result(
+                                                 epm,
+                                                 example_epw_path,
+                                                 os.path.join(work_dir_path, simulation_path_name)
+                                            )
 
-            result_d[name] = {}
-            result_d[name]["Electric"] = (conso_electric-baseline_electric)/baseline_electric
-            result_d[name]["Sensible"] = (conso_sensible-baseline_sensible)/baseline_sensible
+            result_d[simulation_path_name] = {}
+            result_d[simulation_path_name]["Electric"] = (conso_electric-baseline_electric)/baseline_electric
+            result_d[simulation_path_name]["Sensible"] = (conso_sensible-baseline_sensible)/baseline_sensible
 
 Visualize the result
 --------------------
