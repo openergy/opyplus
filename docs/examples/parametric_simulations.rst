@@ -64,7 +64,7 @@ We define a function modifying the EnergyPlus model according the study input pa
         elif parameter == "electric_equipment":
             ### modify electric level
             for ee in epm.ElectricEquipment:
-                if inf.design_flow_rate_calculation_method == "equipmentlevel":
+                if ee.design_level_calculation_method == "equipmentlevel":
                     ee.design_level *= value
                 elif ee.design_level_calculation_method == "watts/area":
                     ee.watts_per_zone_floor_area *= value
@@ -85,18 +85,21 @@ We define a function modifying the EnergyPlus model according the study input pa
                     heating_setpoint_temperature_list.append(th_ds.heating_setpoint_temperature_schedule_name)
                 #### loop on and replace value
                 for hsch in set(heating_setpoint_temperature_list):
+                    #### clear values
+                    hsch.update({ i:None for i in range(2,len(hsch))})
+                    #### update
                     hsch.update({
                         0: hsch[0],
                         1: hsch[1],
                         2: "through: 12/31",
-                        3: "for monday tuesday thursday friday, ",
+                        3: "for monday tuesday thursday friday",
                         4: "until: 07:00",
                         5: "16",
                         4: "until: 18:00",
                         5: "21",
                         4: "until: 24:00",
                         5: "16",
-                        6: "for alldays",
+                        6: "for allotherdays",
                         7: "until: 24:00",
                         8: "16",
                     })
@@ -107,18 +110,21 @@ We define a function modifying the EnergyPlus model according the study input pa
                     heating_setpoint_temperature_list.append(th_ds.heating_setpoint_temperature_schedule_name)
                 #### loop on and replace value
                 for hsch in set(heating_setpoint_temperature_list):
+                    #### clear values
+                    hsch.update({ i:None for i in range(2,len(hsch))})
+                    #### update
                     hsch.update({
                         0: hsch[0],
                         1: hsch[1],
                         2: "through: 12/31",
-                        3: "for monday tuesday wednesday thursday friday saturday,",
+                        3: "for monday tuesday wednesday thursday friday saturday",
                         4: "until: 05:00",
                         5: "16",
                         4: "until: 21:00",
                         5: "21",
                         4: "until: 24:00",
                         5: "16",
-                        6: "for alldays",
+                        6: "for allotherdays",
                         7: "until: 24:00",
                         8: "16",
                     })
