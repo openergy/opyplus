@@ -1,96 +1,114 @@
 Parametric simulations
 ======================
 
-This example shows how to do a sensibility study using opyplus.
+This example shows how to do a sensitivity study using opyplus.
 
-Imports
--------
+Prepare imports and paths
+-------------------------
+
+.. testsetup::
+
+    import os
+    import tempfile
+    initial_cwd = os.getcwd()
+    temp_dir = tempfile.TemporaryDirectory()
+    os.chdir(temp_dir.name)
+
 
 .. testcode::
 
-    import tempfile
-    temp_dir = tempfile.TemporaryDirectory()
-    work_dir_path = temp_dir.name
     import os
     import opyplus as op
 
-Define your Files
------------------
+    eplus_dir_path = op.get_eplus_base_dir_path((9, 0, 1))
+
+
+Define input files
+------------------
 
 .. testcode::
 
-    # select epw
-    example_epw_path = os.path.join(
-        op.get_eplus_base_dir_path((9, 0, 1)),
-        "WeatherData",
-        "USA_CO_Golden-NREL.724666_TMY3.epw"
-        )
-    # select idf
-    example_idf_path = os.path.join(
-        op.get_eplus_base_dir_path((9, 0, 1)),
+    # idf (building model)
+    base_idf_path = os.path.join(
+        eplus_dir_path,
         "ExampleFiles",
         "RefBldgFullServiceRestaurantNew2004_Chicago.idf"
         )
 
+    # epw (weather)
+    epw_path = os.path.join(
+        eplus_dir_path,
+        "WeatherData",
+        "USA_CO_Golden-NREL.724666_TMY3.epw"
+        )
+    
 
-Define your Study Plan
+
+Define the study plan
 ----------------------
+
+
+Variables and values
+^^^^^^^^^^^^^^^^^^^^
 
 .. testcode::
 
-    sensibility_plan = {
-        "light" : [0.5, 1.5], # we will modify level value for Lights object
-        "electric_equipment" : [0.5, 1.5], # we will modify level value for ElectricEquipment object
-        "infiltration" : [0.5, 1.5], # we will modify level value for ZoneInfiltration_DesignFlowRate object
-        "business_days" : ["schedule_light", "schedule_heavy"], # we will change setpoint schedule
-        "heating_setpoint" : [ -1, 1], # we will modify upper schedule value
+    sensitivity_plan = {
+        "light" : [0.5, 1.5], # modify Lights value
+        "electric_equipment" : [0.5, 1.5], # modify ElectricEquipment level
+        "infiltration" : [0.5, 1.5], # modify ZoneInfiltration_DesignFlowRate level
+        "business_days" : ["schedule_light", "schedule_heavy"], # change setpoint schedule
+        "heating_setpoint" : [ -1, 1], # modify schedule's upper value
         }
 
 
-Create a function modifying your model
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-We define a function modifying the EnergyPlus model according the study input parameters
+Define the function that will modify the model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. testcode::
 
     def modify_model(epm, parameter, value):
 
         if parameter == "light":
-            ### modify light level
+            # modify light level
             for light in epm.Lights:
                 light.watts_per_zone_floor_area *= value
+            return
 
-        elif parameter == "electric_equipment":
-            ### modify electric level
+        if parameter == "electric_equipment":
+            # modify electric level
             for ee in epm.ElectricEquipment:
                 if ee.design_level_calculation_method == "equipmentlevel":
                     ee.design_level *= value
                 elif ee.design_level_calculation_method == "watts/area":
                     ee.watts_per_zone_floor_area *= value
+            return
 
-        elif parameter == "infiltration":
-            ### modify infiltration flow
+        if parameter == "infiltration":
+            # modify infiltration flow
             for inf in epm.ZoneInfiltration_DesignFlowRate:
                 if inf.design_flow_rate_calculation_method == "flow/exteriorarea":
                     inf.flow_per_exterior_surface_area *= value
                 elif inf.design_flow_rate_calculation_method == "airchanges/hour":
                     inf.air_changes_per_hour *= value
+            return
 
-        elif parameter == "business_days":
-            ### change schedule value
+        if parameter == "business_days":
+            # change schedule value
             if value == "schedule_light":
                 heating_setpoint_temperature_list = []
                 for th_ds in epm.ThermostatSetpoint_DualSetpoint:
-                    heating_setpoint_temperature_list.append(th_ds.heating_setpoint_temperature_schedule_name)
-                #### loop on and replace value
-                for hsch in set(heating_setpoint_temperature_list):
-                    #### clear values
-                    hsch.clear_extensible_fields()
-                    #### update
-                    hsch.update({
-                        0: hsch[0],
-                        1: hsch[1],
+                    heating_setpoint_temperature_list.append(
+                        th_ds.heating_setpoint_temperature_schedule_name)
+
+                # loop and replace value
+                for heating_setpoint_sch in set(heating_setpoint_temperature_list):
+                    # clear values
+                    heating_setpoint_sch.clear_extensible_fields()
+                    # update
+                    heating_setpoint_sch.update({
+                        0: heating_setpoint_sch[0],
+                        1: heating_setpoint_sch[1],
                         2: "through: 12/31",
                         3: "for monday tuesday thursday friday",
                         4: "until: 07:00",
@@ -107,15 +125,17 @@ We define a function modifying the EnergyPlus model according the study input pa
             elif value == "schedule_heavy":
                 heating_setpoint_temperature_list = []
                 for th_ds in epm.ThermostatSetpoint_DualSetpoint:
-                    heating_setpoint_temperature_list.append(th_ds.heating_setpoint_temperature_schedule_name)
-                #### loop on and replace value
-                for hsch in set(heating_setpoint_temperature_list):
-                    #### clear values
-                    hsch.clear_extensible_fields()
-                    #### update
-                    hsch.update({
-                        0: hsch[0],
-                        1: hsch[1],
+                    heating_setpoint_temperature_list.append(
+                    th_ds.heating_setpoint_temperature_schedule_name)
+
+                # loop and replace value
+                for heating_setpoint_sch in set(heating_setpoint_temperature_list):
+                    # clear values
+                    heating_setpoint_sch.clear_extensible_fields()
+                    # update
+                    heating_setpoint_sch.update({
+                        0: heating_setpoint_sch[0],
+                        1: heating_setpoint_sch[1],
                         2: "through: 12/31",
                         3: "for monday tuesday wednesday thursday friday saturday",
                         4: "until: 05:00",
@@ -128,32 +148,43 @@ We define a function modifying the EnergyPlus model according the study input pa
                         7: "until: 24:00",
                         8: "16",
                     })
+            return
 
-        elif parameter == "heating_setpoint":
-            ### change upper schedule value
+        if parameter == "heating_setpoint":
             heating_setpoint_temperature_list = []
             for th_ds in epm.ThermostatSetpoint_DualSetpoint:
-                heating_setpoint_temperature_list.append(th_ds.heating_setpoint_temperature_schedule_name)
-            ### loop on
-            for hsch in sorted(heating_setpoint_temperature_list):
-                schedule_dict = hsch.to_dict()
-                first_index = max(schedule_dict, key=lambda key: float(schedule_dict[key]) if isinstance(schedule_dict[key], str) and schedule_dict[key].isdigit() else 0)
-                for i,v in schedule_dict.items():
+                heating_setpoint_temperature_list.append(
+                    th_ds.heating_setpoint_temperature_schedule_name
+                    )
+
+            # loop and replace value
+            for heating_setpoint_sch in sorted(heating_setpoint_temperature_list):
+                schedule_dict = heating_setpoint_sch.to_dict()
+                first_index = max(
+                    schedule_dict,
+                    key=lambda x: float(schedule_dict[x])
+                        if isinstance(schedule_dict[x], str) and schedule_dict[x].isdigit()
+                        else 0
+                )
+                for k, v in schedule_dict.items():
                     if v == schedule_dict[first_index]:
-                        hsch[i] = str(float(schedule_dict[i]) + value)
+                        heating_setpoint_sch[k] = str(float(schedule_dict[k]) + value)
+
+            return
+
+        raise ValueError(f"unknown parameter: {parameter}")
 
 
-Create a function to run your model and select the study result
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create the function that will run the simulation and prepare outputs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this example we will add specific output variables to the model, simulate and return consumptions
+In this example we will add specific output variables to the model, simulate and return consumptions.
 
 .. testcode::
 
 
-    def simulate_and_get_result(epm, example_epw_path, simulation_path_name):
-
-        ## add output variable
+    def simulate_and_get_result(epm, epw_path, simulation_name):
+        # add output variables
         epm.output_variable.add({
             0: "*",
             1: "Zone Air Terminal Sensible Heating Energy",
@@ -165,56 +196,62 @@ In this example we will add specific output variables to the model, simulate and
             2: "hourly"
         })
 
-        name = "baseline"
-        ## simulate
-        s = op.simulate(epm, example_epw_path, simulation_path_name)
-        ## get result
+        # simulate
+        s = op.simulate(epm, epw_path, simulation_name)
+
+        # get results
         eso = s.get_out_eso()
         eso.create_datetime_index(2020)
         hourly_df = eso.get_data()
 
+        # filter and aggregate outputs
         regex_sensible = "Zone Air Terminal Sensible"
         regex_electric = "electricity:facility"
-        baseline_sensible = hourly_df.filter(regex=regex_sensible).sum(axis=1).sum()
-        baseline_electric = hourly_df.filter(regex=regex_electric).sum(axis=1).sum()
-        return baseline_sensible,baseline_electric
+        sensible_baseline = hourly_df.filter(regex=regex_sensible).sum(axis=1).sum()
+        electric_baseline = hourly_df.filter(regex=regex_electric).sum(axis=1).sum()
+
+        # return baselines
+        return sensible_baseline, electric_baseline
 
 
-Run your study
---------------
+Run the study
+-------------
 
 .. testcode::
 
-    result_d = {}
+    # calculate baseline
+    epm = op.Epm.load(base_idf_path)
+    electric_baseline, sensible_baseline = simulate_and_get_result(
+        epm,
+        epw_path,
+        "baseline"
+    )
 
-    epm = op.Epm.load(example_idf_path)
-    simulation_path_name = "baseline"
-    baseline_electric, baseline_sensible = simulate_and_get_result(
-                                                 epm,
-                                                 example_epw_path,
-                                                 os.path.join(work_dir_path, simulation_path_name)
-                                            )
-    for parameter in sensibility_plan.keys():
-        for value in sensibility_plan[parameter]:
+    # run sensitivity study
+    results = dict()  # {simulation_name: {"electric": , "sensible": }
+    for parameter, values in sensitivity_plan.items():
+        for value in values:
+            # reload initial model
+            epm = op.Epm.load(base_idf_path)
 
-            epm = op.Epm.load(example_idf_path)
-
+            # modify model
             modify_model(epm, parameter, value)
 
-            simulation_path_name = f"{parameter}-{str(value)}"
+            # simulate and calculate outputs
+            sensible_consumption, electric_consumption = simulate_and_get_result(
+                epm,
+                epw_path,
+                f"{parameter}-{str(value)}"  # simulation name
+            )
 
-            conso_sensible, conso_electric = simulate_and_get_result(
-                                                 epm,
-                                                 example_epw_path,
-                                                 os.path.join(work_dir_path, simulation_path_name)
-                                            )
+            # store results
+            results[simulation_name] = dict(
+                electric=(electric_consumption-electric_baseline)/electric_baseline,
+                sensible=(sensible_consumption-sensible_baseline)/sensible_baseline
+            )
 
-            result_d[simulation_path_name] = {}
-            result_d[simulation_path_name]["Electric"] = (conso_electric-baseline_electric)/baseline_electric
-            result_d[simulation_path_name]["Sensible"] = (conso_sensible-baseline_sensible)/baseline_sensible
-
-Visualize the result
---------------------
+Visualize the results
+---------------------
 
 We use the plotly package to visualize the results.
 
@@ -231,11 +268,11 @@ Plot
 
 .. testcode::
 
-    df = pd.DataFrame().from_dict(result_d).T
+    df = pd.DataFrame().from_dict(results).T
 
     fig = go.Figure(
         data=[go.Bar(
-            x=df.index, y=df['Sensible']
+            x=df.index, y=df["sensible"]
         )],
         layout=go.Layout(title="Zone Air Terminal Sensible Energy (%)")
     )
@@ -253,9 +290,14 @@ Plot
 
     fig = go.Figure(
         data=[go.Bar(
-            x=df.index, y=df['Electric']
+            x=df.index, y=df["electric"]
         )],
         layout=go.Layout(title="electricity:facility (%)")
     )
 
     fig.show()
+
+.. testcleanup::
+
+    # come back to initial cwd
+    os.chdir(initial_cwd)
