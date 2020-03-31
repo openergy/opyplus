@@ -8,6 +8,9 @@
 * p: extensible fields debug: cycle now starts at 1 and not 0 (print(record) displayed a cycle starting at 0, and using 
 field name with cycle 0 returned a field before extensible cycle)
 
+## next
+* p: documentation was enhanced
+
 ## 1.0.2
 * p: improve printing when parsing output (every 30 seconds instead of 60, and was missing in the second loop)
 * p: improve output parsing memory and time efficiency by storing data in lists instead of dicts
