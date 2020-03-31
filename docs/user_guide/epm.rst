@@ -213,11 +213,10 @@ Add record
 .. testoutput::
     :options: +NORMALIZE_WHITESPACE
 
-    ok
     found:  True
 
 Remove record
-****
+*************
 
 .. testcode::
 
