@@ -1,6 +1,5 @@
-"""module to use to work with E+ weather data."""
+"""work with E+ weather data."""
 import collections
-import copy
 import datetime as dt
 
 import numpy as np
