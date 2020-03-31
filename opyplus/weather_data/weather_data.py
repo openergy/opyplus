@@ -340,7 +340,7 @@ class WeatherData:
 
     def set_weather_series(self, weather_series, start_day_of_week=None):
         """
-        Sets a new weather series dataframe.
+        Set a new weather series dataframe.
 
         Parameters
         ----------
