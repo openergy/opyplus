@@ -14,6 +14,9 @@ Prepare imports and paths
     temp_dir = tempfile.TemporaryDirectory()
     os.chdir(temp_dir.name)
 
+    import opyplus as op
+    current_doc_path = os.path.normpath(os.path.join(op.__file__, "..", "..", "docs", "examples"))
+
 
 .. testcode::
 
@@ -273,34 +276,41 @@ Plot
 
     df = pd.DataFrame().from_dict(results).T
 
-    fig = go.Figure(
+    df.sort_values(by=["sensible"], inplace=True)
+
+    sensible_fig = go.Figure(
         data=[go.Bar(
             x=df.index, y=df["sensible"]
         )],
         layout=go.Layout(title="Zone Air Terminal Sensible Energy (%)")
     )
 
-    fig.show()
+    sensible_fig.show()
 
-.. figure:: logo-dark.png
-    :scale: 80 %
-    :alt: Openergy logo
-    :align: center
-
-    Openergy's logo
+.. raw:: html
+    :file: sensible.html
 
 .. testcode::
 
-    fig = go.Figure(
+    df.sort_values(by=["electric"], inplace=True)
+
+    electricity_fig = go.Figure(
         data=[go.Bar(
             x=df.index, y=df["electric"]
         )],
         layout=go.Layout(title="electricity:facility (%)")
     )
 
-    fig.show()
+    electricity_fig.show()
+
+.. raw:: html
+    :file: electricity.html
 
 .. testcleanup::
+
+    # create plotly figures html
+    sensible_fig.write_html(os.path.join(current_doc_path, "sensible.html"))
+    electricity_fig.write_html(os.path.join(current_doc_path, "electricity.html"))
 
     # come back to initial cwd
     os.chdir(initial_cwd)
