@@ -92,72 +92,71 @@ expert example - find upper value and modify it
     Schedule:Compact,
         htgsetp_kitchen_sch,           ! Name
         temperature,                   ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for alldays,                   ! Field 1
-        until: 24:00,                  ! Field 2
-        16,                            ! Field 3
-        for: winterdesignday,          ! Field 4
-        until: 24:00,                  ! Field 5
-        19,                            ! Field 6
-        for: allotherdays,             ! Field 7
-        until: 01:00,                  ! Field 8
-        19,                            ! Field 9
-        until: 05:00,                  ! Field 10
-        15.6,                          ! Field 11
-        until: 24:00,                  ! Field 12
-        19;                            ! Field 13
+        through: 12/31,                ! Field 1
+        for alldays,                   ! Field 2
+        until: 24:00,                  ! Field 3
+        16,                            ! Field 4
+        for: winterdesignday,          ! Field 5
+        until: 24:00,                  ! Field 6
+        19,                            ! Field 7
+        for: allotherdays,             ! Field 8
+        until: 01:00,                  ! Field 9
+        19,                            ! Field 10
+        until: 05:00,                  ! Field 11
+        15.6,                          ! Field 12
+        until: 24:00,                  ! Field 13
+        19;                            ! Field 14
     *** after
     Schedule:Compact,
         htgsetp_kitchen_sch,           ! Name
         temperature,                   ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for alldays,                   ! Field 1
-        until: 24:00,                  ! Field 2
-        16,                            ! Field 3
-        for: winterdesignday,          ! Field 4
-        until: 24:00,                  ! Field 5
-        20.0,                          ! Field 6
-        for: allotherdays,             ! Field 7
-        until: 01:00,                  ! Field 8
-        20.0,                          ! Field 9
-        until: 05:00,                  ! Field 10
-        15.6,                          ! Field 11
-        until: 24:00,                  ! Field 12
-        20.0;                          ! Field 13
+        through: 12/31,                ! Field 1
+        for alldays,                   ! Field 2
+        until: 24:00,                  ! Field 3
+        16,                            ! Field 4
+        for: winterdesignday,          ! Field 5
+        until: 24:00,                  ! Field 6
+        20.0,                          ! Field 7
+        for: allotherdays,             ! Field 8
+        until: 01:00,                  ! Field 9
+        20.0,                          ! Field 10
+        until: 05:00,                  ! Field 11
+        15.6,                          ! Field 12
+        until: 24:00,                  ! Field 13
+        20.0;                          ! Field 14
     *** before
     Schedule:Compact,
         htgsetp_sch,                   ! Name
         temperature,                   ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for alldays,                   ! Field 1
-        until: 24:00,                  ! Field 2
-        16,                            ! Field 3
-        for: winterdesignday,          ! Field 4
-        until: 24:00,                  ! Field 5
-        21,                            ! Field 6
-        for: allotherdays,             ! Field 7
-        until: 01:00,                  ! Field 8
-        21,                            ! Field 9
-        until: 05:00,                  ! Field 10
-        15.6,                          ! Field 11
-        until: 24:00,                  ! Field 12
-        21;                            ! Field 13
+        through: 12/31,                ! Field 1
+        for alldays,                   ! Field 2
+        until: 24:00,                  ! Field 3
+        16,                            ! Field 4
+        for: winterdesignday,          ! Field 5
+        until: 24:00,                  ! Field 6
+        21,                            ! Field 7
+        for: allotherdays,             ! Field 8
+        until: 01:00,                  ! Field 9
+        21,                            ! Field 10
+        until: 05:00,                  ! Field 11
+        15.6,                          ! Field 12
+        until: 24:00,                  ! Field 13
+        21;                            ! Field 14
     *** after
     Schedule:Compact,
         htgsetp_sch,                   ! Name
         temperature,                   ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for alldays,                   ! Field 1
-        until: 24:00,                  ! Field 2
-        16,                            ! Field 3
-        for: winterdesignday,          ! Field 4
-        until: 24:00,                  ! Field 5
-        22.0,                          ! Field 6
-        for: allotherdays,             ! Field 7
-        until: 01:00,                  ! Field 8
-        22.0,                          ! Field 9
-        until: 05:00,                  ! Field 10
-        15.6,                          ! Field 11
-        until: 24:00,                  ! Field 12
-        22.0;                          ! Field 13
-
+        through: 12/31,                ! Field 1
+        for alldays,                   ! Field 2
+        until: 24:00,                  ! Field 3
+        16,                            ! Field 4
+        for: winterdesignday,          ! Field 5
+        until: 24:00,                  ! Field 6
+        22.0,                          ! Field 7
+        for: allotherdays,             ! Field 8
+        until: 01:00,                  ! Field 9
+        22.0,                          ! Field 10
+        until: 05:00,                  ! Field 11
+        15.6,                          ! Field 12
+        until: 24:00,                  ! Field 13
+        22.0;                          ! Field 14
