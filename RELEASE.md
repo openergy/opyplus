@@ -5,6 +5,7 @@
     p: patch
 
 ## next
+* p add 9.3.0 energyplus idd ressource
 * p: documentation was enhanced
 
 ## 1.0.2
