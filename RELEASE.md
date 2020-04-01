@@ -5,7 +5,11 @@
     p: patch
 
 ## next
-* p: add parametric simulation examples
+* p: documentation was enhanced
+
+## 1.0.2
+* p: improve printing when parsing output (every 30 seconds instead of 60, and was missing in the second loop)
+* p: improve output parsing memory and time efficiency by storing data in lists instead of dicts
 
 ## 1.0.1
 * p: use pandas.testing instead of deprecated pandas.util.testing
@@ -15,6 +19,7 @@
 * p: support pandas 1.0
 
 ## 1.0.0.dev6
+* p: add parametric simulation examples
 * p: improved documentation
 * p: added docstring to all public function/module/class
 
