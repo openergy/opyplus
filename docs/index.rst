@@ -1,4 +1,4 @@
-Opyplus Documentation
+Opyplus documentation
 =====================
 
 |Licence| |PyPi - Python Version| |PyPI|
@@ -10,15 +10,31 @@ Opyplus Documentation
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/opyplus
 
-opyplus is a package allowing to work with EnergyPlus in Python.
+**Opyplus** is a package to work with **EnergyPlus in Python**.
 
-More specifically, it allows to:
+With this package, you can programmatically:
 
-   * Parse, query and modify idf files efficiently, with a number of checks ensuring that your idf file remains correct throughout your work
-   * Parse and create epw files
-   * Launch simulations on EnergyPlus
-   * Parse EnergyPlus output files
+ - create and explore input files (building model and weather)
+ - run simulations
+ - perform outputs analysis
 
+.. note:: Opyplus strongly relies on Python's user-friendly api to offer the **best user experience for thermal engineers**.
+
+Its usage is especially relevant for **automatized and reusable operations**, for example:
+
+ - automatic geometry creation
+ - simplified thermal model creation
+ - sensitivity analysis
+
+
+Some of **opyplus strengths** :
+
+ - easy navigation through the thermal model objects
+ - auto-check of thermal model consistency when modifications are applied
+ - automatic output time-series transformation into Pandas dataframes - a worldwide format used for data analysis
+
+Table of contents
+=================
 
 .. toctree::
     :glob:

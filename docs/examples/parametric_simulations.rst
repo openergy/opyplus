@@ -41,7 +41,7 @@ Define input files
         "WeatherData",
         "USA_CO_Golden-NREL.724666_TMY3.epw"
         )
-    
+
 
 
 Define the study plan
@@ -242,6 +242,12 @@ Run the study
                 epm,
                 epw_path,
                 f"{parameter}-{str(value)}"  # simulation name
+            )
+
+            # store results
+            results[simulation_name] = dict(
+                electric=(electric_consumption-electric_baseline)/electric_baseline,
+                sensible=(sensible_consumption-sensible_baseline)/sensible_baseline
             )
 
             # store results
