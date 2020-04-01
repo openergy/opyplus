@@ -234,6 +234,9 @@ Run the study
             # reload initial model
             epm = op.Epm.load(base_idf_path)
 
+            # prepare simulation name
+            simulation_name = f"{parameter}-{str(value)}"
+
             # modify model
             modify_model(epm, parameter, value)
 
@@ -241,13 +244,7 @@ Run the study
             sensible_consumption, electric_consumption = simulate_and_get_result(
                 epm,
                 epw_path,
-                f"{parameter}-{str(value)}"  # simulation name
-            )
-
-            # store results
-            results[simulation_name] = dict(
-                electric=(electric_consumption-electric_baseline)/electric_baseline,
-                sensible=(sensible_consumption-sensible_baseline)/sensible_baseline
+                simulation_name
             )
 
             # store results
