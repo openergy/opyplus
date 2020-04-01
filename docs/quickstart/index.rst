@@ -15,502 +15,249 @@ opyplus can be installed using conda or pip:
 
     conda install -c conda-forge opyplus
 
-Examples
-^^^^^^^^
+Simulation
+^^^^^^^^^^
 
-Imports
--------
+.. testsetup::
+
+    import os
+    import tempfile
+    initial_cwd = os.getcwd()
+    temp_dir = tempfile.TemporaryDirectory()
+    os.chdir(temp_dir.name)
+
+
+Perform imports, and prepare EPlus base directory path (to work with example files).
 
 .. testcode::
 
-    import tempfile
-    temp_dir = tempfile.TemporaryDirectory()
-    work_dir_path = temp_dir.name
     import os
     import opyplus as op
 
-Epm
----
-Load and save an idf file (loaded as an EnergyPlus Model, Epm)
+    eplus_dir_path = op.get_eplus_base_dir_path((9, 0, 1))
+
+Prepare input paths and run simulation.
 
 .. testcode::
 
+    # idf path
     idf_path = os.path.join(
-        op.get_eplus_base_dir_path((9, 0, 1)),
+        eplus_dir_path,
         "ExampleFiles",
         "1ZoneEvapCooler.idf"
     )
-    epm = op.Epm.load(idf_path)
-    epm.save(os.path.join(work_dir_path, "my_idf.idf"))
 
-Table
------
-A table is a collection of records of the same type.
-
-.. testcode::
-
-    zones = epm.Zone
-    print(zones)
-    print(f"\nzones: {len(zones)}\n")
-    for z in zones:
-        print(z.name)
-
-.. testoutput::
-
-    Table Zone (Zone)
-      main zone
-
-    zones: 1
-
-    main zone
-
-Queryset
---------
-
-A queryset is the result of a select query on a table or another queryset.
-
-.. testcode::
-
-    # on a table
-    qs = epm.Zone.select(lambda x: x.name == "main zone")
-
-    # or another queryset
-    qs = qs.select(lambda x: x.name == "main zone")
-
-    print("records: ", qs)
-    print("\niter:")
-    for r in qs:
-        print(r["name"])
-    print("\nget item:")
-    print(qs[0])
-
-.. testoutput::
-
-    records:  <Queryset of Zone: 1 records>
-
-    iter:
-    main zone
-
-    get item:
-    Zone,
-        main zone,                     ! Name
-        0.0,                           ! Direction of Relative North
-        0.0,                           ! X Origin
-        0.0,                           ! Y Origin
-        0.0,                           ! Z Origin
-        1,                             ! Type
-        1,                             ! Multiplier
-        autocalculate,                 ! Ceiling Height
-        autocalculate;                 ! Volume
-
-Record
-------
-
-Get a record
-
-.. testcode::
-
-    # from a table
-    building = epm.Building.one(lambda x: x.name == "Bldg")
-    # or from queryset
-    building = epm.Building.select(lambda x: x["name"] == "Bldg").one()
-
-
-Add a record to a table
-
-.. testcode::
-
-    # add from a table
-    new_sch = epm.Schedule_Compact.add(
-        name="Heating Setpoint Schedule - new[1]",
-        schedule_type_limits_name="Any Number",
-        field_1="Through: 12/31",
-        field_2="For: AllDays",
-        field_3="Until: 24:00,20.0"
+    # epw path
+    epw_path = os.path.join(
+        eplus_dir_path,
+        "WeatherData",
+        "USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"
     )
 
-    print(
-        "found: ",
-        epm.Schedule_Compact.one(
-            lambda x: x.name == "heating setpoint schedule - new[1]"
-        ) is new_sch
-    )
+    # run simulation
+    s = op.simulate(idf_path, epw_path, "my-first-simulation")
+
+Check status, and inspect EPlus .err file.
+
+.. testcode::
+
+    print(f"status: {s.get_status()}\n")
+    print(f"Eplus .err file:\n{s.get_out_err().get_content()}")
 
 .. testoutput::
+    :options: +SKIP
 
-    found:  True
+    status: finished
 
-Extensible fields can also be added after creation
+    Eplus .err file:
+    Program Version,EnergyPlus, Version 9.0.1-bb7ca4f0da, YMD=2020.02.26 14:05,
+       ** Warning ** Weather file location will be used rather than entered (IDF) Location object.
+       **   ~~~   ** ..Location object=DENVER CENTENNIAL CO USA WMO=724666
+       **   ~~~   ** ..Weather File Location=San Francisco Intl Ap CA USA TMY3 WMO#=724940
+       **   ~~~   ** ..due to location differences, Latitude difference=[2.12] degrees, Longitude difference=[17.22] degrees.
+       **   ~~~   ** ..Time Zone difference=[1.0] hour(s), Elevation difference=[99.89] percent, [1791.00] meters.
+       ** Warning ** SetUpDesignDay: Entered DesignDay Barometric Pressure=81560 differs by more than 10% from Standard Barometric Pressure=101301.
+       **   ~~~   ** ...occurs in DesignDay=DENVER CENTENNIAL ANN HTG 99.6% CONDNS DB, Standard Pressure (based on elevation) will be used.
+       ** Warning ** GetAirPathData: AirLoopHVAC="EVAP COOLER SYSTEM" has no Controllers.
+       ** Warning ** SetUpDesignDay: Entered DesignDay Barometric Pressure=81560 differs by more than 10% from Standard Barometric Pressure=101301.
+       **   ~~~   ** ...occurs in DesignDay=DENVER CENTENNIAL ANN CLG 1% CONDNS DB=>MWB, Standard Pressure (based on elevation) will be used.
+       ************* Testing Individual Branch Integrity
+       ************* All Branches passed integrity testing
+       ************* Testing Individual Supply Air Path Integrity
+       ************* All Supply Air Paths passed integrity testing
+       ************* Testing Individual Return Air Path Integrity
+       ************* All Return Air Paths passed integrity testing
+       ************* No node connection errors were found.
+       ************* Beginning Simulation
+       ************* Simulation Error Summary *************
+       ************* EnergyPlus Warmup Error Summary. During Warmup: 0 Warning; 0 Severe Errors.
+       ************* EnergyPlus Sizing Error Summary. During Sizing: 0 Warning; 0 Severe Errors.
+       ************* EnergyPlus Completed Successfully-- 4 Warning; 0 Severe Errors; Elapsed Time=00hr 00min  7.05sec
+
+Retrieve and display outputs.
 
 .. testcode::
 
-    new_sch = epm.Schedule_Compact.add(
-        name="Heating Setpoint Schedule - new[2]",
-        schedule_type_limits_name="Any Number"
-    )
-    new_sch.add_fields(
-        "Through: 12/31",
-        "For: AllDays",
-        "Until: 24:00,20.0"
-    )
+    # retrieve hourly output (.eso file)
+    hourly_output = s.get_out_eso()
 
+    # ask for datetime index on year 2013
+    hourly_output.create_datetime_index(2013)
 
-remove record
+    # get Pandas dataframe
+    df = hourly_output.get_data()
 
-.. testcode::
-
-    new_sch.delete()
-    print("found: ", len(epm.Schedule_Compact.select(lambda x: x.name == "heating setpoint schedule - new[2]")) == 1)
-
+    # monthly resample and display
+    print(df[[
+        "environment,Site Outdoor Air Drybulb Temperature",
+        "main zone,Zone Mean Air Temperature"
+    ]].resample("MS").mean())
 
 .. testoutput::
+    :options: +NORMALIZE_WHITESPACE
 
-    found:  False
+                environment,Site Outdoor Air Drybulb Temperature  main zone,Zone Mean Air Temperature
+    2013-01-01                                          9.598712                            20.009400
+    2013-02-01                                         11.289435                            20.154321
+    2013-03-01                                         12.659767                            20.354625
+    2013-04-01                                         13.678194                            20.515966
+    2013-05-01                                         15.002352                            20.661471
+    2013-06-01                                         15.336250                            21.001910
+    2013-07-01                                         15.936470                            20.998396
+    2013-08-01                                         16.618201                            21.260456
+    2013-09-01                                         16.718843                            21.171012
+    2013-10-01                                         15.105724                            20.569441
+    2013-11-01                                         12.785648                            20.182358
+    2013-12-01                                         10.658524                            20.026346
 
-batch add (and remove)
+
+EPlus Model (idf file)
+^^^^^^^^^^^^^^^^^^^^^^
+
+Load Energy Plus model.
 
 .. testcode::
 
-    schedules = [
-        dict(
-            name="Heating Setpoint Schedule - 0",
-            schedule_type_limits_name="Any Number",
-            field_1="Through: 12/31",
-            field_2="For: AllDays",
-            field_3="Until: 24:00,20.0"
-        ),
-        dict(
-            name="Heating Setpoint Schedule - 1",
-            schedule_type_limits_name="Any Number",
-            field_1="Through: 12/31",
-            field_2="For: AllDays",
-            field_3="Until: 24:00,20.0"
-        ),
-        dict(
-            name="Heating Setpoint Schedule - 2",
-            schedule_type_limits_name="Any Number",
-            field_1="Through: 12/31",
-            field_2="For: AllDays",
-            field_3="Until: 24:00,20.0"
-        ),
-    ]
+    # idf path
+    idf_path = os.path.join(
+        eplus_dir_path,
+        "ExampleFiles",
+        "1ZoneEvapCooler.idf"
+    )
 
-    # idf syntax
-    added = epm.Schedule_Compact.batch_add(schedules)
-    print("added:")
-    for a in added:
-        print(a["name"])
+    # load epm object
+    epm = op.Epm.from_idf(idf_path)
 
-    added.delete()
 
+Iter constructions:
+
+.. testcode::
+
+    for construction in epm.Construction:
+        print(construction)
 
 .. testoutput::
+    :options: +NORMALIZE_WHITESPACE
 
-    added:
-    heating setpoint schedule - 0
-    heating setpoint schedule - 1
-    heating setpoint schedule - 2
+    Construction,
+        r13wall,                       ! Name
+        r13layer;                      ! Outside Layer
+    Construction,
+        floor,                         ! Name
+        c5 - 4 in hw concrete;         ! Outside Layer
+    Construction,
+        roof31,                        ! Name
+        r31layer;                      ! Outside Layer
 
-display info
+
+Retrieve concrete material.
 
 .. testcode::
 
-    print(building.get_info())
-    print("")
-    print(building)
+    concrete = epm.Material.one("c5 - 4 in hw concrete")
+    print(concrete)
 
 
 .. testoutput::
     :options: +NORMALIZE_WHITESPACE
 
-    Building (Building)
-     0: Name (name)
-        * default: NONE
-        * retaincase: 
-     1: North Axis (north_axis)
-        * default: 0.0
-        * note: degrees from true North
-        * type: real
-        * units: deg
-     2: Terrain (terrain)
-        * default: Suburbs
-        * key: Country; Suburbs; City; Ocean; Urban
-        * note: Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest
-        * type: choice
-     3: Loads Convergence Tolerance Value (loads_convergence_tolerance_value)
-        * default: .04
-        * maximum: .5
-        * minimum>: 0.0
-        * note: Loads Convergence Tolerance Value is a fraction of load
-        * type: real
-     4: Temperature Convergence Tolerance Value (temperature_convergence_tolerance_value)
-        * default: .4
-        * maximum: .5
-        * minimum>: 0.0
-        * type: real
-        * units: deltaC
-     5: Solar Distribution (solar_distribution)
-        * default: FullExterior
-        * key: MinimalShadowing; FullExterior; FullInteriorAndExterior; FullExteriorWithReflections; FullInteriorAndExteriorWithReflections
-        * note: MinimalShadowing | FullExterior | FullInteriorAndExterior | FullExteriorWithReflections | FullInteriorAndExteriorWithReflections
-        * type: choice
-     6: Maximum Number of Warmup Days (maximum_number_of_warmup_days)
-        * default: 25
-        * minimum>: 0
-        * note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.; This field's value should NOT be set less than 25.
-        * type: integer
-     7: Minimum Number of Warmup Days (minimum_number_of_warmup_days)
-        * default: 6
-        * minimum>: 0
-        * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered when it is less than the default 6.
-        * type: integer
+    Material,
+        c5 - 4 in hw concrete,         ! Name
+        mediumrough,                   ! Roughness
+        0.1014984,                     ! Thickness
+        1.729577,                      ! Conductivity
+        2242.585,                      ! Density
+        836.8,                         ! Specific Heat
+        0.9,                           ! Thermal Absorptance
+        0.65,                          ! Solar Absorptance
+        0.65;                          ! Visible Absorptance
 
 
-    Building,
-        Bldg,                          ! Name
-        0.0,                           ! North Axis
-        suburbs,                       ! Terrain
-        0.05,                          ! Loads Convergence Tolerance Value
-        0.05,                          ! Temperature Convergence Tolerance Value
-        minimalshadowing,              ! Solar Distribution
-        30,                            ! Maximum Number of Warmup Days
-        6;                             ! Minimum Number of Warmup Days
-
-
-get field value
+Change thickness and conductivity.
 
 .. testcode::
 
-    print("name: ", building.name)
-    print("name: ", building["name"])
-    print("name: ", building[0])
+    # change thickness and conductivity
+    concrete.thickness = 0.2
+    concrete.conductivity = 1.5
 
+    # print new values
+    print(concrete)
 
-.. testoutput::
-
-    name:  Bldg
-    name:  Bldg
-    name:  Bldg
-
-set basic field
-
-.. testcode::
-
-    old_name = building.terrain
-    print(f"old name: {old_name}")
-
-    building.terrain = "Downtown"
-    print(f"new name: {building.terrain}")
-
-    building.terrain = old_name
-
-
-
-.. testoutput::
-
-    old name: suburbs
-    new name: downtown
-
-replace basic fields
-
-.. testcode::
-
-    sch = epm.Schedule_Compact.one(lambda x: x.name == "heating setpoint schedule")
-
-    sch.name = "Heating Setpoint Schedule"
-    sch.field_1 = "Through: 12/31"
-    sch[3] = "For: AllDays"  # index syntax
-
-    print(sch)
-
-    sch.name = "Heating Setpoint Schedule new_name"
-
-    print(sch)
-
-
+    # save new idf
+    epm.save("my-first-model.idf")
 
 .. testoutput::
     :options: +NORMALIZE_WHITESPACE
 
-    Schedule:Compact,
-        heating setpoint schedule,     ! Name
-        any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0;                          ! Field 3
-
-    Schedule:Compact,
-        heating setpoint schedule new_name,    ! Name
-        any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0;                          ! Field 3
+    Material,
+        c5 - 4 in hw concrete,         ! Name
+        mediumrough,                   ! Roughness
+        0.2,                           ! Thickness
+        1.5,                           ! Conductivity
+        2242.585,                      ! Density
+        836.8,                         ! Specific Heat
+        0.9,                           ! Thermal Absorptance
+        0.65,                          ! Solar Absorptance
+        0.65;                          ! Visible Absorptance
 
 
-set record fields
+Outputs (eso file)
+^^^^^^^^^^^^^^^^^^
+
+Connect to previous simulation and retrieve eso object.
 
 .. testcode::
 
-    # work with setpoint record
-    setpoint = epm.ThermostatSetpoint_SingleHeating.one(lambda x: x.name == "heating setpoint")
-    print(setpoint)
-
-    # can set directly by name
-    setpoint.setpoint_temperature_schedule_name = "zone control type sched"
-    print(setpoint)
-
-    # or set record
-    new_sch = epm.Schedule_Compact.one(lambda x: x["name"] == "heating setpoint schedule new_name")
-    setpoint.setpoint_temperature_schedule_name = new_sch
-    print(setpoint)
-
-    # reset old value
-    setpoint.setpoint_temperature_schedule_name = sch
-
-
-.. testoutput::
-    :options: +NORMALIZE_WHITESPACE
-
-    ThermostatSetpoint:SingleHeating,
-        heating setpoint,              ! Name
-        heating setpoint schedule new_name;    ! Setpoint Temperature Schedule Name
-
-    ThermostatSetpoint:SingleHeating,
-        heating setpoint,              ! Name
-        zone control type sched;       ! Setpoint Temperature Schedule Name
-
-    ThermostatSetpoint:SingleHeating,
-        heating setpoint,              ! Name
-        heating setpoint schedule new_name;    ! Setpoint Temperature Schedule Name
-
-
-add fields (only for extensibles)
-
-.. testcode::
-
-    sch.add_fields(
-        "Until: 24:00",
-        "25"
-    )
-    print(sch)
-
-
-.. testoutput::
-
-    Schedule:Compact,
-        heating setpoint schedule new_name,    ! Name
-        any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0,                          ! Field 3
-        until: 24:00,                  ! Field 4
-        25;                            ! Field 5
-
-
-explore links
-
-.. testcode::
-
-    pointing = sch.get_pointing_records()
-    print("pointing on sch:")
-    for _pointing in sch.get_pointing_records():
-        print(_pointing)
-    # todo: [GL] explore by table
-    setpoint = pointing.ThermostatSetpoint_SingleHeating[0]
-    print("pointed by setpoint:")
-    for _pointed in setpoint.get_pointed_records():
-        print(_pointed)
-    # todo: [GL] explore by table
-
-
-.. testoutput::
-
-    pointing on sch:
-    thermostatsetpoint_singleheating
-    pointed by setpoint:
-    schedule_compact
-
-Simulation
-----------
-simulate
-
-.. testcode::
-
-    simulation_dir = os.path.join(work_dir_path, "simulation")
-    if not os.path.isdir(simulation_dir):
-        os.mkdir(simulation_dir)
-    s = op.simulate(
-        epm,
-        os.path.join(
-            op.get_eplus_base_dir_path((9, 0, 1)),
-            "WeatherData",
-            "USA_CO_Golden-NREL.724666_TMY3.epw"
-        ),
-        base_dir_path=simulation_dir
-    )
-
-
-standard output
-
-.. testcode::
-
-    # explore output
+    s = op.Simulation("my-first-simulation")
     eso = s.get_out_eso()
-    print("info: \n", eso.get_info(), "\n")
 
-    # explore environements
-    print("environments: ", list(eso.get_environments().keys()), "\n")
+Display what is contained in eso file (environments, variable names and frequencies).
 
-    # explore variables
-    print(f"variables: {eso.get_variables()}\n")
+.. testcode::
 
-    # tuple instants dataframe
-    df = eso.get_data()
-    print(list(df.columns), "\n")
-    print("index: ", df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
-
-    # create datetime index
-    eso.create_datetime_index(2014)
-
-    # choose start year
-    df = eso.get_data()
-    print("datetime index: ",  df[["environment,Site Outdoor Air Drybulb Temperature"]].head(), "\n")
-
-    # choose time step
-    df = eso.get_data(frequency="hourly")
-
-    # dump to csv for debug
-    csv_dir_path = os.path.join(work_dir_path, "standard-output")
-    eso.to_csv(csv_dir_path)
-    print("standard-output content:")
-    for name in sorted(os.listdir(csv_dir_path)):
-        print(f"  {name}")
-
+    print(eso.get_info())
 
 .. testoutput::
     :options: +NORMALIZE_WHITESPACE
 
-    info:
-     Standard output
+    Standard output
       environments
-        denver centennial ann clg 1% condns db=>mwb (0)
-          latitude: 39.74
-          longitude: -105.18
-          timezone_offset: -7.0
-          elevation: 1829.0
-        denver centennial ann htg 99.6% condns db (1)
-          latitude: 39.74
-          longitude: -105.18
-          timezone_offset: -7.0
-          elevation: 1829.0
+        denver centennial ann htg 99.6% condns db (0)
+          latitude: 37.62
+          longitude: -122.4
+          timezone_offset: -8.0
+          elevation: 2.0
+        denver centennial ann clg 1% condns db=>mwb (1)
+          latitude: 37.62
+          longitude: -122.4
+          timezone_offset: -8.0
+          elevation: 2.0
         runperiod 1 (2)
-          latitude: 39.74
-          longitude: -105.18
-          timezone_offset: -7.0
-          elevation: 1829.0
+          latitude: 37.62
+          longitude: -122.4
+          timezone_offset: -8.0
+          elevation: 2.0
       variables
         hourly
           environment,Site Outdoor Air Drybulb Temperature (7)
@@ -532,185 +279,183 @@ standard output
           zone equipment outlet node,System Node Temperature (394)
           relief air outlet node,System Node Temperature (395)
 
-
-    environments:  ['denver centennial ann clg 1% condns db=>mwb', 'denver centennial ann htg 99.6% condns db', 'runperiod 1']
-
-    variables: OrderedDict([('hourly', [environment,Site Outdoor Air Drybulb Temperature (7), environment,Site Outdoor Air Wetbulb Temperature (8), environment,Site Outdoor Air Humidity Ratio (9), environment,Site Outdoor Air Relative Humidity (10), main zone,Zone Mean Air Temperature (11), main zone baseboard,Baseboard Electric Power (160), supply inlet node,System Node Temperature (384), fan inlet node,System Node Temperature (385), evap cooler inlet node,System Node Temperature (386), supply outlet node,System Node Temperature (387), supply outlet node,System Node Mass Flow Rate (388), outside air inlet node,System Node Temperature (389), main zone outlet node,System Node Temperature (390), main zone node,System Node Temperature (391), main zone inlet node,System Node Temperature (392), zone equipment inlet node,System Node Temperature (393), zone equipment outlet node,System Node Temperature (394), relief air outlet node,System Node Temperature (395)])])
-
-    ['month', 'day', 'hour', 'minute', 'end_minute', 'dst', 'day_type', 'environment,Site Outdoor Air Drybulb Temperature', 'environment,Site Outdoor Air Wetbulb Temperature', 'environment,Site Outdoor Air Humidity Ratio', 'environment,Site Outdoor Air Relative Humidity', 'main zone,Zone Mean Air Temperature', 'main zone baseboard,Baseboard Electric Power', 'supply inlet node,System Node Temperature', 'fan inlet node,System Node Temperature', 'evap cooler inlet node,System Node Temperature', 'supply outlet node,System Node Temperature', 'supply outlet node,System Node Mass Flow Rate', 'outside air inlet node,System Node Temperature', 'main zone outlet node,System Node Temperature', 'main zone node,System Node Temperature', 'main zone inlet node,System Node Temperature', 'zone equipment inlet node,System Node Temperature', 'zone equipment outlet node,System Node Temperature', 'relief air outlet node,System Node Temperature']
-
-    index:     environment,Site Outdoor Air Drybulb Temperature
-    0                                         -4.666667
-    1                                         -3.000000
-    2                                         -3.583333
-    3                                         -2.833333
-    4                                         -2.000000
-
-    datetime index:                       environment,Site Outdoor Air Drybulb Temperature
-    2014-01-01 00:00:00                                         -4.666667
-    2014-01-01 01:00:00                                         -3.000000
-    2014-01-01 02:00:00                                         -3.583333
-    2014-01-01 03:00:00                                         -2.833333
-    2014-01-01 04:00:00                                         -2.000000
-
-    standard-output content:
-      0#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
-      1#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
-      2#runperiod-1#hourly.csv
-
-Weather data
-------------
+Natively, outputs don't have a year and their indexes are not stored in datetimes (but in tuples of integers instead: month, day, hour).
+We transform outputs to datetime index dataframes to ease future analysis (datetimes are easy to manipulate, for example for resample operations).
 
 .. testcode::
 
-    epw = op.WeatherData.load(os.path.join(
-        op.get_eplus_base_dir_path((9, 0, 1)),
-        "WeatherData",
-        "USA_CO_Golden-NREL.724666_TMY3.epw")
+    eso.create_datetime_index(2013)  # we indicate the year
+
+Explore window design day data : display mean daily exterior and interior temperatures.
+
+.. testcode::
+
+    winter_design_day_df = eso.get_data("denver centennial ann htg 99.6% condns db")
+    print(winter_design_day_df[[
+        "main zone,Zone Mean Air Temperature",
+        "environment,Site Outdoor Air Drybulb Temperature"
+        ]].resample("D").mean()
     )
-
-    # weather series
-    df = epw.get_weather_series()
-    print(list(df.columns))
-    print(df[["drybulb"]].head())
-
-
-
-.. testoutput::
-
-    ['year', 'month', 'day', 'hour', 'minute', 'datasource', 'drybulb', 'dewpoint', 'relhum', 'atmos_pressure', 'exthorrad', 'extdirrad', 'horirsky', 'glohorrad', 'dirnorrad', 'difhorrad', 'glohorillum', 'dirnorillum', 'difhorillum', 'zenlum', 'winddir', 'windspd', 'totskycvr', 'opaqskycvr', 'visibility', 'ceiling_hgt', 'presweathobs', 'presweathcodes', 'precip_wtr', 'aerosol_opt_depth', 'snowdepth', 'days_last_snow', 'Albedo', 'liq_precip_depth', 'liq_precip_rate']
-       drybulb
-    0     -3.0
-    1     -3.0
-    2     -4.0
-    3     -2.0
-    4     -2.0
-
-Case management
----------------
-
-tables
-
-.. testcode::
-
-    # table refs have a case, but getitem on idf is case insensitive
-    print("tables:")
-    print(epm.Zone)
-    print(epm.zOnE)
-
-
-.. testoutput::
-
-    tables:
-    Table Zone (Zone)
-      main zone
-    Table Zone (Zone)
-      main zone
-
-record field keys
-
-.. testcode::
-
-    # record field keys are lower case with underscores instead of spaces
-    print("building name:")
-    print(building.name)
-    print(building["name"])
-
-.. testoutput::
-
-    building name:
-    Bldg
-    Bldg
-
-record field values
-
-.. testcode::
-
-    # some record field values retain case (are case sensitive) others not
-    print(building.get_info())
 
 .. testoutput::
     :options: +NORMALIZE_WHITESPACE
 
-    Building (Building)
-     0: Name (name)
-        * default: NONE
-        * retaincase:
-     1: North Axis (north_axis)
-        * default: 0.0
-        * note: degrees from true North
-        * type: real
-        * units: deg
-     2: Terrain (terrain)
-        * default: Suburbs
-        * key: Country; Suburbs; City; Ocean; Urban
-        * note: Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest
-        * type: choice
-     3: Loads Convergence Tolerance Value (loads_convergence_tolerance_value)
-        * default: .04
-        * maximum: .5
-        * minimum>: 0.0
-        * note: Loads Convergence Tolerance Value is a fraction of load
-        * type: real
-     4: Temperature Convergence Tolerance Value (temperature_convergence_tolerance_value)
-        * default: .4
-        * maximum: .5
-        * minimum>: 0.0
-        * type: real
-        * units: deltaC
-     5: Solar Distribution (solar_distribution)
-        * default: FullExterior
-        * key: MinimalShadowing; FullExterior; FullInteriorAndExterior; FullExteriorWithReflections; FullInteriorAndExteriorWithReflections
-        * note: MinimalShadowing | FullExterior | FullInteriorAndExterior | FullExteriorWithReflections | FullInteriorAndExteriorWithReflections
-        * type: choice
-     6: Maximum Number of Warmup Days (maximum_number_of_warmup_days)
-        * default: 25
-        * minimum>: 0
-        * note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.; This field's value should NOT be set less than 25.
-        * type: integer
-     7: Minimum Number of Warmup Days (minimum_number_of_warmup_days)
-        * default: 6
-        * minimum>: 0
-        * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered when it is less than the default 6.
-        * type: integer
+                main zone,Zone Mean Air Temperature  environment,Site Outdoor Air Drybulb Temperature
+    2013-12-21                                 20.0                                             -18.8
 
-
-=> building name retains case, terrain doesn't
-
-**Field values that don't retain case are always forced to lowercase. Field values that retain case keep their
-case sensitive value.**
+Explore run period data : display mean daily exterior and interior temperatures.
 
 .. testcode::
 
-    building.name = "StaysCamelCase"
-    building.terrain = "Suburbs"  # will be set to lowercase
-    print(building)
+    # default environment is the last one found, which is the run period environment in our case
+    run_period_df = eso.get_data()
+
+    # daily resample
+    daily_df = run_period_df[[
+        "main zone,Zone Mean Air Temperature",
+        "environment,Site Outdoor Air Drybulb Temperature"
+        ]].resample("D").mean()
+
+    # display
+    print(daily_df.head())  # will only display first rows of dataframe
 
 .. testoutput::
+    :options: +NORMALIZE_WHITESPACE
 
-    Building,
-        StaysCamelCase,                ! Name
-        0.0,                           ! North Axis
-        suburbs,                       ! Terrain
-        0.05,                          ! Loads Convergence Tolerance Value
-        0.05,                          ! Temperature Convergence Tolerance Value
-        minimalshadowing,              ! Solar Distribution
-        30,                            ! Maximum Number of Warmup Days
-        6;                             ! Minimum Number of Warmup Days
+                main zone,Zone Mean Air Temperature  environment,Site Outdoor Air Drybulb Temperature
+    2013-01-01                            20.058282                                          8.704167
+    2013-01-02                            20.035461                                          9.857639
+    2013-01-03                            20.085657                                         12.200000
+    2013-01-04                            20.000013                                          8.456250
+    2013-01-05                            20.000000                                          7.819097
 
-don't forget these rules when filtering
+Export data in csv format.
 
 .. testcode::
 
-    print("retains, case not respected:", len(epm.Building.select(lambda x: x.name == "stayscamelcase")))  # not ok
-    print("retains, case respected:", len(epm.Building.select(lambda x: x.name == "StaysCamelCase")))  # ok
-    print("doesn't retain, uppercase: ", len(epm.Building.select(lambda x: x.terrain == "Suburbs")))  # not ok
-    print("doesn't retain, lowercase: ", len(epm.Building.select(lambda x: x.terrain == "suburbs")))  # ok
+    eso.to_csv("ouputs-csv")
+
+    # all csv files (one per environment and frequency) where created in one directory
+    for name in os.listdir("ouputs-csv"):
+        print(name)
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    0#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
+    1#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
+    2#runperiod-1#hourly.csv
+
+Weather data (epw file)
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Load Weather data.
+
+.. testcode::
+
+    # epw path
+    epw_path = os.path.join(
+        eplus_dir_path,
+        "WeatherData",
+        "USA_CA_San.Francisco.Intl.AP.724940_TMY3.epw"
+    )
+
+    # load weather data object
+    weather_data = op.WeatherData.from_epw(epw_path)
+
+
+View synthetic info.
+
+.. testcode::
+
+    print(weather_data.get_info())
 
 
 .. testoutput::
+    :options: +NORMALIZE_WHITESPACE
 
-    retains, case not respected: 0
-    retains, case respected: 1
-    doesn't retain, uppercase:  0
-    doesn't retain, lowercase:  1
+    WeatherData
+        has datetime instants: False
+        latitude: 37.62
+        longitude: -122.40
+        timezone_offset: -8.0
+        elevation: 2.0
+        data period: 1999-01-01T00:00:00, 1997-12-31T23:00:00
+
+
+
+Natively, weather data index is not stored in datetimes (but in tuples of integers instead: year, month, day, hour).
+We transform data to datetime index dataframe to ease future analysis (datetimes are easy to manipulate, for example for resample operations).
+
+.. testcode::
+
+    weather_data.create_datetime_instants(2013)  # we indicate start year
+
+    # check that operation worked
+    print(f"has datetime index: {weather_data.has_datetime_instants}")
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    has datetime index: True
+
+Retrieve weather series data (pandas dataframe object).
+
+.. testcode::
+
+    df = weather_data.get_weather_series()
+
+    # print columns
+    print(f"columns: {list(sorted(df.columns))}\n")
+
+    # print drybulb first rows
+    print("drybulb:")
+    print(df["drybulb"].head())
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    columns: ['Albedo', 'aerosol_opt_depth', 'atmos_pressure', 'ceiling_hgt', 'datasource', 'day', 'days_last_snow', 'dewpoint', 'difhorillum', 'difhorrad', 'dirnorillum', 'dirnorrad', 'drybulb', 'extdirrad', 'exthorrad', 'glohorillum', 'glohorrad', 'horirsky', 'hour', 'liq_precip_depth', 'liq_precip_rate', 'minute', 'month', 'opaqskycvr', 'precip_wtr', 'presweathcodes', 'presweathobs', 'relhum', 'snowdepth', 'totskycvr', 'visibility', 'winddir', 'windspd', 'year', 'zenlum']
+
+    drybulb:
+    2013-01-01 01:00:00    7.2
+    2013-01-01 02:00:00    7.2
+    2013-01-01 03:00:00    6.7
+    2013-01-01 04:00:00    6.1
+    2013-01-01 05:00:00    4.4
+    Freq: H, Name: drybulb, dtype: float64
+
+Add one degree celcius to drybulb and set new weather series.
+
+.. testcode::
+
+    # add one degree
+    df["drybulb"] += 1  # equivalent of df["drybulb"] = df["drybulb"] + 1
+
+    # set new dataframe
+    weather_data.set_weather_series(df)
+
+    # check it worked
+    print(weather_data.get_weather_series()["drybulb"].head())
+
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE
+
+    2013-01-01 01:00:00    8.2
+    2013-01-01 02:00:00    8.2
+    2013-01-01 03:00:00    7.7
+    2013-01-01 04:00:00    7.1
+    2013-01-01 05:00:00    5.4
+    Freq: H, Name: drybulb, dtype: float64
+
+Save data in a new epw file.
+
+.. testcode::
+
+    # save new epw
+    weather_data.to_epw("one-more-drybulb-degree.epw")
+
+.. testcleanup::
+
+    # come back to initial cwd
+    os.chdir(initial_cwd)
