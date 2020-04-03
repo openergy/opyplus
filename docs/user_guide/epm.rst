@@ -398,18 +398,18 @@ Replace basic fields
     Schedule:Compact,
         heating setpoint schedule,     ! Name
         any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0;                          ! Field 3
+        through: 12/31,                ! Field 1
+        for: alldays,                  ! Field 2
+        until: 24:00,                  ! Field 3
+        20.0;                          ! Field 4
 
     Schedule:Compact,
         heating setpoint schedule new_name,    ! Name
         any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0;                          ! Field 3
+        through: 12/31,                ! Field 1
+        for: alldays,                  ! Field 2
+        until: 24:00,                  ! Field 3
+        20.0;                          ! Field 4
 
 
 Set record fields
@@ -465,12 +465,12 @@ Add fields (only for extensibles)
     Schedule:Compact,
         heating setpoint schedule new_name,    ! Name
         any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0,                          ! Field 3
-        until: 24:00,                  ! Field 4
-        25;                            ! Field 5
+        through: 12/31,                ! Field 1
+        for: alldays,                  ! Field 2
+        until: 24:00,                  ! Field 3
+        20.0,                          ! Field 4
+        until: 24:00,                  ! Field 5
+        25;                            ! Field 6
 
 Explore links
 ****
