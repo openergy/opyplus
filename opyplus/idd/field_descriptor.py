@@ -112,7 +112,7 @@ class FieldDescriptor:
         # -- serialize if not raw type
         # transform to string if external file
         if isinstance(value, ExternalFile):
-            value = value.pointer
+            value = value.naive_short_ref
 
         # transform to string if record
         if isinstance(value, Record):

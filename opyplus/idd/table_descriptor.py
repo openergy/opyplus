@@ -185,8 +185,13 @@ class TableDescriptor:
                 match = re.fullmatch(pat, ref)
                 if match is None:  # not found
                     continue
+
                 # we found cycle
                 cycle_num = int(match.group(1))
+
+                # check > 0 (or else continue)
+                if cycle_num <= 0:
+                    continue
 
                 # calculate and return index
                 return cycle_start + (cycle_num-1)*cycle_len + pattern_num
@@ -260,7 +265,7 @@ class TableDescriptor:
             return field_descriptor.name
         cycle_start, cycle_len, _ = self.extensible_info
         cycle_num = (index - cycle_start) // cycle_len
-        return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num))
+        return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num+1))
 
     def get_info(self):
         """
