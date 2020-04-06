@@ -174,7 +174,7 @@ Records
 ^^^^^^^
 
 Get record
-****
+**********
 
 .. testcode::
 
@@ -184,7 +184,7 @@ Get record
     building = epm.Building.select(lambda x: x["name"] == "Bldg").one()
 
 Add record
-****
+**********
 
 .. testcode::
 
@@ -229,7 +229,7 @@ Remove record
     found:  False
 
 Batch add (and remove)
-****
+**********************
 
 .. testcode::
 
@@ -274,7 +274,7 @@ Batch add (and remove)
     heating setpoint schedule - 2
 
 Display info
-****
+************
 
 .. testcode::
 
@@ -340,7 +340,7 @@ Display info
 
 
 Get field value
-****
+***************
 
 .. testcode::
 
@@ -356,7 +356,7 @@ Get field value
     name:  Bldg
 
 Set basic field
-****
+***************
 
 .. testcode::
 
@@ -376,7 +376,7 @@ Set basic field
 
 
 Replace basic fields
-****
+********************
 
 .. testcode::
 
@@ -398,22 +398,22 @@ Replace basic fields
     Schedule:Compact,
         heating setpoint schedule,     ! Name
         any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0;                          ! Field 3
+        through: 12/31,                ! Field 1
+        for: alldays,                  ! Field 2
+        until: 24:00,                  ! Field 3
+        20.0;                          ! Field 4
 
     Schedule:Compact,
         heating setpoint schedule new_name,    ! Name
         any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0;                          ! Field 3
+        through: 12/31,                ! Field 1
+        for: alldays,                  ! Field 2
+        until: 24:00,                  ! Field 3
+        20.0;                          ! Field 4
 
 
 Set record fields
-****
+*****************
 
 .. testcode::
 
@@ -449,7 +449,7 @@ Set record fields
         heating setpoint schedule new_name;    ! Setpoint Temperature Schedule Name
 
 Add fields (only for extensibles)
-****
+*********************************
 
 .. testcode::
 
@@ -465,15 +465,15 @@ Add fields (only for extensibles)
     Schedule:Compact,
         heating setpoint schedule new_name,    ! Name
         any number,                    ! Schedule Type Limits Name
-        through: 12/31,                ! Field 0
-        for: alldays,                  ! Field 1
-        until: 24:00,                  ! Field 2
-        20.0,                          ! Field 3
-        until: 24:00,                  ! Field 4
-        25;                            ! Field 5
+        through: 12/31,                ! Field 1
+        for: alldays,                  ! Field 2
+        until: 24:00,                  ! Field 3
+        20.0,                          ! Field 4
+        until: 24:00,                  ! Field 5
+        25;                            ! Field 6
 
 Explore links
-****
+*************
 
 .. testcode::
 

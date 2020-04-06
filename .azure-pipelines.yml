@@ -32,6 +32,7 @@ jobs:
 
     steps:
       - bash: |
+          set -e
           wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
           echo "y\r" | sudo bash ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
           sudo rm ./EnergyPlus-9.0.1-bb7ca4f0da-Linux-x86_64.sh
@@ -39,6 +40,7 @@ jobs:
         condition: eq( variables['Agent.OS'], 'Linux' )
 
       - bash: |
+          set -e
           wget -q https://github.com/NREL/EnergyPlus/releases/download/v9.0.1/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
           sudo hdiutil attach EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.dmg
           sudo installer -pkg /Volumes/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64/EnergyPlus-9.0.1-bb7ca4f0da-Darwin-x86_64.pkg -target /;
@@ -58,22 +60,26 @@ jobs:
         displayName: 'Use Python $(python.version)'
 
       - script: |
+          set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt
         displayName: 'Install dependencies'
 
       - script: |
+          set -e
           pip install flake8 flake8-docstrings
           python -m flake8 opyplus/
         displayName: 'flake8'
 
       - script: |
+          set -e
           pip install pytest pytest-azurepipelines pytest-cov
           pytest --cov=opyplus --cov-report=html tests/
         displayName: 'pytest'
         condition: always()
 
       - script: |
+          set -e
           pip install -r docs/requirements.txt
           cd docs
           make doctest
@@ -99,6 +105,7 @@ jobs:
         displayName: 'Use Python 3.7'
 
       - script: |
+          set -e
           python -m pip install --upgrade pip
           python -m pip install wheel twine
           python setup.py sdist bdist_wheel
