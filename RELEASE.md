@@ -4,8 +4,8 @@
     m: minor
     p: patch
 
-## next
-* p: documentation was enhanced
+## 1.0.3
+* p: first version of documentation is ready
 
 ## 1.0.2
 * p: improve printing when parsing output (every 30 seconds instead of 60, and was missing in the second loop)
