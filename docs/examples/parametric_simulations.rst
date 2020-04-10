@@ -97,52 +97,66 @@ Define the function that will modify the model
             return
 
         if parameter == "heating_setpoint":
-            ## create a list with all heating setpoint temperature schedules found in ThermostatSetpoint_DualSetpoint objects
+            # create a list with all heating setpoint temperature schedules
+            # found in ThermostatSetpoint_DualSetpoint objects
             heating_setpoint_temperature_list = []
-            for th_ds in epm.ThermostatSetpoint_DualSetpoint: ### loop on ThermostatSetpoint_DualSetpoint object
+            # loop on ThermostatSetpoint_DualSetpoint object
+            for th_ds in epm.ThermostatSetpoint_DualSetpoint:
+                # add heating_setpoint_temperature_schedule_name to list
                 heating_setpoint_temperature_list.append(
-                    th_ds.heating_setpoint_temperature_schedule_name) ### add heating_setpoint_temperature_schedule_name to list
+                    th_ds.heating_setpoint_temperature_schedule_name)
 
             # loop on each heating_setpoint_temperature_schedule and replace value
             for heating_setpoint_sch in sorted(heating_setpoint_temperature_list):
-                ## get dict of the schedule { 0: schedule'name, 1: schedule type limits name, 2: extensible field 1 value, ... }
+                # get dict of the schedule { 0: schedule'name, 1: schedule type limits name,
+                # 2: extensible field 1 value, ... }
                 schedule_dict = heating_setpoint_sch.to_dict()
-                ## get the index of max value
+                # get the index of max value
+                # (we transform string to float if the value is a string and a can is a digit
+                #  not a text)
                 first_index = max(
                     schedule_dict,
                     key=lambda x: float(schedule_dict[x])
                         if isinstance(schedule_dict[x], str) and schedule_dict[x].isdigit()
-                        else 0 ### transform string to float if the value is a string and a can is a digit not a text
+                        else 0
                 )
-                ## loop on all dict items and modify value if its the max value
+                # loop on all dict items and modify value if its the max value
                 for k, v in schedule_dict.items():
-                    if v == schedule_dict[first_index]: ### it is the max value ?
-                        heating_setpoint_sch[k] = str(float(schedule_dict[k]) + value) ### update value and set it in string format
+                    if v == schedule_dict[first_index]: # it is the max value ?
+                        # update value and set it in string format
+                        heating_setpoint_sch[k] = str(float(schedule_dict[k]) + value)
 
             return
 
         if parameter == "cooling_setpoint":
-            ## create a list with all cooling setpoint temperature schedules found in ThermostatSetpoint_DualSetpoint objects
+            # create a list with all cooling setpoint temperature schedules found
+            # in ThermostatSetpoint_DualSetpoint objects
             cooling_setpoint_temperature_list = []
-            for th_ds in epm.ThermostatSetpoint_DualSetpoint: ### loop on ThermostatSetpoint_DualSetpoint object
+            # loop on ThermostatSetpoint_DualSetpoint object
+            for th_ds in epm.ThermostatSetpoint_DualSetpoint:
+                # add cooling_setpoint_temperature_schedule_name to list
                 cooling_setpoint_temperature_list.append(
-                    th_ds.cooling_setpoint_temperature_schedule_name) ### add cooling_setpoint_temperature_schedule_name to list
+                    th_ds.cooling_setpoint_temperature_schedule_name)
 
             # loop on each cooling_setpoint_temperature_schedule and replace value
             for cooling_setpoint_sch in set(cooling_setpoint_temperature_list):
-                ## get dict of the schedule { 0: schedule'name, 1: schedule type limits name, 2: extensible field 1 value, ... }
+                # get dict of the schedule { 0: schedule'name,
+                # 1: schedule type limits name, 2: extensible field 1 value, ... }
                 schedule_dict = cooling_setpoint_sch.to_dict()
-                ## get the index of max value
+                # get the index of max value
+                # (we transform string to float if the value is a string and a can
+                #  is a digit not a text)
                 first_index = min(
                     schedule_dict,
                     key=lambda x: float(schedule_dict[x])
                         if isinstance(schedule_dict[x], str) and schedule_dict[x].isdigit()
-                        else 100 ### transform string to float if the value is a string and a can is a digit not a text
+                        else 100
                 )
-                ## loop on all dict items and modify value if its the min value
+                # loop on all dict items and modify value if its the min value
                 for k, v in schedule_dict.items():
-                    if v == schedule_dict[first_index]: ### it is the min value ?
-                        cooling_setpoint_sch[k] = str(float(schedule_dict[k]) + value) ### update value and set it in string format
+                    if v == schedule_dict[first_index]: # it is the min value ?
+                        # update value and set it in string format
+                        cooling_setpoint_sch[k] = str(float(schedule_dict[k]) + value)
 
             return
 
@@ -204,7 +218,7 @@ Run the study
     )
 
     # run sensitivity study
-    results = dict()  # {simulation_name: {"electric": , "sensible": }
+    results = dict()  # {simulation_name: {"total": , "sensible": }
     for parameter, values in sensitivity_plan.items():
         for value in values:
             # reload initial model
@@ -251,13 +265,14 @@ Plot
 
     df.sort_values(by=["sensible"], inplace=True)
 
+    title = """'Zone Air Terminal Sensible Energy' relative difference
+    (compared to baseline)"""
+
     sensible_fig = go.Figure(
-        data=[go.Bar(
-            x=df.index, y=df["sensible"]
-        )],
-        layout=go.Layout(title=
-        """Relative error of each sensible plan simulation with the baseline for output: 'Zone Air Terminal Sensible Energy'""",
-        font=dict(size=11,)
+        data=[go.Bar(x=df.index, y=df["sensible"])],
+        layout=go.Layout(
+            title=title,
+            font=dict(size=11)
         )
     )
 
@@ -266,43 +281,41 @@ Plot
 .. raw:: html
     :file: sensible.html
 
-This building model is more sensible to heating setpoint than other parameters.
+This building model is more sensible to heating setpoint than to other parameters.
 
 .. testcode::
 
-    df.sort_values(by=["electric"], inplace=True)
+    df.sort_values(by=["total"], inplace=True)
 
-    cross_dependancy_fig = go.Figure(
+    cross_dependency_fig = go.Figure(
         data=[go.Scatter(
-            x=df["sensible"], y=df["total"], mode="markers", text=df.index
+            x=df["sensible"],
+            y=df["total"],
+            mode="markers",
+            text=df.index
         )],
         layout=go.Layout(
-            title="Dependancy correlation between consumption and sensible need",
-            font=dict(size=11,),
-            xaxis=dict(
-              title="relative sensibility on air sensible energy",
-            ),
-            yaxis=dict(
-                title= "relative sensibility on total consumption facility",
-            )
-        ),
-
+            title="Dependency correlation between consumption and sensible need",
+            font=dict(size=11),
+            xaxis=dict(title="relative sensibility on air sensible energy"),
+            yaxis=dict(title="relative sensibility on total consumption facility")
+        )
     )
 
-    cross_dependancy_fig.show()
+    cross_dependency_fig.show()
 
 
 .. raw:: html
-    :file: cross_dependancy.html
+    :file: cross_dependency.html
 
 
-We remark a good sensibility symmetry and a factor 3 between sensibility need and consumption.
+We notice a good sensibility symmetry and a factor 3 between sensibility need and consumption.
 
 .. testcleanup::
 
     # create plotly figures html
     sensible_fig.write_html(os.path.join(current_doc_path, "sensible.html"))
-    electricity_fig.write_html(os.path.join(current_doc_path, "electricity.html"))
+    cross_dependency_fig.write_html(os.path.join(current_doc_path, "cross_dependency.html"))
 
     # come back to initial cwd
     os.chdir(initial_cwd)
