@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## next
+* p: unnecessary files where removed
+
 ## 1.0.3
 * p: first version of documentation is ready
 
