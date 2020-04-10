@@ -336,7 +336,7 @@ Export data in csv format.
     eso.to_csv("ouputs-csv")
 
     # all csv files (one per environment and frequency) where created in one directory
-    for name in os.listdir("ouputs-csv"):
+    for name in sorted(os.listdir("ouputs-csv")):
         print(name)
 
 .. testoutput::
@@ -459,3 +459,4 @@ Save data in a new epw file.
 
     # come back to initial cwd
     os.chdir(initial_cwd)
+

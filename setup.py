@@ -11,16 +11,16 @@ with open("requirements.txt", "r") as f:
 
 
 setup(
-    name='opyplus',
+    name="opyplus",
     version=version,
     packages=find_packages(where=".", include=["opyplus", "opyplus.*"]),
     description="Python package to work with Energyplus input and output",
     author="Openergy development team",
     author_email="contact@openergy.fr",
-    long_description=open('README.md').read(),
+    long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     install_requires=requirements,
-    url='https://github.com/openergy/opyplus',
+    url="https://github.com/openergy/opyplus",
     classifiers=[
         "Programming Language :: Python",
         "Development Status :: 5 - Production/Stable",

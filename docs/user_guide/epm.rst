@@ -174,7 +174,7 @@ Records
 ^^^^^^^
 
 Get record
-****
+**********
 
 .. testcode::
 
@@ -184,7 +184,7 @@ Get record
     building = epm.Building.select(lambda x: x["name"] == "Bldg").one()
 
 Add record
-****
+**********
 
 .. testcode::
 
@@ -229,7 +229,7 @@ Remove record
     found:  False
 
 Batch add (and remove)
-****
+**********************
 
 .. testcode::
 
@@ -274,7 +274,7 @@ Batch add (and remove)
     heating setpoint schedule - 2
 
 Display info
-****
+************
 
 .. testcode::
 
@@ -340,7 +340,7 @@ Display info
 
 
 Get field value
-****
+***************
 
 .. testcode::
 
@@ -356,7 +356,7 @@ Get field value
     name:  Bldg
 
 Set basic field
-****
+***************
 
 .. testcode::
 
@@ -376,7 +376,7 @@ Set basic field
 
 
 Replace basic fields
-****
+********************
 
 .. testcode::
 
@@ -413,7 +413,7 @@ Replace basic fields
 
 
 Set record fields
-****
+*****************
 
 .. testcode::
 
@@ -449,7 +449,7 @@ Set record fields
         heating setpoint schedule new_name;    ! Setpoint Temperature Schedule Name
 
 Add fields (only for extensibles)
-****
+*********************************
 
 .. testcode::
 
@@ -473,7 +473,7 @@ Add fields (only for extensibles)
         25;                            ! Field 6
 
 Explore links
-****
+*************
 
 .. testcode::
 

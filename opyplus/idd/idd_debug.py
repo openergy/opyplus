@@ -43,7 +43,7 @@ def correct_idd(idd):
         fd = idd.table_descriptors["fan_systemmodel"].get_field_descriptor(0)
         fd.append_tag("reference", "FansCVandVAV")
 
-    if idd.version >= (8, 6, 0):
+    if idd.version >= (8, 6, 0) and idd.version < (9, 3, 0):
         # ZoneHvac:CoolingPanel:RadiantConvective:Water
         fd = idd.table_descriptors["zonehvac_coolingpanel_radiantconvective_water"].get_field_descriptor(0)
         fd.append_tag("reference-class-name", "validBranchEquipmentTypes")
