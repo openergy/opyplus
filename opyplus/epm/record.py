@@ -259,6 +259,10 @@ class Record:
         value
             Field value
         """
+        # bypass recursively if slice
+        if isinstance(item, slice):
+            return list(self[i] for i in range(*item.indices(len(self))))
+
         # prepare item
         item = self._field_key_to_index(item)
 

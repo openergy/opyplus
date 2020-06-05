@@ -4,8 +4,9 @@
     m: minor
     p: patch
 
-## next
+## 1.1.0
 * p: unnecessary files where removed
+* m: record slice was implemented
 
 ## 1.0.3
 * p: first version of documentation is ready
