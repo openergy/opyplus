@@ -90,7 +90,7 @@ samples will be kept up to date: use `.. testcode::` and `.. testoutput::` rathe
 When finished, he completes the RELEASE.md without writing the version number (he completes under ## next).
 He then creates a pull request into master.
 2. Once the pull request has been accepted by an administrator (tests must pass, among other things), the branch is merged on master.
-3. When administrator wants to create a version, he completes RELEAS.md with version number, sets it version.py, commits and creates a tag.
+3. When administrator wants to create a version, he completes RELEASE.md with version number, sets it version.py, commits and creates a tag (vX.X.X).
 He then pushes. The tests should succeed because all pull requests tests have succeeded.
 A conda and pip build will then automatically be performed by Azure Pipelines. 
 
