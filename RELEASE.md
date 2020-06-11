@@ -7,6 +7,7 @@
 ## 1.1.0
 * p: unnecessary files where removed
 * m: record slice was implemented
+* p: table_multivariablelookup idd_debug.py debug
 
 ## 1.0.3
 * p: first version of documentation is ready

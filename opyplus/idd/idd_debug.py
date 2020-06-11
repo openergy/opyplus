@@ -19,11 +19,11 @@ def correct_idd(idd):
 
     if idd.version < (9, 2, 0):
         # Table:MultiVariableLookup extensible info
-        # extensible cycle_len should be 1 (not 20), cycle_start should be 20 (not 22)
+        # extensible cycle_len should be 1 (not 20), cycle_start should be 32 (not 34)
         td = idd.table_descriptors["table_multivariablelookup"]
         del td.tags["extensible:20"]
         td.add_tag("extensible:1")
-        fd = td.get_field_descriptor(20)
+        fd = td.get_field_descriptor(32)
         fd.append_tag("begin-extensible")
 
     # EnergyManagementSystem:Sensor add retain case

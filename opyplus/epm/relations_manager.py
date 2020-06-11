@@ -199,7 +199,7 @@ class RelationsManager:
         """
         return MultiTableQueryset(
             self._epm,
-            (l.source_record for l in self._links_by_target.get(target_record_or_table, set()))
+            (link.source_record for link in self._links_by_target.get(target_record_or_table, set()))
         )
 
     def get_pointed_by(self, source_record):
@@ -216,5 +216,5 @@ class RelationsManager:
         """
         return MultiTableQueryset(
             self._epm,
-            (l.target_record for l in self._links_by_source.get(source_record, set()))
+            (link.target_record for link in self._links_by_source.get(source_record, set()))
         )
