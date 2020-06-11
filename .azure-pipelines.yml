@@ -85,7 +85,7 @@ jobs:
           make doctest
           make html
         displayName: 'docs'
-        condition: always()
+        condition: eq(variables['Agent.OS'], 'Linux')
 
 
   - job: 'Publish'
