@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## 1.1.1
+* p: compatibility with pandas 1.1.0
+
 ## 1.1.0
 * p: unnecessary files where removed
 * m: record slice was implemented

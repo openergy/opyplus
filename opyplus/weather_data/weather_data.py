@@ -515,17 +515,26 @@ def _sanitize_weather_series(df):
     # create df
     df = pd.DataFrame(collections.OrderedDict((k, df.get(k)) for k in COLUMNS))
 
-    # replace all missing values by nans
-    df.replace(
-        to_replace={k: v[1] for k, v in COLUMNS.items() if v[2] is not str},
-        value=np.nan,
-        inplace=True,
-    )
-    df.replace(
-        to_replace={k: v[1] for k, v in COLUMNS.items() if v[2] is str},
-        value="",
-        inplace=True,
-    )
+    # replace all missing values, unfortunately since pandas 1.1.0 we have to iterate on columns
+    for k, v in COLUMNS.items():
+        if v[2] is str:
+            if v[1] is None:
+                df[k].fillna(value="", inplace=True)
+            else:
+                df[k].replace(
+                    to_replace=v[1],
+                    value="",
+                    inplace=True,
+                )
+        else:
+            if v[1] is None:
+                df[k].fillna(value=np.nan, inplace=True)
+            else:
+                df[k].replace(
+                    to_replace=v[1],
+                    value=np.nan,
+                    inplace=True,
+                )
 
     # check that all used columns with no missing value aren't null
     not_null = [k for k, v in COLUMNS.items() if (v[0] and v[1] is None)]
