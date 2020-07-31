@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## 1.1.2
+* p: fix version number issue
+
 ## 1.1.1
 * p: compatibility with pandas 1.1.0
 
