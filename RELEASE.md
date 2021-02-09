@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## next
+* p: idd group recognition debug
+
 ## 1.1.2
 * p: fix version number issue
 
