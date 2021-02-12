@@ -103,7 +103,7 @@ class Idd:
                 continue
 
             # group comment (must be before comments)
-            match = re.search(r"^\\group (.+)$", line)
+            match = re.search(r"^\\\s?group (.+)$", line)  # some groups have a space between \ and group (\s?)
             if match is not None:
                 group_name = match.group(1).strip()
                 # self._groups_d[group_name.lower()] = dict(name=group_name, record_descriptors=[])
