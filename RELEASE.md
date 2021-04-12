@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## next
+* m: idd 9.4.0 and 9.5.0 added
+
 ## 1.1.3
 * p: idd group recognition debug
 
