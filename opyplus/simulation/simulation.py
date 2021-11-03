@@ -283,11 +283,13 @@ class Simulation:
 
         # launch calculation
         run_subprocess(
-            cmd_l,
+            " ".join(cmd_l),
+            shell=True,
             cwd=self._dir_abs_path,
             stdout=std_out_err,
             stderr=std_out_err,
-            beat_freq=beat_freq
+            beat_freq=beat_freq,
+            message="simulation is still running\n"
         )
 
         # if needed, we delete temp weather data (only on Windows, see above)

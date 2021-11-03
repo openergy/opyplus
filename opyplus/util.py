@@ -162,7 +162,14 @@ class PrintFunctionStreamWriter:
             self._print_function(message)
 
 
-def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, beat_freq=None):
+def run_subprocess(
+        command,
+        cwd=None,
+        stdout=None,
+        stderr=None,
+        shell=False,
+        beat_freq=None,
+        message="subprocess is still running\n"):
     """
     Run a subprocess and manage its stdout/stderr streams.
 
@@ -196,7 +203,7 @@ def run_subprocess(command, cwd=None, stdout=None, stderr=None, shell=False, bea
                     sub_p.wait(timeout=beat_freq)
                     break
                 except subprocess.TimeoutExpired:
-                    stdout.write("subprocess is still running\n")
+                    stdout.write(message)
                     if hasattr(sys.stdout, "flush"):
                         sys.stdout.flush()
         return sub_p.returncode
