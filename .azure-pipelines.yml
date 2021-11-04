@@ -123,7 +123,7 @@ jobs:
 
       - task: GitHubRelease@0
         inputs:
-          gitHubConnection: 'sysadmin@openergy.fr'
+          gitHubConnection: 'openergy-sysadmin'
           repositoryName: 'openergy/opyplus'
           releaseNotesSource: 'file'
           releaseNotesFile: 'release-notes.md'
