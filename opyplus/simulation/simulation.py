@@ -283,8 +283,7 @@ class Simulation:
 
         # launch calculation
         run_subprocess(
-            " ".join(cmd_l),
-            shell=True,
+            cmd_l,
             cwd=self._dir_abs_path,
             stdout=std_out_err,
             stderr=std_out_err,
