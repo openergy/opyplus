@@ -5,6 +5,7 @@
     p: patch
 
 ## next
+* p: suprocess.Popen is now run with shell=True
 
 ## 1.2.0
 * m: idd 9.4.0 and 9.5.0 added

@@ -169,7 +169,8 @@ def run_subprocess(
         stderr=None,
         shell=False,
         beat_freq=None,
-        message="subprocess is still running\n"):
+        message="subprocess is still running\n"
+):
     """
     Run a subprocess and manage its stdout/stderr streams.
 
@@ -181,6 +182,7 @@ def run_subprocess(
     stderr: output error stream (must have 'write' method)
     shell: see subprocess.Popen
     beat_freq: if not none, stdout will be used at least every beat_freq (in seconds)
+    message: message to display in stdout at every beat
     """
     sys.encoding = CONF.encoding
     # prepare variables

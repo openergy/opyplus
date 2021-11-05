@@ -24,6 +24,8 @@ RUNNING = "running"
 FINISHED = "finished"
 FAILED = "failed"
 
+BEAT_MESSAGE = "simulation is still running\n"
+
 logger = logging.getLogger(__name__)
 
 
@@ -283,12 +285,13 @@ class Simulation:
 
         # launch calculation
         run_subprocess(
-            cmd_l,
+            " ".join(cmd_l),
+            shell=True,
             cwd=self._dir_abs_path,
             stdout=std_out_err,
             stderr=std_out_err,
             beat_freq=beat_freq,
-            message="simulation is still running\n"
+            message=BEAT_MESSAGE
         )
 
         # if needed, we delete temp weather data (only on Windows, see above)

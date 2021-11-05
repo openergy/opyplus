@@ -1,9 +1,9 @@
 import unittest
 import os
 import tempfile
-import io
 
 from opyplus import simulate, Epm
+from opyplus.simulation.simulation import BEAT_MESSAGE
 from tests.util import iter_eplus_versions
 from opyplus.compatibility import get_eplus_base_dir_path
 
@@ -59,7 +59,7 @@ class SimulateTest(unittest.TestCase):
             complete_message = "\n".join(all_messages)
 
             # check subprocess is still running
-            self.assertIn("subprocess is still running", complete_message)
+            self.assertIn(BEAT_MESSAGE, complete_message)
 
             # check stdout
             without_subprocess_message = complete_message.replace("subprocess is still running\n", "")
