@@ -48,3 +48,9 @@ def correct_idd(idd):
         fd = idd.table_descriptors["zonehvac_coolingpanel_radiantconvective_water"].get_field_descriptor(0)
         fd.append_tag("reference-class-name", "validBranchEquipmentTypes")
         fd.append_tag("reference", "validBranchEquipmentNames")
+
+    if idd.version == (9, 6, 0):
+        # missing tag \begin-extensible for 'ComfortViewFactorAngles' table
+        td = idd.table_descriptors["comfortviewfactorangles"]
+        fd = td.get_field_descriptor(2)
+        fd.append_tag("begin-extensible")

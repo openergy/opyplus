@@ -21,7 +21,7 @@ COLUMNS = collections.OrderedDict((  # name: (used, missing, dtype)
     ("month", (True, None, int)),
     ("day", (True, None, int)),
     ("hour", (True, None, int)),
-    ("minute", (False, None, str)),
+    ("minute", (False, 0, float)),
     ("datasource", (False, None, str)),
     ("drybulb", (True, 99.9, float)),  # °C, instantaneous
     ("dewpoint", (True, 99.9, float)),  # °C, instantaneous
