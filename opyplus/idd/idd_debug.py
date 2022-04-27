@@ -49,7 +49,7 @@ def correct_idd(idd):
         fd.append_tag("reference-class-name", "validBranchEquipmentTypes")
         fd.append_tag("reference", "validBranchEquipmentNames")
 
-    if idd.version == (9, 6, 0):
+    if idd.version >= (9, 6, 0):
         # missing tag \begin-extensible for 'ComfortViewFactorAngles' table
         td = idd.table_descriptors["comfortviewfactorangles"]
         fd = td.get_field_descriptor(2)
