@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## 1.4.0
+* m: idd 22.1.0 was added
+
 ## 1.3.0
 * m: idd 9.6.0 was added
 
