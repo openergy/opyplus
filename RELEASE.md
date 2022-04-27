@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## 1.3.0
+* m: idd 9.6.0 was added
+
 ## 1.2.1
 * p: subprocess.Popen is now run with shell=True 
 
