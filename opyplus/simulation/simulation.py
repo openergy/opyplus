@@ -261,7 +261,7 @@ class Simulation:
         if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
             idf_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
         elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
-            idf_file_cmd = self._resource_map[ResourcesRefs.idf]  # we use rel path
+            idf_file_cmd = self.get_resource_path(ResourcesRefs.idf, relative=True) # we use rel path
         else:
             raise AssertionError("should not be here")
 
@@ -270,7 +270,7 @@ class Simulation:
         if epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
             epw_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
         elif epw_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
-            epw_file_cmd = self._resource_map[ResourcesRefs.epw]  # we use rel path
+            epw_file_cmd = self.get_resource_path(ResourcesRefs.epw, relative=True)  # we use rel path
         else:
             raise AssertionError("should not be here")
 
@@ -318,7 +318,7 @@ class Simulation:
         """
         return self._dir_abs_path
 
-    def get_resource_path(self, ref, raise_if_not_found=False):
+    def get_resource_path(self, ref, raise_if_not_found=False, relative=False):
         """
         Get simulation resource path from ref.
 
@@ -340,6 +340,8 @@ class Simulation:
             if raise_if_not_found:
                 raise FileNotFoundError(f"requested resource '{ref}' not found")
             return None
+        if relative:
+            return rel_path
         return os.path.join(self._dir_abs_path, rel_path)
 
     def check_exists(self, ref):

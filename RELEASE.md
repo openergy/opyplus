@@ -5,7 +5,7 @@
     p: patch
 
 ## 1.4.1
-* p: simulation run if file path contains space
+* p: simulation run if file path contains space now works
 
 ## 1.4.0
 * m: idd 22.1.0 was added
