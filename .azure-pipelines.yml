@@ -14,15 +14,15 @@ jobs:
         LinuxPython37:
           imageName: 'ubuntu-latest'
           python.version: '3.7'
-        MacOSPython36:
-          imageName: 'macOS-latest'
-          python.version: '3.6'
+#        MacOSPython36:
+#          imageName: 'macOS-latest'
+#          python.version: '3.6'
         MacOSPython37:
           imageName: 'macOS-latest'
           python.version: '3.7'
-        WindowsPython36:
-          imageName: 'windows-latest'
-          python.version: '3.6'
+#        WindowsPython36:
+#          imageName: 'windows-latest'
+#          python.version: '3.6'
         WindowsPython37:
           imageName: 'windows-latest'
           python.version: '3.7'
