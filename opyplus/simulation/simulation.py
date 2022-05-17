@@ -261,7 +261,7 @@ class Simulation:
         if idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.simu_dir:
             idf_file_cmd = os.path.join(self._dir_abs_path, CONF.default_model_name)
         elif idf_command_style == SIMULATION_INPUT_COMMAND_STYLES.file_path:
-            idf_file_cmd = self.get_resource_path(ResourcesRefs.idf, relative=True) # we use rel path
+            idf_file_cmd = self.get_resource_path(ResourcesRefs.idf, relative=True)  # we use rel path
         else:
             raise AssertionError("should not be here")
 
