@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## next
+* p: from version 9.2, allow schedule type limit to be set at "On/Off"
+
 ## 1.4.0
 * m: idd 22.1.0 was added
 

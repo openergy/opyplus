@@ -54,3 +54,18 @@ def correct_idd(idd):
         td = idd.table_descriptors["comfortviewfactorangles"]
         fd = td.get_field_descriptor(2)
         fd.append_tag("begin-extensible")
+
+    # for all version >= 9.2, add key On/Off for object listing ScheduleTypeLimitNames
+    if idd.version >= (9, 2, 0):
+        for table_ref, table_descriptor in idd.table_descriptors.items():
+            field_descriptor_names = [fd.name for fd in table_descriptor._field_descriptors]
+            field_name = 'Schedule Type Limits Name'
+            if field_name in field_descriptor_names:
+                field_index = table_descriptor.get_field_index(field_name.lower().replace(" ", "_"))
+                field_descriptor = table_descriptor.get_field_descriptor(field_index)
+                field_descriptor.append_tag("key", "On/Off")
+                field_descriptor.tags.update({
+                    "type": ["choice"],
+                    "key": ["On/Off"]
+                })
+
