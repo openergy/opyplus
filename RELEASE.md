@@ -4,6 +4,11 @@
     m: minor
     p: patch
 
+## next
+* p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
+``Epm``.
+* p: handle 0-length records
+
 ## 1.4.1
 * p: simulation run if file path contains space now works
 
