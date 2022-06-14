@@ -461,10 +461,17 @@ class Epm:
                 target_dir_path=os.path.join(dir_path, get_external_files_dir_name(model_name=model_name))
             )
 
+        def _sort(table, table_ref, exclude=()):
+            if table_ref in exclude:
+                return table
+            return sorted(table)
+
         # prepare body
         formatted_records = []
+        order_dependent_records = ("energymanagementsystem_programcallingmanager",)
         for table_ref, table in self._tables.items():  # self._tables is already sorted
-            formatted_records.extend([r.to_idf(model_name=model_name) for r in sorted(table)])
+            formatted_records.extend([
+                r.to_idf(model_name=model_name) for r in _sort(table, table_ref, order_dependent_records)])
         body = "\n\n".join(formatted_records)
 
         # return
