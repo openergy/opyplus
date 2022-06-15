@@ -45,6 +45,9 @@ def default_external_files_dir_name(model_name):
 
 logger = logging.getLogger(__name__)
 
+# the order of the records of these tables matter
+NON_SORTABLE_TABLE_REFS = ("energymanagementsystem_programcallingmanager",)
+
 
 class Epm:
     """
@@ -464,7 +467,10 @@ class Epm:
         # prepare body
         formatted_records = []
         for table_ref, table in self._tables.items():  # self._tables is already sorted
-            formatted_records.extend([r.to_idf(model_name=model_name) for r in sorted(table)])
+            formatted_records.extend([
+                r.to_idf(model_name=model_name)
+                for r in (table if table_ref in NON_SORTABLE_TABLE_REFS else sorted(table))
+            ])
         body = "\n\n".join(formatted_records)
 
         # return

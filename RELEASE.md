@@ -6,6 +6,12 @@
 
 ## next
 * p: from version 9.2, allow schedule type limit to be set at "On/Off"
+* p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
+``Epm``.
+* p: handle 0-length records
+
+## 1.4.1
+* p: simulation run if file path contains space now works
 
 ## 1.4.0
 * m: idd 22.1.0 was added

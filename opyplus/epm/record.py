@@ -831,8 +831,10 @@ class Record:
         # fields
         # fields_nb: we don't use len(self) but max(self). We wan't to stop if no more values (even base fields)
         #   because some idd records are defined without extensibles (although they should used them), for example
-        #   construction, and eplus does not know what to do...
-        fields_nb = max(self._data)+1
+        #   construction, and eplus does not know what to do... Because some example files (e.g.
+        #   ASHRAE9012016_Warehouse_Denver.idf) have records for which len(self._data) == 0, we set field_nb to 1
+        #   in this case to prevent max of an empty arg to raise an error.
+        fields_nb = max(self._data)+1 if len(self._data) else 1
         for i in range(fields_nb):
             # value
             tab = " " * TAB_LEN

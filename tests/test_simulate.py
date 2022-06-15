@@ -64,3 +64,40 @@ class SimulateTest(unittest.TestCase):
             # check stdout
             without_subprocess_message = complete_message.replace("subprocess is still running\n", "")
             self.assertGreater(len(without_subprocess_message.split("\n")), 15)  # check that more than 15 lines
+
+    def test_simulate_with_blank_space(self):
+        for eplus_version in iter_eplus_versions(self):
+            # prepare paths
+            idf_path = os.path.join(
+                get_eplus_base_dir_path(eplus_version),
+                "ExampleFiles",
+                "1ZoneEvapCooler.idf"
+            )
+            epw_path = os.path.join(
+                get_eplus_base_dir_path(eplus_version),
+                "WeatherData",
+                "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"
+            )
+
+            # prepare a quick simulation
+            idf = Epm.load(idf_path)
+            sc = idf.SimulationControl.one()
+            sc.run_simulation_for_sizing_periods = "No"
+            rp = idf.RunPeriod.one()
+            rp.end_month = 1
+            rp.end_day_of_month = 1
+
+            # simulate
+            with tempfile.TemporaryDirectory() as dir_path:
+                # make dir path with blank space
+                base_dir_path = os.path.join(dir_path, "test blank space")
+                s = simulate(
+                    idf,
+                    epw_path,
+                    base_dir_path,
+                    beat_freq=0.1
+                )
+
+                # check one day output
+                eso_df = s.get_out_eso().get_data()
+                self.assertEqual(24, len(eso_df))
