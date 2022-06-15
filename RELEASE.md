@@ -4,7 +4,7 @@
     m: minor
     p: patch
 
-## next
+## 1.4.2
 * p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
 ``Epm``.
 * p: handle 0-length records
