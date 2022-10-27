@@ -4,6 +4,9 @@
     m: minor
     p: patch
 
+## next
+* p: documentation generation debug
+
 ## 1.4.2
 * p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
 ``Epm``.
