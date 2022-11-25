@@ -1,5 +1,4 @@
 pandas>=0.20.0,<2.0.0
-numpy  # added because numpy is not automatically installed by readthedocs
 unidecode>=1.0.22,<2.0
 python-slugify>=3.0.2,<4.0
 cchardet>=2.1.4,<3.0
