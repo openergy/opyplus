@@ -4,8 +4,8 @@
     m: minor
     p: patch
 
-## next
-* p: documentation generation debug
+## 1.5.0
+* m: idd 22.2.0 was added
 
 ## 1.4.2
 * p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
