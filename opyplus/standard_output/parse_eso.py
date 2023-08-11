@@ -81,18 +81,25 @@ def parse_eso(file_like, print_function=lambda x: None):
         # parse content
         content_l = content.split(",")
         if len(content_l) == 2:
-            key_value, var_name = content_l
-            key_value = key_value.strip().lower()  # no retaincase
-            var_name, unit = var_name.split("[")
-            var_name = var_name.strip()
-            unit = unit.strip()[:-1]
+            # key_value, var_name = content_l
+            # key_value = key_value.strip().lower()  # no retaincase
+            # var_name, unit = var_name.split("[")
+            # var_name = var_name.strip()
+            # unit = unit.strip()[:-1]
+            key_value, var_name = (part.strip().lower() for part in content_l)
+            var_name, _, unit = var_name.partition("[")
+            unit = unit.rstrip("]")
         elif len(content_l) == 1:  # may only have one element (for example Custom:Meter)
-            key_value = content.strip()
-            var_name = METER
-            key_value, unit = key_value.split("[")
-
-            key_value = key_value.strip().lower()  # no retaincase
-            unit = unit.strip()[:-1]
+            # key_value = content.strip()
+            # var_name = METER
+            # key_value, unit = key_value.split("[")
+            #
+            # key_value = key_value.strip().lower()  # no retaincase
+            # unit = unit.strip()[:-1]
+            key_value, unit = content.strip().split("[")
+            key_value = key_value.strip().lower()
+            unit = unit.rstrip("]")
+            var_name = "METER"
         else:
             raise RuntimeError(f"unknown syntax for row {row_num}: '{row}'")
 
