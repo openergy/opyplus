@@ -6,8 +6,7 @@
 
 ## next
 * p: documentation generation debug
-* m: idd 22.2.0 was added
-* m: idd 23.1.0 was added
+* m: idd 22.2.0, idd 23.1.0 was added,idd 23.2.0 were added
 
 ## 1.4.2
 * p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
