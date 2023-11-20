@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         LinuxPython36:
-          imageName: 'ubuntu-latest'
+          imageName: 'ubuntu-20.04'
           python.version: '3.6'
         LinuxPython37:
           imageName: 'ubuntu-latest'
