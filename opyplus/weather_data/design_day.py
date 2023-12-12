@@ -1,25 +1,47 @@
-"""Weather data design condition module."""
-from ..util import get_multi_line_copyright_message, to_buffer, version_str_to_version
 from ..epm.parse_idf import parse_idf
 from ..epm.table import Table
-from ..epm.record import Record
 from ..epm.epm import Epm
 import collections
+from ..epm.relations_manager import RelationsManager
+import logging
+
+logger = logging.getLogger(__name__)
+
+DDY_TABLE_DESCRIPTORS_REF = ["sizingperiod_designday",
+                             "site_location",
+                             "runperiodcontrol_daylightsavingtime"]
+
+HEATING_DESIGN_REF = "htg 99.6%"
+COOLING_DESIGN_REF = "clg .4% condns db=>mwb"
 
 
 class Ddy(Epm):
     """
-    Class describing E+ weather data design condition.
+    Ddy model.
+
+    Ddy is an EnergyPlus DesignDay model
+    It can come from a .ddy file, available on https://energyplus.net/weather
+
+    Ddy is a .idf file but only with design days objects
+    A Ddy contains:
+        SiteLocation
+        SizingPeriod_DesignDay: list of design days
+        RunPeriodControl_DaylightSavingTime
 
     Parameters
     ----------
-    name: str
-    values: list
+    json_data: json serializable object, default None
+        if provided, Epm will be filled with given objects
+    check_length: boolean, default True
+        If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
+    check_required: boolean, default True
+        If True, will raise an exception if a required field is missing. If False, not not perform any checks.
+    idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
+        directly provide an IDD object.
 
-    Attributes
-    ----------
-    name: str
-    values: list
+    Notes
+    -----
+    Ddy files are not versioned, and by default will use latest IDD version for model conversion from .ddy
     """
 
     def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
@@ -30,12 +52,19 @@ class Ddy(Epm):
             check_length=check_length,
             idd_or_version=idd_or_version
         )
-        # create empty general permanent record if no json_data
+        # !! relations manager must be defined before table creation because table creation will trigger
+        # hook registering
+        self._dev_relations_manager = RelationsManager(self)
+
         self._tables = collections.OrderedDict(sorted([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
-            for table_descriptor in self._dev_idd.table_descriptors.values() if
-            "sizingperiod_designday" in table_descriptor.table_ref.lower()
+            for table_descriptor in self._dev_idd.table_descriptors.values()
+            if table_descriptor.table_ref.lower() in DDY_TABLE_DESCRIPTORS_REF
         ]))
+
+        # load json_data if relevant
+        if json_data is not None:
+            self._dev_populate_from_json_data(json_data)
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
@@ -74,13 +103,31 @@ class Ddy(Epm):
             buffer_or_path
     ):
         """
-        Load Ddy from a file.
+        Load Ddy from a .ddy file.
 
         Returns
         -------
         Ddy
         """
-        return cls().from_idf(
-            buffer_or_path=buffer_or_path
+        return cls._create_from_buffer_or_path(
+            parse_idf,
+            buffer_or_path
+        )
 
+    def copy_to_epm(self, epm, ref=None):
+        """
+        Dump the Epm to a json-serializable dict.
+
+        Returns
+        -------
+        dict
+            A dictionary of serialized data.
+        """
+        # create data
+        design_day = self.sizingperiod_designday.one(lambda x: HEATING_DESIGN_REF in x.name)
+        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
+                           range(len(design_day))}
+
+        epm.sizingperiod_designday.add(
+            design_day_dict
         )

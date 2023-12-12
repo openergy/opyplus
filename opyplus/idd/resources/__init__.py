@@ -18,7 +18,9 @@ def get_latest_idd_version():
         patch
     """
     split_file_names = (os.path.splitext(name) for name in sorted(os.listdir(IDD_DIR_PATH)))
-    last_file_name = sorted(root for (root, ext) in split_file_names if ext == ".idd")[-1]
+    last_file_name = sorted((root for (root, ext) in split_file_names if ext == ".idd"),
+                            key=lambda x: (int(x.split("-")[0][1:]),
+                                           int(x.split("-")[1])))[-1]
     major, minor, patch, _ = last_file_name[1:].split("-")
     return int(major), int(minor), 0
 
