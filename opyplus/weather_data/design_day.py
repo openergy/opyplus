@@ -114,6 +114,22 @@ class Ddy(Epm):
             buffer_or_path
         )
 
+    def get_design_day_dict(self, ref):
+        """
+        Dump the Epm to a json-serializable dict.
+
+        Returns
+        -------
+        dict
+            A dictionary of serialized data.
+        """
+        # create data
+        design_day = self.sizingperiod_designday.one(lambda x: ref in x.name)
+        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
+                           range(len(design_day))}
+
+        return design_day_dict
+
     def copy_to_epm(self, epm, ref=None):
         """
         Dump the Epm to a json-serializable dict.
@@ -124,9 +140,7 @@ class Ddy(Epm):
             A dictionary of serialized data.
         """
         # create data
-        design_day = self.sizingperiod_designday.one(lambda x: HEATING_DESIGN_REF in x.name)
-        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
-                           range(len(design_day))}
+        design_day_dict = self.get_design_day_dict()
 
         epm.sizingperiod_designday.add(
             design_day_dict
