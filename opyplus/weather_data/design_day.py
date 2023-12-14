@@ -3,6 +3,7 @@ from ..epm.table import Table
 from ..epm.epm import Epm
 import collections
 from ..epm.relations_manager import RelationsManager
+from .. import CONF
 import logging
 
 logger = logging.getLogger(__name__)
@@ -10,9 +11,6 @@ logger = logging.getLogger(__name__)
 DDY_TABLE_DESCRIPTORS_REF = ["sizingperiod_designday",
                              "site_location",
                              "runperiodcontrol_daylightsavingtime"]
-
-HEATING_DESIGN_REF = "htg 99.6%"
-COOLING_DESIGN_REF = "clg .4% condns db=>mwb"
 
 
 class Ddy(Epm):
@@ -22,7 +20,7 @@ class Ddy(Epm):
     Ddy is an EnergyPlus DesignDay model
     It can come from a .ddy file, available on https://energyplus.net/weather
 
-    Ddy is a .idf file but only with design days objects
+    Ddy files follow same santard as Idf but only contains design conditions EnergyPlus objects
     A Ddy contains:
         SiteLocation
         SizingPeriod_DesignDay: list of design days
@@ -111,7 +109,8 @@ class Ddy(Epm):
         """
         return cls._create_from_buffer_or_path(
             parse_idf,
-            buffer_or_path
+            buffer_or_path,
+            idd_or_version=CONF.default_idd_version  # .ddy are not version: latest idd is used
         )
 
     def get_design_day_dict(self, ref):

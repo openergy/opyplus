@@ -5,7 +5,8 @@
     p: patch
 
 ## next
-* m: implementing DesignDay model 
+* m: implementing DesignDay model from ddy 
+* p: fix latest default idd version in conf 
 
 ## 1.5.0
 * p: documentation generation debug
