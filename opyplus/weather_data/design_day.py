@@ -1,3 +1,5 @@
+"""Ddy design day module."""
+
 from ..epm.parse_idf import parse_idf
 from ..epm.table import Table
 from ..epm.epm import Epm
@@ -20,7 +22,7 @@ class Ddy(Epm):
     Ddy is an EnergyPlus DesignDay model
     It can come from a .ddy file, available on https://energyplus.net/weather
 
-    Ddy files follow same santard as Idf but only contains design conditions EnergyPlus objects
+    Ddy files follow same standard as Idf but only contains design conditions EnergyPlus objects
     A Ddy contains:
         SiteLocation
         SizingPeriod_DesignDay: list of design days
@@ -95,6 +97,33 @@ class Ddy(Epm):
 
         return s.strip()
 
+    def get_design_day_dict(self, design_day_ref):
+        """
+        Get design day from ref as dict
+
+        Returns
+        -------
+        dict
+        """
+        # create data
+        design_day = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name)
+        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
+                           range(len(design_day))}
+
+        return design_day_dict
+
+    def copy_to_epm(self, epm, design_day_ref):
+        """
+        Add design day to Epm
+        """
+        # get design day as dict
+        design_day_dict = self.get_design_day_dict(design_day_ref)
+
+        epm.sizingperiod_designday.add(
+            design_day_dict
+        )
+
+    # ------------------------------------------- save/load ------------------------------------------------------------
     @classmethod
     def from_ddy(
             cls,
@@ -111,36 +140,4 @@ class Ddy(Epm):
             parse_idf,
             buffer_or_path,
             idd_or_version=CONF.default_idd_version  # .ddy are not version: latest idd is used
-        )
-
-    def get_design_day_dict(self, ref):
-        """
-        Dump the Epm to a json-serializable dict.
-
-        Returns
-        -------
-        dict
-            A dictionary of serialized data.
-        """
-        # create data
-        design_day = self.sizingperiod_designday.one(lambda x: ref in x.name)
-        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
-                           range(len(design_day))}
-
-        return design_day_dict
-
-    def copy_to_epm(self, epm, ref=None):
-        """
-        Dump the Epm to a json-serializable dict.
-
-        Returns
-        -------
-        dict
-            A dictionary of serialized data.
-        """
-        # create data
-        design_day_dict = self.get_design_day_dict()
-
-        epm.sizingperiod_designday.add(
-            design_day_dict
         )
