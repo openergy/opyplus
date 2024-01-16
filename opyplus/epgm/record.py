@@ -807,8 +807,8 @@ class Record:
         if named_keys:
             data = {self.get_field_descriptor(k).ref: self[int(k)] for k, v in data.items()}
 
-        comment_dict = {"_comment": self._comment}
-        return {**comment_dict, **data}
+        comment_data = {"_comment": self._comment}
+        return {**comment_data, **data}
 
     def to_idf(self, model_name=None):
         """
