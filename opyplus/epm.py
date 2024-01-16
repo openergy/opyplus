@@ -187,4 +187,4 @@ class Epm(Epgm):
 
     def to_idf(self, buffer_or_path=None, dump_external_files=True):
         """See save."""
-        self.to_epsfm(buffer_or_path, dump_external_files)
+        self.to_epstf(buffer_or_path, dump_external_files)
