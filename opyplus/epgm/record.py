@@ -803,56 +803,59 @@ class Record:
         dict
             A dictionary of serialized data.
         """
-        data = {k: self.get_serialized_value(k, model_name=model_name) for k in self._data}
+        data = {str(k): self.get_serialized_value(k, model_name=model_name) for k in self._data}
         if named_keys:
             data = {self.get_field_descriptor(k).ref: self[k] for k, v in data.items()}
-        return {**dict(_comment=self._comment, **data)}
+        # collections.OrderedDict(
+        #     [("_comment", self._comment)]
+        #     + [(k, self.get_serialized_value(k, model_name=model_name)) for k in self._data]
+        # )
+        return {**dict(_comment=self._comment), **data}
 
+    def to_idf(self, model_name=None):
+        """
+        Get record as an idf string.
 
-def to_idf(self, model_name=None):
-    """
-    Get record as an idf string.
+        Parameters
+        ----------
+         model_name: str or None
+            if given, will be used as external file directory base name
 
-    Parameters
-    ----------
-     model_name: str or None
-        if given, will be used as external file directory base name
-
-    Returns
-    -------
-    str
-    """
-    json_data = self.to_json_data(model_name=model_name)
-
-    # comment
-    s = "" if self._comment == "" else f"{textwrap.indent(self._comment, '! ')}\n"
-
-    # record descriptor ref
-    s += f"{self._table._dev_descriptor.table_name},\n"
-
-    # fields
-    # fields_nb: we don't use len(self) but max(self). We wan't to stop if no more values (even base fields)
-    #   because some idd records are defined without extensibles (although they should used them), for example
-    #   construction, and eplus does not know what to do... Because some example files (e.g.
-    #   ASHRAE9012016_Warehouse_Denver.idf) have records for which len(self._data) == 0, we set field_nb to 1
-    #   in this case to prevent max of an empty arg to raise an error.
-    fields_nb = max(self._data) + 1 if len(self._data) else 1
-    for i in range(fields_nb):
-        # value
-        tab = " " * TAB_LEN
-        raw_value = json_data.get(i, "")
-        content = f"{tab}{raw_value}{';' if i == fields_nb - 1 else ','}"
+        Returns
+        -------
+        str
+        """
+        json_data = self.to_json_data(model_name=model_name)
 
         # comment
-        spaces_nb = COMMENT_COLUMN_START - len(content)
-        if spaces_nb < 0:
-            spaces_nb = TAB_LEN
+        s = "" if self._comment == "" else f"{textwrap.indent(self._comment, '! ')}\n"
 
-        # comment
-        name = self._table._dev_descriptor.get_extended_name(i)
-        comment = "" if name is None else " " * spaces_nb + f"! {name}"
+        # record descriptor ref
+        s += f"{self._table._dev_descriptor.table_name},\n"
 
-        # store
-        s += f"{content}{comment}\n"
+        # fields
+        # fields_nb: we don't use len(self) but max(self). We wan't to stop if no more values (even base fields)
+        #   because some idd records are defined without extensibles (although they should used them), for example
+        #   construction, and eplus does not know what to do... Because some example files (e.g.
+        #   ASHRAE9012016_Warehouse_Denver.idf) have records for which len(self._data) == 0, we set field_nb to 1
+        #   in this case to prevent max of an empty arg to raise an error.
+        fields_nb = max(self._data) + 1 if len(self._data) else 1
+        for i in range(fields_nb):
+            # value
+            tab = " " * TAB_LEN
+            raw_value = json_data.get(i, "")
+            content = f"{tab}{raw_value}{';' if i == fields_nb - 1 else ','}"
 
-    return s
+            # comment
+            spaces_nb = COMMENT_COLUMN_START - len(content)
+            if spaces_nb < 0:
+                spaces_nb = TAB_LEN
+
+            # comment
+            name = self._table._dev_descriptor.get_extended_name(i)
+            comment = "" if name is None else " " * spaces_nb + f"! {name}"
+
+            # store
+            s += f"{content}{comment}\n"
+
+        return s
