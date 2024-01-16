@@ -8,7 +8,7 @@ from opyplus import CONF
 
 
 class DdyTest(unittest.TestCase):
-    def test_ddy_generation(self):
+    def test_design_day_selection(self):
         # check that a ddy can be correctly loaded with designdays
         for eplus_version in iter_eplus_versions(self):
             with open(
@@ -19,4 +19,4 @@ class DdyTest(unittest.TestCase):
                     encoding=CONF.encoding
             ) as f:
                 ddy = Ddy.from_ddy(f)
-        design_day_table = ddy.sizingperiod_designday
+        design_day_table = ddy.sizingperiod_designday.one(lambda x: "htg 99%" in x.name).to_json_data(named_keys=True)

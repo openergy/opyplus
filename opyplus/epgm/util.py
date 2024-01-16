@@ -1,4 +1,4 @@
-"""Util functions for opyplus epm package."""
+"""Util functions for opyplus epgm package."""
 import json
 
 from ..util import multi_mode_write

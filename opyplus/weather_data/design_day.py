@@ -1,7 +1,7 @@
 """Ddy design day module."""
 
-from ..epm.parse_idf import parse_idf
-from ..epm.epsfm import Epsfm
+from ..epgm.parse_idf import parse_idf
+from ..epgm.epgm import Epgm
 from .. import CONF
 import logging
 
@@ -14,7 +14,7 @@ DDY_TABLE_DESCRIPTORS_REF = (
 )
 
 
-class Ddy(Epsfm):
+class Ddy(Epgm):
     """
     Ddy model.
 
@@ -44,14 +44,15 @@ class Ddy(Epsfm):
         Ddy files are not versioned, and by default will use latest IDD version for model conversion from .ddy
     """
 
+    _dev_restrict_table_refs = DDY_TABLE_DESCRIPTORS_REF
+
     def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
         # call super
         super().__init__(
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
-            idd_or_version=idd_or_version,
-            table_refs_selection=DDY_TABLE_DESCRIPTORS_REF
+            idd_or_version=idd_or_version
         )
 
     # --------------------------------------------- public api ---------------------------------------------------------
@@ -85,30 +86,30 @@ class Ddy(Epsfm):
 
         return s.strip()
 
-    def get_design_day_dict(self, design_day_ref):
-        """
-        Get design day from ref as dict.
-
-        Parameters
-        ----------
-        design_day_ref
-
-        Returns
-        -------
-        design_day_dict
-        """
-        design_day_select = self.sizingperiod_designday.select(lambda x: design_day_ref in x.name)
-        if len(design_day_select) == 0:
-            raise ValueError(f"Design day with name '{design_day_ref}' not found.")
-        if len(design_day_select) > 1:
-            raise ValueError(
-                f"Ambiguous design day selection, "
-                f"{len(design_day_select)} design days containing ref '{design_day_ref}' were found, be more concise.")
-
-        design_day = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name)
-        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
-                           range(len(design_day))}
-        return design_day_dict
+    # def get_design_day_dict(self, design_day_ref):
+    #     """
+    #     Get design day from ref as dict.
+    #
+    #     Parameters
+    #     ----------
+    #     design_day_ref
+    #
+    #     Returns
+    #     -------
+    #     design_day_dict
+    #     """
+    #     design_day_select = self.sizingperiod_designday.select(lambda x: design_day_ref in x.name)
+    #     if len(design_day_select) == 0:
+    #         raise ValueError(f"Design day with name '{design_day_ref}' not found.")
+    #     if len(design_day_select) > 1:
+    #         raise ValueError(
+    #             f"Ambiguous design day selection, "
+    #             f"{len(design_day_select)} design days containing ref '{design_day_ref}' were found, be more concise.")
+    #
+    #     design_day_data = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name).to
+    #     # design_day_data = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
+    #     #                    range(len(design_day))}
+    #     return design_day_data
 
     def add_design_day_to_epm(self, epm, design_day_ref):
         """
@@ -142,6 +143,5 @@ class Ddy(Epsfm):
         return cls._create_from_buffer_or_path(
             parse_idf,
             buffer_or_path,
-            idd_or_version=CONF.default_idd_version,  # .ddy are not version: latest idd is used
-            table_refs_selection=DDY_TABLE_DESCRIPTORS_REF
+            idd_or_version=CONF.default_idd_version
         )

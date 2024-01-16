@@ -11,8 +11,8 @@ create/update/delete framework methods (see methods documentation):
 
 import os
 import logging
-from .. import CONF
-from .epsfm import Epsfm
+from . import CONF
+from opyplus.epgm.epgm import Epgm
 
 
 def default_external_files_dir_name(model_name):
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 NON_SORTABLE_TABLE_REFS = ("energymanagementsystem_programcallingmanager",)
 
 
-class Epm(Epsfm):
+class Epm(Epgm):
     """
     Energyplus model.
 
@@ -179,7 +179,7 @@ class Epm(Epsfm):
             idd_or_version=None
     ):
         """See load."""
-        return cls().from_epsfm(
+        return cls().from_epstf(
             buffer_or_path,
             check_required,
             check_length,

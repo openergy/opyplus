@@ -3,7 +3,7 @@
 
 class Link:
     """
-    Link class, describing a link between two Epm records (IDF objects), or between an Epm record and an Epm table.
+    Link class, describing link between two Epgm records (IDF,DDY objects), or between an Epgm record and an Epgm table.
 
     Parameters
     ----------
@@ -16,9 +16,9 @@ class Link:
     hook_references: list of str
     initial_hook_value
     source_index: int
-    source_record: opyplus.epm.record.Record or None
-    target_record: opyplus.epm.record.Record or None
-    target_table: opyplus.epm.table.Table or None
+    source_record: opyplus.epgm.record.Record or None
+    target_record: opyplus.epgm.record.Record or None
+    target_table: opyplus.epgm.table.Table or None
 
     Notes
     -----
@@ -42,9 +42,9 @@ class Link:
 
         Returns
         -------
-        opyplus.epm.relations_manager.RelationsManager
+        opyplus.epgm.relations_manager.RelationsManager
         """
-        return self.source_record.get_epm()._dev_relations_manager
+        return self.source_record.get_epgm()._dev_relations_manager
 
     @property
     def target(self):
@@ -53,7 +53,7 @@ class Link:
 
         Returns
         -------
-        opyplus.epm.table.Table or opyplus.epm.record.Record
+        opyplus.epgm.table.Table or opyplus.epgm.record.Record
         """
         if self.target_table is not None:
             return self.target_table
@@ -67,7 +67,7 @@ class Link:
 
         Parameters
         ----------
-        source_record: opyplus.epm.record.Record
+        source_record: opyplus.epgm.record.Record
         """
         # return if already active
         if self.source_record is not None:
@@ -83,8 +83,8 @@ class Link:
 
         Parameters
         ----------
-        target_record: opyplus.epm.record.Record or None
-        target_table: opyplus.epm.table.Table or None
+        target_record: opyplus.epgm.record.Record or None
+        target_table: opyplus.epgm.table.Table or None
         """
         if target_record is not None:
             self.target_record = target_record

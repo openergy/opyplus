@@ -1,4 +1,4 @@
-"""Opyplus epm package record_hook module.
+"""Opyplus epgm package record_hook module.
 
 A record hook is a record's field on which another record can point.
 """
@@ -49,9 +49,9 @@ class RecordHook:
 
         Returns
         -------
-        opyplus.epm.relations_manager.RelationsManager
+        opyplus.epgm.relations_manager.RelationsManager
         """
-        return self.target_record.get_epm()._dev_relations_manager
+        return self.target_record.get_epgm()._dev_relations_manager
 
     def activate(self, target_record):
         """

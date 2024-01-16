@@ -1,4 +1,4 @@
-"""Epm multi-table queryset module."""
+"""Epgm multi-table queryset module."""
 import itertools
 import collections
 
@@ -7,16 +7,16 @@ from .queryset import Queryset
 
 class MultiTableQueryset:
     """
-    A Multi-Table queryset of an Epm is a queryset that contains records from different table.
+    A Multi-Table queryset of an Epgm is a queryset that contains records from different table.
 
     Parameters
     ----------
-    epm: opyplus.Epm
-    records: list of opyplus.epm.record.Record
+    epgm: opyplus.Epgm
+    records: list of opyplus.epgm.record.Record
     """
 
-    def __init__(self, epm, records):
-        self._epm = epm
+    def __init__(self, epgm, records):
+        self._epgm = epgm
 
         # organize by table (we use ordered dict so __iter__ is deterministic and __eq__ works)
         # to prevent exhausting group iterator too early :
@@ -44,7 +44,7 @@ class MultiTableQueryset:
         Queryset
         """
         # get table
-        table = getattr(self._epm, item)
+        table = getattr(self._epgm, item)
         table_lower_ref = table.get_ref().lower()
 
         # return queryset with default if empty
@@ -139,6 +139,6 @@ class MultiTableQueryset:
 
         Returns
         -------
-        typing.Iterable[opyplus.epm.record.Record]
+        typing.Iterable[opyplus.epgm.record.Record]
         """
         return itertools.chain(*self._querysets.values())

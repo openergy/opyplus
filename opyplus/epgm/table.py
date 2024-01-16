@@ -1,4 +1,4 @@
-"""Epm table module."""
+"""Epgm table module."""
 
 from .record import Record
 from .queryset import Queryset
@@ -64,12 +64,12 @@ class Table:
     Parameters
     ----------
     table_descriptor: opyplus.idd.table_descriptor.TableDescriptor
-    epm: opyplus.Epm
+    epgm: opyplus.Epgm
     """
 
-    def __init__(self, table_descriptor, epm):
+    def __init__(self, table_descriptor, epgm):
         self._dev_descriptor = table_descriptor
-        self._epm = epm
+        self._epgm = epgm
         self._records = dict()
 
         # no pk if first field is not a required reference
@@ -84,7 +84,7 @@ class Table:
         # register table hooks
         table_hooks_references = self._dev_descriptor.field_descriptors[0].tags.get("reference-class-name")
         if table_hooks_references is not None:
-            self._epm._dev_relations_manager.register_table_hook(table_hooks_references, self)
+            self._epgm._dev_relations_manager.register_table_hook(table_hooks_references, self)
 
     def _dev_record_id_was_updated(self, old_id):
         # remove old id
@@ -190,7 +190,7 @@ class Table:
         Get table ref.
 
         The table ref is the converted name, in order to be compatible with Python variable rules (so we can access
-        table from Epm using __getattr__).
+        table from Epgm using __getattr__).
         Conversion rule: all non alphanumeric characters are transformed to underscores.
         Example: 'Schedule_Compact'
 
@@ -209,15 +209,15 @@ class Table:
         """
         return self._dev_descriptor.table_name
 
-    def get_epm(self):
+    def get_epgm(self):
         """
-        Get epm to which this table belongs.
+        Get epgm to which this table belongs.
 
         Returns
         -------
-        opyplus.Epm
+        opyplus.Epgm
         """
-        return self._epm
+        return self._epgm
 
     # explore
     def select(self, filter_by=None):
@@ -296,7 +296,7 @@ class Table:
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
-        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        #     epgm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
