@@ -803,9 +803,9 @@ class Record:
         dict
             A dictionary of serialized data.
         """
-        data = {str(k): self.get_serialized_value(k, model_name=model_name) for k in self._data}
+        data = {k: self.get_serialized_value(k, model_name=model_name) for k in self._data}
         if named_keys:
-            data = {self.get_field_descriptor(k).ref: self[int(k)] for k, v in data.items()}
+            data = {self.get_field_descriptor(k).ref: self[k] for k, v in data.items()}
 
         comment_data = {"_comment": self._comment}
         return {**comment_data, **data}
