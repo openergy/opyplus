@@ -12,7 +12,7 @@ create/update/delete framework methods (see methods documentation):
 import os
 import logging
 from .. import CONF
-from .epsf import Epsf
+from .epsfm import Epsfm
 
 
 def default_external_files_dir_name(model_name):
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 NON_SORTABLE_TABLE_REFS = ("energymanagementsystem_programcallingmanager",)
 
 
-class Epm(Epsf):
+class Epm(Epsfm):
     """
     Energyplus model.
 
@@ -69,15 +69,14 @@ class Epm(Epsf):
         - else will use default eplus version used in conf, which is initially set to latest available idd version
     """
 
-    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None,
-                 table_refs_selection=None):
+    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
         # call super
         super().__init__(
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
             idd_or_version=idd_or_version,
-            table_refs_selection=table_refs_selection
+            table_refs_selection=None
         )
 
     # --------------------------------------------- public api ---------------------------------------------------------

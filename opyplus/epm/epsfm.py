@@ -1,8 +1,8 @@
 """
-Module to handle energyplus files (idf and ddy) as python objects (EnergyPlus Model).
+Module to handle energyplus files (idf and ddy) as python objects (EnergyPlus Standard Model).
 
 create/update/delete framework methods (see methods documentation):
- - epsf._dev_populate_from_json_data
+ - epsfm._dev_populate_from_json_data
  - table.batch_add
  - record.update
  - queryset.delete
@@ -49,24 +49,24 @@ logger = logging.getLogger(__name__)
 NON_SORTABLE_TABLE_REFS = ("energymanagementsystem_programcallingmanager",)
 
 
-class Epsf:
+class Epsfm:
     """
     Energyplus standard file model.
 
     An Epsf is an EnergyPlus file standard Model.
-    It can come from and idf, a epjson (not coded yet), or a json.
-    It can be transformed in an idf, an epjson (not coded yet) or a json.
 
     Parameters
     ----------
     json_data: json serializable object, default None
-        if provided, Epm will be filled with given objects
+        if provided, Epsfm will be filled with given objects
     check_length: boolean, default True
         If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
     check_required: boolean, default True
         If True, will raise an exception if a required field is missing. If False, not not perform any checks.
     idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
         directly provide an IDD object.
+    table_refs_selection: list of IDD objects refs that compose the model, default None
+        if not provided all IDD objects refs will be used as Tables
 
     Notes
     -----
@@ -165,13 +165,13 @@ class Epsf:
         with buffer as f:
             json_data = parse_fct(f)
 
-        # create and return epm
+        # create and return Epsfm
         return cls(
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
             idd_or_version=idd_or_version,
-            table_refs_selection=table_refs_selection
+            # table_refs_selection=table_refs_selection
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
@@ -180,7 +180,7 @@ class Epsf:
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
-        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        #     epsfm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
@@ -225,19 +225,19 @@ class Epsf:
 
         Returns
         -------
-        {'<Epsf>'}
+        {'<Epsfm>'}
         """
-        return "<Epsf>"
+        return "<Epsfm>"
 
     def __str__(self):
         """
-        Str representation of Epm, with the number of records per tables.
+        Str representation of Epsfm, with the number of records per tables.
 
         Returns
         -------
         str
         """
-        s = "Epsf\n"
+        s = "Epsfm\n"
 
         for table in self._tables.values():
             records_nb = len(table)
@@ -271,11 +271,11 @@ class Epsf:
 
     def __eq__(self, other):
         """
-        Compare two epm by comparing their json-serializable dict.
+        Compare two epsfm by comparing their json-serializable dict.
 
         Parameters
         ----------
-        other: Epm
+        other: Epsfm
 
         Returns
         -------
@@ -285,7 +285,7 @@ class Epsf:
 
     def __iter__(self):
         """
-        Iterate through the tables of this Epm.
+        Iterate through the tables of this Epsfm.
 
         Returns
         -------
@@ -327,7 +327,7 @@ class Epsf:
 
         Returns
         -------
-        list of opyplus.epm.external_file.ExternalFile
+        list of opyplus.epsfm.external_file.ExternalFile
         """
         external_files = []
         for table in self._tables.values():
@@ -349,7 +349,7 @@ class Epsf:
         self._comment = str(comment)
 
     def set_defaults(self):
-        """All fields of Epm with a default value and that are null will be set to their default value."""
+        """All fields of Epsfm with a default value and that are null will be set to their default value."""
         for table in self._tables.values():
             for r in table:
                 r.set_defaults()
@@ -366,7 +366,7 @@ class Epsf:
 
     def to_json_data(self):
         """
-        Dump the Epm to a json-serializable dict.
+        Dump the Epsfm to a json-serializable dict.
 
         Returns
         -------
@@ -390,7 +390,7 @@ class Epsf:
             idd_or_version=None
     ):
         """
-        Load Epm from a file.
+        Load Epsfm from a file.
 
         Parameters
         ----------
@@ -411,9 +411,9 @@ class Epsf:
 
         Returns
         -------
-        Epm
+        Epsfm
         """
-        return cls().from_epsf(
+        return cls().from_epsfm(
             buffer_or_path,
             check_required=check_required,
             check_length=check_length,
@@ -422,7 +422,7 @@ class Epsf:
 
     def save(self, buffer_or_path=None, dump_external_files=True):
         """
-        Save Epm to a file.
+        Save Epsfm to a file.
 
         Parameters
         ----------
@@ -449,7 +449,7 @@ class Epsf:
             idd_or_version=None
     ):
         """
-        Create Epm from a json file.
+        Create Epsfm from a json file.
 
         Parameters
         ----------
@@ -470,7 +470,7 @@ class Epsf:
 
         Returns
         -------
-        Epm
+        Epsfm
         """
         return cls._create_from_buffer_or_path(
             json.load,
@@ -507,7 +507,7 @@ class Epsf:
 
     # ----------- idf
     @classmethod
-    def from_epsf(
+    def from_epsfm(
             cls,
             buffer_or_path,
             check_required=True,
@@ -523,7 +523,7 @@ class Epsf:
             idd_or_version=idd_or_version
         )
 
-    def to_epsf(self, buffer_or_path=None, dump_external_files=True):
+    def to_epsfm(self, buffer_or_path=None, dump_external_files=True):
         """See save."""
         # prepare comment
         comment = get_multi_line_copyright_message()
