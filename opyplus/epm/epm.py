@@ -69,14 +69,14 @@ class Epm(Epsf):
         - else will use default eplus version used in conf, which is initially set to latest available idd version
     """
 
-    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
+    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None, table_refs_selection=None):
         # call super
         super().__init__(
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
             idd_or_version=idd_or_version,
-            table_refs_selection=None
+            table_refs_selection=table_refs_selection
         )
 
     # --------------------------------------------- public api ---------------------------------------------------------
