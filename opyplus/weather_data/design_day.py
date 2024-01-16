@@ -86,31 +86,6 @@ class Ddy(Epgm):
 
         return s.strip()
 
-    # def get_design_day_dict(self, design_day_ref):
-    #     """
-    #     Get design day from ref as dict.
-    #
-    #     Parameters
-    #     ----------
-    #     design_day_ref
-    #
-    #     Returns
-    #     -------
-    #     design_day_dict
-    #     """
-    #     design_day_select = self.sizingperiod_designday.select(lambda x: design_day_ref in x.name)
-    #     if len(design_day_select) == 0:
-    #         raise ValueError(f"Design day with name '{design_day_ref}' not found.")
-    #     if len(design_day_select) > 1:
-    #         raise ValueError(
-    #             f"Ambiguous design day selection, "
-    #             f"{len(design_day_select)} design days containing ref '{design_day_ref}' were found, be more concise.")
-    #
-    #     design_day_data = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name).to
-    #     # design_day_data = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
-    #     #                    range(len(design_day))}
-    #     return design_day_data
-
     def add_design_day_to_epm(self, epm, design_day_ref):
         """
         Add design day to Epm.
@@ -121,10 +96,10 @@ class Ddy(Epgm):
         design_day_ref
         """
         # get design day as dict
-        design_day_dict = self.get_design_day_dict(design_day_ref)
+        design_day_data = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name)
 
         epm.sizingperiod_designday.add(
-            design_day_dict
+            design_day_data
         )
 
     # ------------------------------------------- save/load ------------------------------------------------------------

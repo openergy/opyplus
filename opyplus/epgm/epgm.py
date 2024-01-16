@@ -65,8 +65,6 @@ class Epgm:
         If True, will raise an exception if a required field is missing. If False, not not perform any checks.
     idd_or_version: (expert) if you want to use a specific idd, you can require a specific version (x.x.x), or
         directly provide an IDD object.
-    table_refs_selection: list of IDD objects refs that compose the model, default None
-        if not provided all IDD objects refs will be used as Tables
 
     Notes
     -----
@@ -86,6 +84,10 @@ class Epgm:
     _dev_idd_cls = Idd  # for subclassing
 
     # table restriction
+    """
+    list of IDD objects refs that compose the model, default None
+        if not provided all IDD objects refs will be used as Tables
+    """
     _dev_restrict_table_refs = None  # for subclassing
 
     def __init__(

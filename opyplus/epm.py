@@ -75,8 +75,7 @@ class Epm(Epgm):
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
-            idd_or_version=idd_or_version,
-            table_refs_selection=None
+            idd_or_version=idd_or_version
         )
 
     # --------------------------------------------- public api ---------------------------------------------------------
