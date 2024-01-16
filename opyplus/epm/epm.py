@@ -179,7 +179,7 @@ class Epm(Epsfm):
             idd_or_version=None
     ):
         """See load."""
-        return cls().from_epsf(
+        return cls().from_epsfm(
             buffer_or_path,
             check_required,
             check_length,
@@ -188,4 +188,4 @@ class Epm(Epsfm):
 
     def to_idf(self, buffer_or_path=None, dump_external_files=True):
         """See save."""
-        self.to_epsf(buffer_or_path, dump_external_files)
+        self.to_epsfm(buffer_or_path, dump_external_files)
