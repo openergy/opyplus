@@ -1,10 +1,7 @@
 """Ddy design day module."""
 
 from ..epm.parse_idf import parse_idf
-from ..epm.table import Table
 from ..epm.epsf import Epsf
-import collections
-from ..epm.relations_manager import RelationsManager
 from .. import CONF
 import logging
 
@@ -91,7 +88,11 @@ class Ddy(Epsf):
 
     def get_design_day_dict(self, design_day_ref):
         """
-        Get design day from ref as dict
+        Get design day from ref as dict.
+
+        Parameters
+        ----------
+        design_day_ref
 
         Returns
         -------
@@ -102,7 +103,8 @@ class Ddy(Epsf):
             raise ValueError(f"Design day with name '{design_day_ref}' not found.")
         if len(design_day_select) > 1:
             raise ValueError(
-                f"Ambiguous design day selection, {len(design_day_select)} design days with name '{design_day_ref}' were found, be more concise.")
+                f"Ambiguous design day selection, "
+                f"{len(design_day_select)} design days with name '{design_day_ref}' were found, be more concise.")
 
         design_day = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name)
         design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
@@ -111,7 +113,12 @@ class Ddy(Epsf):
 
     def add_design_day_to_epm(self, epm, design_day_ref):
         """
-        Add design day to Epm
+        Add design day to Epm.
+
+        Parameters
+        ----------
+        epm
+        design_day_ref
         """
         # get design day as dict
         design_day_dict = self.get_design_day_dict(design_day_ref)
