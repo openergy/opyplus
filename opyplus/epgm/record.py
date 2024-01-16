@@ -806,11 +806,9 @@ class Record:
         data = {str(k): self.get_serialized_value(k, model_name=model_name) for k in self._data}
         if named_keys:
             data = {self.get_field_descriptor(k).ref: self[int(k)] for k, v in data.items()}
-        # collections.OrderedDict(
-        #     [("_comment", self._comment)]
-        #     + [(k, self.get_serialized_value(k, model_name=model_name)) for k in self._data]
-        # )
-        return {**dict(_comment=self._comment), **data}
+
+        comment_dict = {"_comment": self._comment}
+        return {**comment_dict, **data}
 
     def to_idf(self, model_name=None):
         """
