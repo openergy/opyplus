@@ -10,22 +10,10 @@ create/update/delete framework methods (see methods documentation):
 """
 
 import os
-import collections
-import textwrap
-import json
 import logging
-
 from .. import CONF
-from ..util import get_multi_line_copyright_message, to_buffer, version_str_to_version
-from ..idd.idd import Idd
-from .table import Table
-from .record import Record
-from .relations_manager import RelationsManager
-from .external_files_manager import ExternalFilesManager
-from .external_file import get_external_files_dir_name
-from .parse_idf import parse_idf
-from .util import json_data_to_json, multi_mode_write
 from .epsf import Epsf
+
 
 def default_external_files_dir_name(model_name):
     """
@@ -87,10 +75,9 @@ class Epm(Epsf):
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
-            idd_or_version=idd_or_version
+            idd_or_version=idd_or_version,
+            table_refs_selection=None
         )
-
-
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
@@ -122,8 +109,6 @@ class Epm(Epsf):
             s += f"  {table.get_name()}: {records_nb} record{plural}\n"
 
         return s.strip()
-
-
 
     # ------------------------------------------- save/load ------------------------------------------------------------
     @classmethod
@@ -199,9 +184,8 @@ class Epm(Epsf):
             check_required,
             check_length,
             idd_or_version
-            )
-
+        )
 
     def to_idf(self, buffer_or_path=None, dump_external_files=True):
         """See save."""
-        self.to_epsf(buffer_or_path,dump_external_files)
+        self.to_epsf(buffer_or_path, dump_external_files)

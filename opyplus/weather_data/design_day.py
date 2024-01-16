@@ -14,7 +14,7 @@ DDY_TABLE_DESCRIPTORS_REF = (
     "sizingperiod_designday",
     "site_location",
     "runperiodcontrol_daylightsavingtime",
-     )
+)
 
 
 class Ddy(Epsf):
@@ -47,7 +47,8 @@ class Ddy(Epsf):
         Ddy files are not versioned, and by default will use latest IDD version for model conversion from .ddy
     """
 
-    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None,table_refs_selection=DDY_TABLE_DESCRIPTORS_REF):
+    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None,
+                 table_refs_selection=DDY_TABLE_DESCRIPTORS_REF):
         # call super
         super().__init__(
             json_data=json_data,
@@ -99,11 +100,13 @@ class Ddy(Epsf):
         design_day_select = self.sizingperiod_designday.select(lambda x: design_day_ref in x.name)
         if len(design_day_select) == 0:
             raise ValueError(f"Design day with name '{design_day_ref}' not found.")
-        if len(design_day_select)>1:
-            raise ValueError(f"Ambiguous design day selection, {len(design_day_select)} design days with name '{design_day_ref}' were found, be more concise.")
-        
+        if len(design_day_select) > 1:
+            raise ValueError(
+                f"Ambiguous design day selection, {len(design_day_select)} design days with name '{design_day_ref}' were found, be more concise.")
+
         design_day = self.sizingperiod_designday.one(lambda x: design_day_ref in x.name)
-        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in range(len(design_day))}
+        design_day_dict = {design_day.get_field_descriptor(field).ref: design_day[field] for field in
+                           range(len(design_day))}
         return design_day_dict
 
     def add_design_day_to_epm(self, epm, design_day_ref):

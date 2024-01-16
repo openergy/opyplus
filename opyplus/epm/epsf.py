@@ -85,7 +85,14 @@ class Epsf:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None, table_refs_selection=None):
+    def __init__(
+            self,
+            json_data=None,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None,
+            table_refs_selection=None
+    ):
         # prepare idd
         self._dev_idd = None
         if isinstance(idd_or_version, Idd):
@@ -122,10 +129,11 @@ class Epsf:
         # # external files manager
         self._dev_external_files_manager = ExternalFilesManager(self)
 
-        table_refs = self._dev_idd.table_descriptors.values() 
+        table_refs = self._dev_idd.table_descriptors.values()
         if table_refs_selection is not None:
-            table_refs = [table_descriptor for table_descriptor in self._dev_idd.table_descriptors.values() if table_descriptor.table_ref.lower() in table_refs_selection] 
-        
+            table_refs = [table_descriptor for table_descriptor in self._dev_idd.table_descriptors.values() if
+                          table_descriptor.table_ref.lower() in table_refs_selection]
+
         self._tables = collections.OrderedDict(sorted([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
             for table_descriptor in table_refs
@@ -496,6 +504,7 @@ class Epsf:
         )
 
         # --------------------------------------- import/export ------------------------------------------------------------
+
     # ----------- idf
     @classmethod
     def from_epsf(
