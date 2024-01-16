@@ -179,7 +179,7 @@ class Epm(Epsf):
             idd_or_version=None
     ):
         """See load."""
-        cls.from_epsf(
+        return cls().from_epsf(
             buffer_or_path,
             check_required,
             check_length,
