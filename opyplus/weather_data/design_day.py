@@ -11,6 +11,10 @@ DDY_TABLE_DESCRIPTORS_REF = (
     "sizingperiod_designday",
     "site_location",
     "runperiodcontrol_daylightsavingtime",
+    "sizingperiod_weatherfileconditiontype",
+    "site_precipitation",
+    "roofirrigation",
+    "schedule_file"
 )
 
 
