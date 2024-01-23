@@ -438,7 +438,7 @@ class Epgm:
         str or None
             None, or an idf string (if buffer_or_path is None).
         """
-        return self.to_epsf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
+        return self.to_epstf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
 
     # --------------------------------------- import/export ------------------------------------------------------------
     # ----------- json
@@ -550,7 +550,7 @@ class Epgm:
         formatted_records = []
         for table_ref, table in self._tables.items():  # self._tables is already sorted
             formatted_records.extend([
-                r.to_idf(model_name=model_name)
+                r.to_epstf(model_name=model_name)
                 for r in (table if table_ref in NON_SORTABLE_TABLE_REFS else sorted(table))
             ])
         body = "\n\n".join(formatted_records)

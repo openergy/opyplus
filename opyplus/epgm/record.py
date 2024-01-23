@@ -242,7 +242,7 @@ class Record:
         if self._table is None:
             return repr(self).strip()
 
-        return self.to_idf().strip()
+        return self.to_epstf().strip()
 
     def __getitem__(self, item):
         """
@@ -567,7 +567,7 @@ class Record:
         ----------
         comment: str
         """
-        # todo-later: manage properly (for the moment only used in to_idf)
+        # todo-later: manage properly (for the moment only used in to_epstf)
         self._comment = comment
 
     def copy(self, new_name=None):
@@ -810,9 +810,9 @@ class Record:
         comment_data = {"_comment": self._comment}
         return {**comment_data, **data}
 
-    def to_idf(self, model_name=None):
+    def to_epstf(self, model_name=None):
         """
-        Get record as an idf string.
+        Get record as an energyplus string.
 
         Parameters
         ----------

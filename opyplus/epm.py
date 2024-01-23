@@ -109,64 +109,6 @@ class Epm(Epgm):
 
         return s.strip()
 
-    # ------------------------------------------- save/load ------------------------------------------------------------
-    @classmethod
-    def load(
-            cls,
-            buffer_or_path,
-            check_required=True,
-            check_length=True,
-            idd_or_version=None
-    ):
-        """
-        Load Epm from a file.
-
-        Parameters
-        ----------
-        buffer_or_path: str or typing.StringIO
-            idf buffer or path
-        check_required: bool
-            If True (default), will raise an exception if a required field is missing.
-            If False, do not perform any checks.
-        check_length: bool
-            If True (default), will raise an exception if a field has a bigger length than authorized.
-            If False, will not check.
-
-        Other Parameters
-        ----------------
-        idd_or_version: tuple or Idd
-            If you want to use a specific idd, you can require a specific version (x.x.x),
-            or directly provide an IDD object.
-
-        Returns
-        -------
-        Epm
-        """
-        return cls().from_idf(
-            buffer_or_path,
-            check_required=check_required,
-            check_length=check_length,
-            idd_or_version=idd_or_version
-        )
-
-    def save(self, buffer_or_path=None, dump_external_files=True):
-        """
-        Save Epm to a file.
-
-        Parameters
-        ----------
-        buffer_or_path: typing.StringIO or str or None
-            output to write into. If None, will return a json string.
-        dump_external_files: boolean, default True
-            if True, external files will be dumped in external files directory
-
-        Returns
-        -------
-        str or None
-            None, or an idf string (if buffer_or_path is None).
-        """
-        return self.to_idf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
-
     # --------------------------------------- import/export ------------------------------------------------------------
     # ----------- idf
     @classmethod
