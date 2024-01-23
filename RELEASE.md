@@ -5,8 +5,9 @@
     p: patch
 
 ## next
-* m: implementing DesignDay model from ddy 
-* p: fix latest default idd version in conf 
+* m: implementing DesignDay model from ddy  
+* p: fix latest default idd version in conf
+* p: code refactoring to create parent model Epgm
 
 ## 1.5.0
 * p: documentation generation debug
