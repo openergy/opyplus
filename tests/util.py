@@ -6,6 +6,7 @@ TESTED_EPLUS_VERSIONS = [
     (9, 0, 1)  # todo: manage 9.2.0
     # (9, 2, 0),  # todo: manage 9.2.0
     # (22, 1, 0),
+    # (22, 2, 0),
 ]
 
 

@@ -13,6 +13,9 @@
 * p: documentation generation debug
 * m: idd 22.2.0, idd 23.1.0, idd 23.2.0 were added
 
+## 1.5.0
+* m: idd 22.1.2 added
+
 ## 1.4.2
 * p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving
 ``Epm``.
