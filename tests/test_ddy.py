@@ -19,4 +19,6 @@ class DdyTest(unittest.TestCase):
                     encoding=CONF.encoding
             ) as f:
                 ddy = Ddy.from_ddy(f)
-        design_day_table = ddy.sizingperiod_designday.one(lambda x: "htg 99%" in x.name).to_json_data(named_keys=True)
+        # testing conversion to_json_data with named keys to
+        heating_design_day_data = ddy.sizingperiod_designday.one(lambda x: "htg 99%" in x.name).to_json_data(named_keys=True)
+        self.assertEqual(heating_design_day_data["day_type"], "winterdesignday")
