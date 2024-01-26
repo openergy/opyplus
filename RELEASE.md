@@ -4,9 +4,14 @@
     m: minor
     p: patch
 
+## next
+* m: implementing DesignDay model from ddy  
+* p: fix latest default idd version in conf
+* p: code refactoring to create parent model Epgm
+
 ## 1.5.0
 * p: documentation generation debug
-* m: idd 22.2.0, idd 23.1.0 was added,idd 23.2.0 were added
+* m: idd 22.2.0, idd 23.1.0, idd 23.2.0 were added
 
 ## 1.4.2
 * p: preserve order of ``EnergyManagementSystem:ProgramCallingManager`` objects when saving

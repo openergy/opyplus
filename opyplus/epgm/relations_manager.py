@@ -1,4 +1,4 @@
-"""Relation managers allow to handle links between different Epm records (idf objects)."""
+"""Relation managers allow to handle links between different Epgm records (idf objects)."""
 
 from .multi_table_queryset import MultiTableQueryset
 from ..exceptions import FieldValidationError
@@ -6,11 +6,11 @@ from ..exceptions import FieldValidationError
 
 class RelationsManager:
     """
-    Relation manager class to handle links between different Epm records (idf objects).
+    Relation manager class to handle links between different Epgm records (idf objects).
 
     Parameters
     ----------
-    epm: opyplus.Epm
+    epgm: opyplus.Epgm
 
     Notes
     -----
@@ -48,8 +48,8 @@ class RelationsManager:
             unregister link
     """
 
-    def __init__(self, epm):
-        self._epm = epm
+    def __init__(self, epgm):
+        self._epgm = epgm
         self._table_hooks = {}  # {(hook_ref, table_lower_name): table, ...}
         self._record_hooks = {}  # {(hook_ref, value): hook, ...
         self._links_by_source = {}  # {source_record_or_table: links_set, ...}
@@ -61,7 +61,7 @@ class RelationsManager:
 
         Parameters
         ----------
-        hook: opyplus.epm.record_hook.RecordHook
+        hook: opyplus.epgm.record_hook.RecordHook
 
         Notes
         -----
@@ -82,7 +82,7 @@ class RelationsManager:
 
         Parameters
         ----------
-        hook: opyplus.epm.record_hook.RecordHook
+        hook: opyplus.epgm.record_hook.RecordHook
         old_keys: iterable of str
         """
         # remove old keys
@@ -99,7 +99,7 @@ class RelationsManager:
         Parameters
         ----------
         references: list of str
-        table: opyplus.epm.table.Table
+        table: opyplus.epgm.table.Table
         """
         table_lower_name = table.get_name().lower()
         for ref in references:
@@ -111,7 +111,7 @@ class RelationsManager:
 
         Parameters
         ----------
-        link: opyplus.epm.link.Link
+        link: opyplus.epgm.link.Link
 
         Notes
         -----
@@ -155,7 +155,7 @@ class RelationsManager:
 
         Parameters
         ----------
-        hook: opyplus.epm.record_hook.RecordHook
+        hook: opyplus.epgm.record_hook.RecordHook
         """
         # find records pointing on record hook
         for link in self._links_by_target.get(hook.target_record, set()).copy():
@@ -175,7 +175,7 @@ class RelationsManager:
 
         Parameters
         ----------
-        link: opyplus.epm.link.Link
+        link: opyplus.epgm.link.Link
         """
         self._links_by_target[link.target].remove(link)
         if len(self._links_by_target[link.target]) == 0:
@@ -191,14 +191,14 @@ class RelationsManager:
 
         Parameters
         ----------
-        target_record_or_table: opyplus.epm.record.Record or opyplus.epm.table.Table
+        target_record_or_table: opyplus.epgm.record.Record or opyplus.epgm.table.Table
 
         Returns
         -------
         MultiTableQueryset
         """
         return MultiTableQueryset(
-            self._epm,
+            self._epgm,
             (link.source_record for link in self._links_by_target.get(target_record_or_table, set()))
         )
 
@@ -208,13 +208,13 @@ class RelationsManager:
 
         Parameters
         ----------
-        source_record: opyplus.epm.record.Record
+        source_record: opyplus.epgm.record.Record
 
         Returns
         -------
         MultiTableQueryset
         """
         return MultiTableQueryset(
-            self._epm,
+            self._epgm,
             (link.target_record for link in self._links_by_source.get(source_record, set()))
         )

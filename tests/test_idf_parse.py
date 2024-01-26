@@ -3,7 +3,7 @@ import os
 
 from tests.util import iter_eplus_versions
 
-from opyplus.epm.parse_idf import parse_idf
+from opyplus.epgm.parse_idf import parse_idf
 from opyplus.compatibility import get_eplus_base_dir_path
 from opyplus import CONF
 

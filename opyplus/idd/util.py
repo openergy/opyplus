@@ -1,5 +1,5 @@
 """Useful functions for idd manipulation."""
-from ..epm.external_file import ExternalFile
+from ..epgm.external_file import ExternalFile
 
 
 def isinstance_str(value):

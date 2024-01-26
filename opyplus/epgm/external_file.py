@@ -34,7 +34,7 @@ class ExternalFile:
     Parameters
     ----------
     ref: str
-        unique identifier (in the concerned epm namespace) of the file
+        unique identifier (in the concerned epgm namespace) of the file
     content: str
         content of the file
     """

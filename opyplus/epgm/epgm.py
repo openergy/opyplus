@@ -1,8 +1,8 @@
 """
-Module to handle idf files as python objects (EnergyPlus Model).
+Module to handle energyplus files (idf and ddy) as python objects (EnergyPlus Standard Model).
 
 create/update/delete framework methods (see methods documentation):
- - epm._dev_populate_from_json_data
+ - epgm._dev_populate_from_json_data
  - table.batch_add
  - record.update
  - queryset.delete
@@ -15,16 +15,16 @@ import textwrap
 import json
 import logging
 
-from .. import CONF
-from ..util import get_multi_line_copyright_message, to_buffer, version_str_to_version
-from ..idd.idd import Idd
-from .table import Table
-from .record import Record
-from .relations_manager import RelationsManager
-from .external_files_manager import ExternalFilesManager
-from .external_file import get_external_files_dir_name
-from .parse_idf import parse_idf
-from .util import json_data_to_json, multi_mode_write
+from opyplus import CONF
+from opyplus.util import get_multi_line_copyright_message, to_buffer, version_str_to_version
+from opyplus.idd.idd import Idd
+from opyplus.epgm.table import Table
+from opyplus.epgm.record import Record
+from opyplus.epgm.relations_manager import RelationsManager
+from opyplus.epgm.external_files_manager import ExternalFilesManager
+from opyplus.epgm.external_file import get_external_files_dir_name
+from opyplus.epgm.parse_idf import parse_idf
+from opyplus.epgm.util import json_data_to_json, multi_mode_write
 
 
 def default_external_files_dir_name(model_name):
@@ -49,18 +49,16 @@ logger = logging.getLogger(__name__)
 NON_SORTABLE_TABLE_REFS = ("energymanagementsystem_programcallingmanager",)
 
 
-class Epm:
+class Epgm:
     """
-    Energyplus model.
+    Energyplus generic model.
 
-    An Epm is an Energy Plus Model.
-    It can come from and idf, a epjson (not coded yet), or a json.
-    It can be transformed in an idf, an epjson (not coded yet) or a json.
+    An Epgm is an EnergyPlus file standard Model.
 
     Parameters
     ----------
     json_data: json serializable object, default None
-        if provided, Epm will be filled with given objects
+        if provided, Epgm will be filled with given objects
     check_length: boolean, default True
         If True, will raise an exception if a field has a bigger length than authorized. If False, will not check.
     check_required: boolean, default True
@@ -85,7 +83,20 @@ class Epm:
     _dev_table_cls = Table  # for subclassing
     _dev_idd_cls = Idd  # for subclassing
 
-    def __init__(self, json_data=None, check_required=True, check_length=True, idd_or_version=None):
+    # table restriction
+    """
+    list of IDD objects refs that compose the model, default None
+        if not provided all IDD objects refs will be used as Tables
+    """
+    _dev_restrict_table_refs = None  # for subclassing
+
+    def __init__(
+            self,
+            json_data=None,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None
+    ):
         # prepare idd
         self._dev_idd = None
         if isinstance(idd_or_version, Idd):
@@ -119,12 +130,17 @@ class Epm:
         # hook registering
         self._dev_relations_manager = RelationsManager(self)
 
-        # external files manager
+        # # external files manager
         self._dev_external_files_manager = ExternalFilesManager(self)
+
+        table_refs = self._dev_idd.table_descriptors.values()
+        if self._dev_restrict_table_refs is not None:
+            table_refs = [table_descriptor for table_descriptor in self._dev_idd.table_descriptors.values() if
+                          table_descriptor.table_ref.lower() in self._dev_restrict_table_refs]
 
         self._tables = collections.OrderedDict(sorted([  # {lower_ref: table, ...}
             (table_descriptor.table_ref.lower(), Table(table_descriptor, self))
-            for table_descriptor in self._dev_idd.table_descriptors.values()
+            for table_descriptor in table_refs
         ]))
 
         self._dev_check_required = check_required
@@ -152,12 +168,12 @@ class Epm:
         with buffer as f:
             json_data = parse_fct(f)
 
-        # create and return epm
+        # create and return Epgm
         return cls(
             json_data=json_data,
             check_required=check_required,
             check_length=check_length,
-            idd_or_version=idd_or_version
+            idd_or_version=idd_or_version,
         )
 
     # ------------------------------------------ dev api ---------------------------------------------------------------
@@ -166,7 +182,7 @@ class Epm:
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
-        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        #     epgm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
@@ -211,19 +227,19 @@ class Epm:
 
         Returns
         -------
-        {'<Epm>'}
+        {'<Epgm>'}
         """
-        return "<Epm>"
+        return "<Epgm>"
 
     def __str__(self):
         """
-        Str representation of Epm, with the number of records per tables.
+        Str representation of Epgm, with the number of records per tables.
 
         Returns
         -------
         str
         """
-        s = "Epm\n"
+        s = "Epgm\n"
 
         for table in self._tables.values():
             records_nb = len(table)
@@ -257,11 +273,11 @@ class Epm:
 
     def __eq__(self, other):
         """
-        Compare two epm by comparing their json-serializable dict.
+        Compare two epgm by comparing their json-serializable dict.
 
         Parameters
         ----------
-        other: Epm
+        other: Epgm
 
         Returns
         -------
@@ -271,7 +287,7 @@ class Epm:
 
     def __iter__(self):
         """
-        Iterate through the tables of this Epm.
+        Iterate through the tables of this Epgm.
 
         Returns
         -------
@@ -313,7 +329,7 @@ class Epm:
 
         Returns
         -------
-        list of opyplus.epm.external_file.ExternalFile
+        list of opyplus.epgm.external_file.ExternalFile
         """
         external_files = []
         for table in self._tables.values():
@@ -335,7 +351,7 @@ class Epm:
         self._comment = str(comment)
 
     def set_defaults(self):
-        """All fields of Epm with a default value and that are null will be set to their default value."""
+        """All fields of Epgm with a default value and that are null will be set to their default value."""
         for table in self._tables.values():
             for r in table:
                 r.set_defaults()
@@ -352,7 +368,7 @@ class Epm:
 
     def to_json_data(self):
         """
-        Dump the Epm to a json-serializable dict.
+        Dump the Epgm to a json-serializable dict.
 
         Returns
         -------
@@ -376,7 +392,7 @@ class Epm:
             idd_or_version=None
     ):
         """
-        Load Epm from a file.
+        Load Epgm from a file.
 
         Parameters
         ----------
@@ -397,9 +413,9 @@ class Epm:
 
         Returns
         -------
-        Epm
+        Epgm
         """
-        return cls().from_idf(
+        return cls().from_epstf(
             buffer_or_path,
             check_required=check_required,
             check_length=check_length,
@@ -408,7 +424,7 @@ class Epm:
 
     def save(self, buffer_or_path=None, dump_external_files=True):
         """
-        Save Epm to a file.
+        Save Epgm to a file.
 
         Parameters
         ----------
@@ -422,65 +438,9 @@ class Epm:
         str or None
             None, or an idf string (if buffer_or_path is None).
         """
-        return self.to_idf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
+        return self.to_epstf(buffer_or_path=buffer_or_path, dump_external_files=dump_external_files)
 
     # --------------------------------------- import/export ------------------------------------------------------------
-    # ----------- idf
-    @classmethod
-    def from_idf(
-            cls,
-            buffer_or_path,
-            check_required=True,
-            check_length=True,
-            idd_or_version=None
-    ):
-        """See load."""
-        return cls._create_from_buffer_or_path(
-            parse_idf,
-            buffer_or_path,
-            check_required=check_required,
-            check_length=check_length,
-            idd_or_version=idd_or_version
-        )
-
-    def to_idf(self, buffer_or_path=None, dump_external_files=True):
-        """See save."""
-        # prepare comment
-        comment = get_multi_line_copyright_message()
-        if self._comment != "":
-            comment += textwrap.indent(self._comment, "! ", lambda line: True)
-        comment += "\n\n"
-
-        # prepare external files dir path if file path
-        if isinstance(buffer_or_path, str):
-            dir_path, file_name = os.path.split(buffer_or_path)
-            model_name, _ = os.path.splitext(file_name)
-        else:
-            model_name, dir_path = None, os.path.curdir
-
-        # dump files if asked
-        if dump_external_files:
-            self.dump_external_files(
-                target_dir_path=os.path.join(dir_path, get_external_files_dir_name(model_name=model_name))
-            )
-
-        # prepare body
-        formatted_records = []
-        for table_ref, table in self._tables.items():  # self._tables is already sorted
-            formatted_records.extend([
-                r.to_idf(model_name=model_name)
-                for r in (table if table_ref in NON_SORTABLE_TABLE_REFS else sorted(table))
-            ])
-        body = "\n\n".join(formatted_records)
-
-        # return
-        content = comment + body
-        return multi_mode_write(
-            lambda f: f.write(content),
-            lambda: content,
-            buffer_or_path
-        )
-
     # ----------- json
     @classmethod
     def from_json(
@@ -491,7 +451,7 @@ class Epm:
             idd_or_version=None
     ):
         """
-        Create Epm from a json file.
+        Create Epgm from a json file.
 
         Parameters
         ----------
@@ -512,7 +472,7 @@ class Epm:
 
         Returns
         -------
-        Epm
+        Epgm
         """
         return cls._create_from_buffer_or_path(
             json.load,
@@ -543,4 +503,62 @@ class Epm:
             self.to_json_data(),
             buffer_or_path=buffer_or_path,
             indent=indent
+        )
+
+    # --------------------------------------- import/export ------------------------------------------------------------
+
+    # ----------- idf
+    @classmethod
+    def from_epstf(
+            cls,
+            buffer_or_path,
+            check_required=True,
+            check_length=True,
+            idd_or_version=None
+    ):
+        """See load."""
+        return cls._create_from_buffer_or_path(
+            parse_idf,
+            buffer_or_path,
+            check_required=check_required,
+            check_length=check_length,
+            idd_or_version=idd_or_version
+        )
+
+    def to_epstf(self, buffer_or_path=None, dump_external_files=True):
+        """See save."""
+        # prepare comment
+        comment = get_multi_line_copyright_message()
+        if self._comment != "":
+            comment += textwrap.indent(self._comment, "! ", lambda line: True)
+        comment += "\n\n"
+
+        # prepare external files dir path if file path
+        if isinstance(buffer_or_path, str):
+            dir_path, file_name = os.path.split(buffer_or_path)
+            model_name, _ = os.path.splitext(file_name)
+        else:
+            model_name, dir_path = None, os.path.curdir
+
+        # dump files if asked
+        if dump_external_files:
+            self.dump_external_files(
+                target_dir_path=os.path.join(dir_path, get_external_files_dir_name(model_name=model_name))
+            )
+
+        # prepare body
+        formatted_records = []
+        for table_ref, table in self._tables.items():  # self._tables is already sorted
+            formatted_records.extend([
+                r.to_epstf(model_name=model_name)
+                for r in (table if table_ref in NON_SORTABLE_TABLE_REFS else sorted(table))
+            ])
+        body = "\n\n".join(formatted_records)
+
+        # return
+        content = comment + body
+        return multi_mode_write(
+            lambda f: f.write(content),
+            lambda: content,
+            buffer_or_path
         )

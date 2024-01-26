@@ -1,4 +1,4 @@
-"""Epm record module."""
+"""Epgm record module."""
 
 import uuid
 import os
@@ -9,7 +9,6 @@ from .link import Link, NONE_LINK
 from .record_hook import RecordHook, NONE_RECORD_HOOK
 from .external_file import ExternalFile, NONE_EXTERNAL_FILE, get_external_files_dir_name
 from ..exceptions import FieldValidationError
-
 
 TAB_LEN = 4
 COMMENT_COLUMN_START = 35
@@ -34,7 +33,7 @@ class Record:
 
     Parameters
     ----------
-    table: opyplus.epm.table.Table
+    table: opyplus.epgm.table.Table
     data: dict or None
         if dict, key: index_or_ref, value: raw value or value
     """
@@ -75,7 +74,7 @@ class Record:
 
         # leave if empty required fields are tolerated
         # check that no required fields are missing
-        if not self._table.get_epm()._dev_check_required:
+        if not self._table.get_epgm()._dev_check_required:
             return
 
         # check required
@@ -98,7 +97,7 @@ class Record:
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
         # prepare value
-        value = field_descriptor.deserialize(value, index, check_length=self.get_epm()._dev_check_length)
+        value = field_descriptor.deserialize(value, index, check_length=self.get_epgm()._dev_check_length)
 
         # if relevant, store current id to signal change to table later on
         old_id = None
@@ -152,7 +151,7 @@ class Record:
         field_descriptor = self._table._dev_descriptor.get_field_descriptor(index)
 
         # check not required (if asked and check required mode)
-        if check_not_required and self._table.get_epm()._dev_check_required:
+        if check_not_required and self._table.get_epgm()._dev_check_required:
             field_descriptor.check_not_required()
 
         # check not pk (in case idd was badly written)
@@ -212,7 +211,7 @@ class Record:
     def _dev_activate_external_files(self):
         for v in self._data.values():
             if isinstance(v, ExternalFile):
-                v._dev_activate(self.get_epm()._dev_external_files_manager)
+                v._dev_activate(self.get_epgm()._dev_external_files_manager)
 
     # --------------------------------------------- public api ---------------------------------------------------------
     # python magic
@@ -243,7 +242,7 @@ class Record:
         if self._table is None:
             return repr(self).strip()
 
-        return self.to_idf().strip()
+        return self.to_epstf().strip()
 
     def __getitem__(self, item):
         """
@@ -332,9 +331,9 @@ class Record:
         list of str
         """
         return [
-            f"f{i}" if fd.ref is None else fd.ref for
-            (i, fd) in enumerate(self._table._dev_descriptor.field_descriptors)
-        ] + list(self.__dict__)
+                   f"f{i}" if fd.ref is None else fd.ref for
+                   (i, fd) in enumerate(self._table._dev_descriptor.field_descriptors)
+               ] + list(self.__dict__)
 
     def __len__(self):
         """
@@ -351,11 +350,11 @@ class Record:
             # go to end of extensible group
             cycle_start, cycle_len, patterns = self.get_extensible_info()
             extensible_position = biggest_index - cycle_start
-            last_position = (extensible_position//cycle_len+1)*cycle_len-1
+            last_position = (extensible_position // cycle_len + 1) * cycle_len - 1
             biggest_index = cycle_start + last_position
 
         return max(
-            biggest_index+1,
+            biggest_index + 1,
             self._table._dev_descriptor.base_fields_nb
         )
 
@@ -426,15 +425,15 @@ class Record:
         return id(self) if self._table._dev_no_pk else self[0]
 
     # get context
-    def get_epm(self):
+    def get_epgm(self):
         """
-        Get the epm this record belongs to.
+        Get the epgm this record belongs to.
 
         Returns
         -------
-        opyplus.Epm
+        opyplus.Epgm
         """
-        return self._table.get_epm()
+        return self._table.get_epgm()
 
     def get_table(self):
         """
@@ -442,7 +441,7 @@ class Record:
 
         Returns
         -------
-        opyplus.epm.table.Table
+        opyplus.epgm.table.Table
         """
         return self._table
 
@@ -506,7 +505,7 @@ class Record:
         MultiTableQueryset
             all records pointing on record.
         """
-        return self.get_epm()._dev_relations_manager.get_pointed_by(self)
+        return self.get_epgm()._dev_relations_manager.get_pointed_by(self)
 
     def get_pointing_records(self):
         """
@@ -517,7 +516,7 @@ class Record:
         MultiTableQueryset
             all records pointed by record.
         """
-        return self.get_epm()._dev_relations_manager.get_pointing_on(self)
+        return self.get_epgm()._dev_relations_manager.get_pointing_on(self)
 
     def get_external_files(self):
         """
@@ -525,7 +524,7 @@ class Record:
 
         Returns
         -------
-        list of opyplus.epm.external_file.ExternalFile
+        list of opyplus.epgm.external_file.ExternalFile
             external files contained by record.
         """
         return [v for v in self._data.values() if isinstance(v, ExternalFile)]
@@ -545,7 +544,7 @@ class Record:
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
-        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        #     epgm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
         # 1. add inert
         #     * data is checked
         #     * old links are unregistered
@@ -568,7 +567,7 @@ class Record:
         ----------
         comment: str
         """
-        # todo-later: manage properly (for the moment only used in to_idf)
+        # todo-later: manage properly (for the moment only used in to_epstf)
         self._comment = comment
 
     def copy(self, new_name=None):
@@ -650,7 +649,7 @@ class Record:
         fields = self.clear_extensible_fields()
 
         # pop
-        serialized_value = fields.pop(index-cycle_start)
+        serialized_value = fields.pop(index - cycle_start)
 
         # add remaining
         self.add_fields(*fields)
@@ -699,7 +698,7 @@ class Record:
         # workflow
         # --------
         # (methods belonging to create/update/delete framework:
-        #     epm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
+        #     epgm._dev_populate_from_json_data, table.batch_add, record.update, queryset.delete, record.delete)
         # 1. unregister: links, hooks and external files
         # 3. remove from table without unregistering
 
@@ -788,7 +787,7 @@ class Record:
         """
         return collections.OrderedDict(sorted(self._data.items()))
 
-    def to_json_data(self, model_name=None):
+    def to_json_data(self, model_name=None, named_keys=False):
         """
         Get record as a json-serializable dict.
 
@@ -796,20 +795,24 @@ class Record:
         ----------
         model_name: str or None
             if given, will be used as external file directory base name
-
+        named_keys: bool, default False
+            If True, will return data with named keys
+            If False, return data with num keys
         Returns
         -------
         dict
             A dictionary of serialized data.
         """
-        return collections.OrderedDict(
-            [("_comment", self._comment)]
-            + [(k, self.get_serialized_value(k, model_name=model_name)) for k in self._data]
-        )
+        data = {k: self.get_serialized_value(k, model_name=model_name) for k in self._data}
+        if named_keys:
+            data = {self.get_field_descriptor(k).ref: self[k] for k, v in data.items()}
 
-    def to_idf(self, model_name=None):
+        comment_data = {"_comment": self._comment}
+        return {**comment_data, **data}
+
+    def to_epstf(self, model_name=None):
         """
-        Get record as an idf string.
+        Get record as an energyplus string.
 
         Parameters
         ----------
@@ -834,12 +837,12 @@ class Record:
         #   construction, and eplus does not know what to do... Because some example files (e.g.
         #   ASHRAE9012016_Warehouse_Denver.idf) have records for which len(self._data) == 0, we set field_nb to 1
         #   in this case to prevent max of an empty arg to raise an error.
-        fields_nb = max(self._data)+1 if len(self._data) else 1
+        fields_nb = max(self._data) + 1 if len(self._data) else 1
         for i in range(fields_nb):
             # value
             tab = " " * TAB_LEN
             raw_value = json_data.get(i, "")
-            content = f"{tab}{raw_value}{';' if i == fields_nb-1 else ','}"
+            content = f"{tab}{raw_value}{';' if i == fields_nb - 1 else ','}"
 
             # comment
             spaces_nb = COMMENT_COLUMN_START - len(content)

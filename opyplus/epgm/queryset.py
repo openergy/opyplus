@@ -1,4 +1,4 @@
-"""Epm queryset module."""
+"""Epgm queryset module."""
 
 from itertools import filterfalse
 
@@ -42,8 +42,8 @@ class Queryset:
 
     Parameters
     ----------
-    table: opyplus.epm.table.Table
-    records: typing.Iterable[opyplus.epm.record.Record]
+    table: opyplus.epgm.table.Table
+    records: typing.Iterable[opyplus.epgm.record.Record]
     """
 
     def __init__(self, table, records=None):
@@ -84,7 +84,7 @@ class Queryset:
 
         Returns
         -------
-        opyplus.epm.record.Record
+        opyplus.epgm.record.Record
         """
         return self._records[item]
 
@@ -94,7 +94,7 @@ class Queryset:
 
         Returns
         -------
-        typing.Iterator[opyplus.epm.record.Record]
+        typing.Iterator[opyplus.epgm.record.Record]
         """
         return iter(self._records)
 
@@ -143,7 +143,7 @@ class Queryset:
 
         Returns
         -------
-        opyplus.epm.table.Table
+        opyplus.epgm.table.Table
         """
         return self._table
 
@@ -189,7 +189,7 @@ class Queryset:
 
         Returns
         -------
-        opyplus.epm.record.Record
+        opyplus.epgm.record.Record
             If one and only one record is found. Else raises.
 
         Raises

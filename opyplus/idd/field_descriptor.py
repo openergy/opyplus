@@ -3,10 +3,10 @@ import re
 import unidecode
 
 from ..exceptions import FieldValidationError
-from ..epm.record import Record
-from ..epm.link import Link, NONE_LINK
-from ..epm.record_hook import RecordHook, NONE_RECORD_HOOK
-from ..epm.external_file import ExternalFile
+from ..epgm.record import Record
+from ..epgm.link import Link, NONE_LINK
+from ..epgm.record_hook import RecordHook, NONE_RECORD_HOOK
+from ..epgm.external_file import ExternalFile
 from .util import isinstance_str
 
 MAX_FIELD_LENGTH = 100

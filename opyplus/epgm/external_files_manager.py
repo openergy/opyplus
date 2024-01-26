@@ -9,15 +9,15 @@ class ExternalFilesManager:
     """
     External Files Manager class.
 
-    Each Epm has an external file manager that manages its pool of external files.
+    Each Epgm has an external file manager that manages its pool of external files.
 
     Parameters
     ----------
-    epm: opyplus.Epm
+    epgm: opyplus.Epgm
     """
 
-    def __init__(self, epm):
-        self._epm = epm
+    def __init__(self, epgm):
+        self._epm = epgm
         self._contents = dict()  # {ref: content_str, ...}
         self._external_files = set()
 
@@ -93,7 +93,7 @@ class ExternalFilesManager:
 
         Parameters
         ----------
-        external_file: opyplus.epm.external_file.ExternalFile
+        external_file: opyplus.epgm.external_file.ExternalFile
         """
         # store
         self._external_files.add(external_file)
@@ -111,7 +111,7 @@ class ExternalFilesManager:
 
         Parameters
         ----------
-        external_file: opyplus.epm.external_file.ExternalFile
+        external_file: opyplus.epgm.external_file.ExternalFile
         """
         self._external_files.remove(external_file)
 
@@ -142,7 +142,7 @@ class ExternalFilesManager:
 
         Parameters
         ----------
-        external_file: opyplus.epm.external_file.ExternalFile
+        external_file: opyplus.epgm.external_file.ExternalFile
 
         Returns
         -------
