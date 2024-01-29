@@ -1,0 +1,15 @@
+name: test-and-publish
+on:
+  push:
+    branches:
+      - CC_devops
+jobs:
+  openergy:
+    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v03.yml@CC_international
+    with:
+      install-eplus-920: true
+
+    secrets:
+      AZURE_CONDA_CHANNEL_KEY: ${{ secrets.AZURE_CONDA_CHANNEL_KEY }}
+      CONDA_CHANNEL_SYSADMIN_URL: ${{ secrets.CONDA_CHANNEL_SYSADMIN_URL }}
+      ADMIN_GITHUB_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
