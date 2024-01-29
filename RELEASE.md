@@ -4,6 +4,8 @@
     m: minor
     p: patch
 
+## next
+
 ## 1.6.0
 * m: implementing DesignDay model from ddy  
 * p: fix latest default idd version in conf
