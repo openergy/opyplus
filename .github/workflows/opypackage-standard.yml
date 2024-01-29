@@ -7,7 +7,7 @@ jobs:
   openergy:
     uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v03.yml@CC_international
     with:
-      install-eplus-920: true
+      install-eplus-2210: true
 
     secrets:
       AZURE_CONDA_CHANNEL_KEY: ${{ secrets.AZURE_CONDA_CHANNEL_KEY }}
