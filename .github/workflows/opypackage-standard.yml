@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - CC_devops
+
+# todo [CC]: manage mac and windows os tests
 jobs:
   openergy:
     uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v03.yml@CC_international

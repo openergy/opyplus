@@ -8,6 +8,8 @@
 * m: implementing DesignDay model from ddy  
 * p: fix latest default idd version in conf
 * p: code refactoring to create parent model Epgm
+* p: devops debug, initiating azure pipelines to github actions migration
+* p: tests implemented on EnergyPlus 22.1.0 (ubuntu os, only)
 
 ## 1.5.0
 * p: documentation generation debug
