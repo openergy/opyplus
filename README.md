@@ -37,7 +37,7 @@ It is currently automatically tested against the following python versions:
 
 opyplus is designed to work with any EnergyPlus version.
 Currently, it is automatically tested against the following versions (listed in TESTED_EPLUS_VERSIONS : oplus.tests.util):
-* 9.0.1
+* 22.1.0
 
 Each test is therefore run multiple times : once per tested version. To automatically run a test on all versions, use
 eplus_tester function (oplus.tests.util).
@@ -47,8 +47,8 @@ eplus_tester function (oplus.tests.util).
 opyplus is designed to work with any Operating System. It is automatically tested against the latest versions of 
 the following OS:
 * Ubuntu
-* MacOS
-* Microsoft Windows
+* MacOS (test outdated: should be reconnected)
+* Microsoft Windows (tet outdated: should be reconnected)
 
 ## Contributing
 
@@ -56,7 +56,7 @@ the following OS:
 
 Install pytest and the packages listed in requirements.txt using pip or conda.
 
-Install EnergyPlus v9.0.1.
+Install EnergyPlus v22.1.0.
 
 At the root of the repository, run pytest: `python -m pytest`.
 

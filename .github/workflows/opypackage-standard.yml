@@ -2,12 +2,12 @@ name: test-and-publish
 on:
   push:
     branches:
-      - CC_devops
+      - develop
 
-# todo [CC]: manage mac and windows os tests
+# todo [CC]: manage latest mac and windows os tests
 jobs:
   openergy:
-    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v03.yml@CC_international
+    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v03.yml@master
     with:
       install-eplus-2210: true
 
