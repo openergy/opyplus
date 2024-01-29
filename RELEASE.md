@@ -5,6 +5,7 @@
     p: patch
 
 ## next
+* p: devops: fix to publish to pypi 
 
 ## 1.6.1
 * p: reconnected to pypi account
