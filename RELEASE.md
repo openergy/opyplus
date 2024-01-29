@@ -4,7 +4,8 @@
     m: minor
     p: patch
 
-## next
+## 1.6.1
+* p: reconnected to pypi account
 
 ## 1.6.0
 * m: implementing DesignDay model from ddy  
