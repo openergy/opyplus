@@ -89,7 +89,6 @@ samples will be kept up to date: use `.. testcode::` and `.. testoutput::` rathe
 1. Developer XX works on his branch (XX-...).
 When finished, he completes the RELEASE.md without writing the version number (he completes under ## next).
 He then creates a pull request into develop.
-2. Once the pull request has been accepted by an administrator (tests must pass, among other things), the branch is merged on develop.
-3. When administrator wants to create a version, on branch "develop" he completes RELEASE.md with version number, commits and creates a tag (vX.X.X).
-He then pushes. The tests should succeed because all pull requests tests have succeeded.
-A conda and pip build will then automatically be performed by Github actions. 
+2. Once the pull request has been accepted by an administrator the branch is merged on develop. Since new version is "next": only tests are running
+3. When administrator wants to create a version, on branch "develop" he completes RELEASE.md with version number "x.x.x".
+He then pushes. Tests and versioning are running. A conda and pip build will then automatically be performed by Github actions. 
