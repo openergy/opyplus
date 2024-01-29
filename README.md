@@ -37,7 +37,7 @@ It is currently automatically tested against the following python versions:
 
 opyplus is designed to work with any EnergyPlus version.
 Currently, it is automatically tested against the following versions (listed in TESTED_EPLUS_VERSIONS : oplus.tests.util):
-* 9.0.1
+* 22.1.0
 
 Each test is therefore run multiple times : once per tested version. To automatically run a test on all versions, use
 eplus_tester function (oplus.tests.util).
@@ -47,8 +47,8 @@ eplus_tester function (oplus.tests.util).
 opyplus is designed to work with any Operating System. It is automatically tested against the latest versions of 
 the following OS:
 * Ubuntu
-* MacOS
-* Microsoft Windows
+* MacOS (test outdated: should be reconnected)
+* Microsoft Windows (tet outdated: should be reconnected)
 
 ## Contributing
 
@@ -56,7 +56,7 @@ the following OS:
 
 Install pytest and the packages listed in requirements.txt using pip or conda.
 
-Install EnergyPlus v9.0.1.
+Install EnergyPlus v22.1.0.
 
 At the root of the repository, run pytest: `python -m pytest`.
 
@@ -88,9 +88,7 @@ samples will be kept up to date: use `.. testcode::` and `.. testoutput::` rathe
 
 1. Developer XX works on his branch (XX-...).
 When finished, he completes the RELEASE.md without writing the version number (he completes under ## next).
-He then creates a pull request into master.
-2. Once the pull request has been accepted by an administrator (tests must pass, among other things), the branch is merged on master.
-3. When administrator wants to create a version, he completes RELEASE.md with version number, sets it version.py, commits and creates a tag (vX.X.X).
-He then pushes. The tests should succeed because all pull requests tests have succeeded.
-A conda and pip build will then automatically be performed by Azure Pipelines. 
-
+He then creates a pull request into develop.
+2. Once the pull request has been accepted by an administrator the branch is merged on develop. Since new version is "next": only tests are running
+3. When administrator wants to create a version, on branch "develop" he completes RELEASE.md with version number "x.x.x".
+He then pushes. Tests and versioning are running. A conda and pip build will then automatically be performed by Github actions. 
