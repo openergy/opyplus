@@ -805,7 +805,7 @@ class Record:
         """
         data = {k: self.get_serialized_value(k, model_name=model_name) for k in self._data}
         if named_keys:
-            data = {self.get_field_descriptor(k).ref: self[k] for k, v in data.items()}
+            data = {self._table._dev_descriptor.get_extended_ref(k): v for k, v in data.items()}
 
         comment_data = {"_comment": self._comment}
         return {**comment_data, **data}
