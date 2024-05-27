@@ -4,7 +4,7 @@ on:
     branches:
       - cc_3_12
 
-# todo: test different python req.
+# todo: test different python
 jobs:
   openergy:
     uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_opyplus
