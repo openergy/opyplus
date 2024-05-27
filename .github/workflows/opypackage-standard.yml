@@ -4,7 +4,6 @@ on:
     branches:
       - cc_3_12
 
-# todo [CC]: manage latest mac and windows os tests
 jobs:
   openergy:
     uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_opyplus
