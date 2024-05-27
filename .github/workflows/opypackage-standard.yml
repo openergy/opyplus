@@ -10,7 +10,7 @@ jobs:
     uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_opyplus
     with:
       install-eplus-2210: true
-      os-requirements: "['windows-latest']"
+      os-requirements: "['ubuntu-latest', 'windows-latest']"
 
     secrets:
       ADMIN_GITHUB_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
