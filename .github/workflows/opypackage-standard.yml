@@ -11,7 +11,8 @@ jobs:
     with:
       install-eplus-2210: true
       os-requirements: "['ubuntu-latest', 'windows-latest']"
-      python-requirements: "['>=3.6,<3.7']"
+      python-conda-requirement: ">=3.6,<3.9"
+      python-versions: "['3.6','3.7', '3.8']"
 
     secrets:
       ADMIN_GITHUB_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
