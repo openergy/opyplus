@@ -1,0 +1,16 @@
+# To use:
+#
+#   $ conda env create -f environment.yml  # `mamba` works too for this command
+#   $ conda activate opyplus
+#
+name: opyplus
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.7,<3.13
+  - pip
+  - pandas >=1.5.0,<3.0.0
+  - unidecode >=1.0.22,<2.0
+  - python-slugify >=3.0.2,<6.0
+  - pip:
+      - faust-cchardet
