@@ -493,7 +493,7 @@ class WeatherData:
         epw_content = self._headers_to_epw(use_datetimes=use_datetimes) + df.to_csv(
             header=False,
             index=False,
-            line_terminator="\n"
+            lineterminator="\n"
         )
 
         # write and return
