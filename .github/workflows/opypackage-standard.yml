@@ -4,13 +4,12 @@ on:
     branches:
       - cc_3_12
 
-# todo: test python matrix for diff python versions
 jobs:
   openergy:
     uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_opyplus
     with:
       install-eplus-2210: true
-      os-requirements: "['windows-latest']"
+      os-requirements: "['ubuntu-latest']"
       python-conda-requirement: ">=3.7,<3.13"
       python-versions: "['3.12']"
 
