@@ -6,12 +6,12 @@ on:
 
 jobs:
   openergy:
-    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_opyplus
+    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_python_update
     with:
       install-eplus-2210: true
       os-requirements: "['ubuntu-latest']"
-      python-conda-requirement: ">=3.7,<3.13"
-      python-versions: "['3.12']"
+      python-conda-requirement: ">=3.8,<3.13"
+      python-versions: "['3.10', '3.11', '3.12']"
 
     secrets:
       ADMIN_GITHUB_TOKEN: ${{ secrets.ADMIN_GITHUB_TOKEN }}
