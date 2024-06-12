@@ -5,6 +5,8 @@
     p: patch
 
 ## next
+* m: officially supports python >=3.8,<3.13
+* m: drop python 3.7 support 
 
 ## 1.6.1
 * p: reconnected to pypi account

@@ -10,7 +10,7 @@ from opyplus import WeatherData
 from opyplus.compatibility import get_eplus_base_dir_path
 from tests.util import assert_epw_equal, iter_eplus_versions  # todo: improve epw-equal and use it
 
-from pandas.util.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal
 
 from tests.resources import Resources
 
