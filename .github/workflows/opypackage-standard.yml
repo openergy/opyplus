@@ -2,11 +2,11 @@ name: test-and-publish
 on:
   push:
     branches:
-      - develop
+      - cc_test_doctest
 
 jobs:
   openergy:
-    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@master
+    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_beta_tests
     with:
       install-eplus-2210: true
       make-doctest: true
