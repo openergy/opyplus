@@ -265,7 +265,30 @@ class TableDescriptor:
             return field_descriptor.name
         cycle_start, cycle_len, _ = self.extensible_info
         cycle_num = (index - cycle_start) // cycle_len
-        return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num+1))
+        return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num + 1))
+
+    def get_extended_ref(self, index):
+        """
+        Get extended name.
+
+        Parameters
+        ----------
+        index: int
+
+        Returns
+        -------
+        str
+
+        Notes
+        -----
+        manages extensible names
+        """
+        field_descriptor = self.get_field_descriptor(index)
+        if self.extensible_info is None:
+            return field_descriptor.ref
+        cycle_start, cycle_len, _ = self.extensible_info
+        cycle_num = (index - cycle_start) // cycle_len
+        return None if field_descriptor.ref is None else field_descriptor.ref.replace("1", str(cycle_num + 1))
 
     def get_info(self):
         """

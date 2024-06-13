@@ -23,7 +23,7 @@ Prepare imports and paths
     import os
     import opyplus as op
 
-    eplus_dir_path = op.get_eplus_base_dir_path((9, 0, 1))
+    eplus_dir_path = op.get_eplus_base_dir_path((22,1,0))
 
 
 Define input files

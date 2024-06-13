@@ -34,7 +34,7 @@ Perform imports, and prepare EPlus base directory path (to work with example fil
     import os
     import opyplus as op
 
-    eplus_dir_path = op.get_eplus_base_dir_path((9, 0, 1))
+    eplus_dir_path = op.get_eplus_base_dir_path((22,1,0))
 
 Prepare input paths and run simulation.
 
@@ -117,18 +117,19 @@ Retrieve and display outputs.
     :options: +NORMALIZE_WHITESPACE
 
                 environment,Site Outdoor Air Drybulb Temperature  main zone,Zone Mean Air Temperature
-    2013-01-01                                          9.598712                            20.009400
-    2013-02-01                                         11.289435                            20.154321
-    2013-03-01                                         12.659767                            20.354625
-    2013-04-01                                         13.678194                            20.515966
-    2013-05-01                                         15.002352                            20.661471
-    2013-06-01                                         15.336250                            21.001910
-    2013-07-01                                         15.936470                            20.998396
-    2013-08-01                                         16.618201                            21.260456
-    2013-09-01                                         16.718843                            21.171012
-    2013-10-01                                         15.105724                            20.569441
-    2013-11-01                                         12.785648                            20.182358
-    2013-12-01                                         10.658524                            20.026346
+    2013-01-01                                          9.598712                            20.009387
+    2013-02-01                                         11.289435                            20.154352
+    2013-03-01                                         12.659767                            20.355373
+    2013-04-01                                         13.678194                            20.521632
+    2013-05-01                                         15.002352                            20.672635
+    2013-06-01                                         15.336250                            21.007091
+    2013-07-01                                         15.936470                            21.008586
+    2013-08-01                                         16.618201                            21.269260
+    2013-09-01                                         16.718843                            21.175295
+    2013-10-01                                         15.105724                            20.574237
+    2013-11-01                                         12.785648                            20.182148
+    2013-12-01                                         10.658524                            20.026321
+
 
 
 EPlus Model (idf file)
@@ -253,7 +254,7 @@ Display what is contained in eso file (environments, variable names and frequenc
           longitude: -122.4
           timezone_offset: -8.0
           elevation: 2.0
-        runperiod 1 (2)
+        run period 1 (2)
           latitude: 37.62
           longitude: -122.4
           timezone_offset: -8.0
@@ -265,19 +266,20 @@ Display what is contained in eso file (environments, variable names and frequenc
           environment,Site Outdoor Air Humidity Ratio (9)
           environment,Site Outdoor Air Relative Humidity (10)
           main zone,Zone Mean Air Temperature (11)
-          main zone baseboard,Baseboard Electric Power (160)
-          supply inlet node,System Node Temperature (384)
-          fan inlet node,System Node Temperature (385)
-          evap cooler inlet node,System Node Temperature (386)
-          supply outlet node,System Node Temperature (387)
-          supply outlet node,System Node Mass Flow Rate (388)
-          outside air inlet node,System Node Temperature (389)
-          main zone outlet node,System Node Temperature (390)
-          main zone node,System Node Temperature (391)
-          main zone inlet node,System Node Temperature (392)
-          zone equipment inlet node,System Node Temperature (393)
-          zone equipment outlet node,System Node Temperature (394)
-          relief air outlet node,System Node Temperature (395)
+          main zone baseboard,Baseboard Electricity Rate (220)
+          supply inlet node,System Node Temperature (516)
+          fan inlet node,System Node Temperature (517)
+          evap cooler inlet node,System Node Temperature (518)
+          supply outlet node,System Node Temperature (519)
+          supply outlet node,System Node Mass Flow Rate (520)
+          outside air inlet node,System Node Temperature (521)
+          main zone outlet node,System Node Temperature (522)
+          main zone node,System Node Temperature (523)
+          main zone inlet node,System Node Temperature (524)
+          zone equipment inlet node,System Node Temperature (525)
+          zone equipment outlet node,System Node Temperature (526)
+          main zone inlet node atinlet,System Node Temperature (527)
+          relief air outlet node,System Node Temperature (528)
 
 Natively, outputs don't have a year and their indexes are not stored in datetimes (but in tuples of integers instead: month, day, hour).
 We transform outputs to datetime index dataframes to ease future analysis (datetimes are easy to manipulate, for example for resample operations).
@@ -323,10 +325,10 @@ Explore run period data : display mean daily exterior and interior temperatures.
     :options: +NORMALIZE_WHITESPACE
 
                 main zone,Zone Mean Air Temperature  environment,Site Outdoor Air Drybulb Temperature
-    2013-01-01                            20.058282                                          8.704167
-    2013-01-02                            20.035461                                          9.857639
-    2013-01-03                            20.085657                                         12.200000
-    2013-01-04                            20.000013                                          8.456250
+    2013-01-01                            20.058172                                          8.704167
+    2013-01-02                            20.035528                                          9.857639
+    2013-01-03                            20.085623                                         12.200000
+    2013-01-04                            19.999999                                          8.456250
     2013-01-05                            20.000000                                          7.819097
 
 Export data in csv format.
@@ -344,7 +346,7 @@ Export data in csv format.
 
     0#denver-centennial-ann-htg-99-6-condns-db#hourly.csv
     1#denver-centennial-ann-clg-1-condns-db-mwb#hourly.csv
-    2#runperiod-1#hourly.csv
+    2#run-period-1#hourly.csv
 
 Weather data (epw file)
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -423,7 +425,8 @@ Retrieve weather series data (pandas dataframe object).
     2013-01-01 03:00:00    6.7
     2013-01-01 04:00:00    6.1
     2013-01-01 05:00:00    4.4
-    Freq: H, Name: drybulb, dtype: float64
+    Freq: h, Name: drybulb, dtype: float64
+
 
 Add one degree celcius to drybulb and set new weather series.
 
@@ -446,7 +449,7 @@ Add one degree celcius to drybulb and set new weather series.
     2013-01-01 03:00:00    7.7
     2013-01-01 04:00:00    7.1
     2013-01-01 05:00:00    5.4
-    Freq: H, Name: drybulb, dtype: float64
+    Freq: h, Name: drybulb, dtype: float64
 
 Save data in a new epw file.
 
