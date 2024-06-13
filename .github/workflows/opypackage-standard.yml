@@ -6,7 +6,7 @@ on:
 
 jobs:
   openergy:
-    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_beta_tests
+    uses: openergy/ogithub-actions/.github/workflows/opypackage-standard-v05.yml@cc_beta_tests # todo change
     with:
       install-eplus-2210: true
       make-doctest: true
