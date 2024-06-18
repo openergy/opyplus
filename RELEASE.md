@@ -4,6 +4,8 @@
     m: minor
     p: patch
 
+## next
+
 ## 2.0.0
 * M: officially supports python >=3.8,<3.13
 * m: drop python 3.7 support 
