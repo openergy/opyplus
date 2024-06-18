@@ -22,7 +22,7 @@ Perform imports, and prepare EPlus base directory path (to work with example fil
     import os
     import opyplus as op
 
-    eplus_dir_path = op.get_eplus_base_dir_path((9, 0, 1))
+    eplus_dir_path = op.get_eplus_base_dir_path((22,1,0))
 
 
 Load Epm
@@ -53,7 +53,7 @@ Load Epm
       AirLoopHVAC:SupplyPath: 1 record
       AirLoopHVAC:ZoneMixer: 1 record
       AirLoopHVAC:ZoneSplitter: 1 record
-      AirTerminal:SingleDuct:Uncontrolled: 1 record
+      AirTerminal:SingleDuct:ConstantVolume:NoReheat: 1 record
       AvailabilityManager:HighTemperatureTurnOn: 1 record
       AvailabilityManager:LowTemperatureTurnOff: 1 record
       AvailabilityManagerAssignmentList: 1 record
@@ -92,6 +92,7 @@ Load Epm
       Version: 1 record
       Zone: 1 record
       ZoneControl:Thermostat: 1 record
+      ZoneHVAC:AirDistributionUnit: 1 record
       ZoneHVAC:Baseboard:Convective:Electric: 1 record
       ZoneHVAC:EquipmentConnections: 1 record
       ZoneHVAC:EquipmentList: 1 record
@@ -303,8 +304,9 @@ Display info
         * default: .04
         * maximum: .5
         * minimum>: 0.0
-        * note: Loads Convergence Tolerance Value is a fraction of load
+        * note: Loads Convergence Tolerance Value is a change in load from one warmup day to the next
         * type: real
+        * units: W
      4: Temperature Convergence Tolerance Value (temperature_convergence_tolerance_value)
         * default: .4
         * maximum: .5
@@ -322,9 +324,9 @@ Display info
         * note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.; This field's value should NOT be set less than 25.
         * type: integer
      7: Minimum Number of Warmup Days (minimum_number_of_warmup_days)
-        * default: 6
+        * default: 1
         * minimum>: 0
-        * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered when it is less than the default 6.
+        * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; However this can lead to excessive run times as warmup days can be repeated needlessly.; For faster execution rely on the convergence criteria to detect when warmup is complete.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered. The default is 1.
         * type: integer
 
 
@@ -337,6 +339,8 @@ Display info
         minimalshadowing,              ! Solar Distribution
         30,                            ! Maximum Number of Warmup Days
         6;                             ! Minimum Number of Warmup Days
+
+
 
 
 Get field value
@@ -569,8 +573,9 @@ In Energy Plus, some record field values retain case (are case sensitive) and ot
         * default: .04
         * maximum: .5
         * minimum>: 0.0
-        * note: Loads Convergence Tolerance Value is a fraction of load
+        * note: Loads Convergence Tolerance Value is a change in load from one warmup day to the next
         * type: real
+        * units: W
      4: Temperature Convergence Tolerance Value (temperature_convergence_tolerance_value)
         * default: .4
         * maximum: .5
@@ -588,9 +593,9 @@ In Energy Plus, some record field values retain case (are case sensitive) and ot
         * note: EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.; This field's value should NOT be set less than 25.
         * type: integer
      7: Minimum Number of Warmup Days (minimum_number_of_warmup_days)
-        * default: 6
+        * default: 1
         * minimum>: 0
-        * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered when it is less than the default 6.
+        * note: The minimum number of warmup days that produce enough temperature and flux history; to start EnergyPlus simulation for all reference buildings was suggested to be 6.; However this can lead to excessive run times as warmup days can be repeated needlessly.; For faster execution rely on the convergence criteria to detect when warmup is complete.; When this field is greater than the maximum warmup days defined previous field; the maximum number of warmup days will be reset to the minimum value entered here.; Warmup days will be set to be the value you entered. The default is 1.
         * type: integer
 
 

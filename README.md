@@ -1,6 +1,5 @@
 ![GitHub](https://img.shields.io/github/license/openergy/opyplus?color=brightgreen)
-[![Build Status](https://dev.azure.com/openergy/opyplus/_apis/build/status/openergy.opyplus?branchName=master)](https://dev.azure.com/openergy/opyplus/_build/latest?definitionId=1&branchName=master)
-![Azure DevOps coverage](https://img.shields.io/azure-devops/coverage/openergy/opyplus/1)
+[![test-and-publish](https://github.com/openergy/opyplus/actions/workflows/opypackage-standard.yml/badge.svg?branch=cc_3_12)](https://github.com/openergy/opyplus/actions/workflows/opypackage-standard.yml)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/opyplus)
 ![PyPI](https://img.shields.io/pypi/v/opyplus)
 
@@ -27,11 +26,12 @@ Documentation is available at https://opyplus.readthedocs.io
 
 ### Python versions
 
-opyplus is designed to work with python 3.6 and newer.
+opyplus is designed to work with python 3.8 and newer.
 
 It is currently automatically tested against the following python versions:
-* 3.6
-* 3.7
+* 3.10
+* 3.11
+* 3.12
 
 ### EnergyPlus versions
 
@@ -44,11 +44,7 @@ eplus_tester function (oplus.tests.util).
 
 ### Operating system
 
-opyplus is designed to work with any Operating System. It is automatically tested against the latest versions of 
-the following OS:
-* Ubuntu
-* MacOS (test outdated: should be reconnected)
-* Microsoft Windows (tet outdated: should be reconnected)
+opyplus is designed to work with any Operating System but is automatically tested against the latest versions of Ubuntu OS.
 
 ## Contributing
 

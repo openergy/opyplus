@@ -4,7 +4,11 @@
     m: minor
     p: patch
 
-## next
+## 2.0.0
+* M: officially supports python >=3.8,<3.13
+* m: drop python 3.7 support 
+* p: fix record to_json_data() method to capture dynamic idd fields (ex. branch_{i}_name)
+* m: idd 24.1.0 was added
 
 ## 1.6.1
 * p: reconnected to pypi account
