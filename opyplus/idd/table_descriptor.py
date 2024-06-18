@@ -269,7 +269,7 @@ class TableDescriptor:
 
     def get_extended_ref(self, index):
         """
-        Get extended name.
+        Get extended ref.
 
         Parameters
         ----------
@@ -281,7 +281,7 @@ class TableDescriptor:
 
         Notes
         -----
-        manages extensible names
+        manages extensible refs
         """
         field_descriptor = self.get_field_descriptor(index)
         if self.extensible_info is None:

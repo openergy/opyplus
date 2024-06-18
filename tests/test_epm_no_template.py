@@ -39,3 +39,18 @@ class EpmNoTemplateTest(unittest.TestCase):
             # with check
             epm = op.Epm()
             self.assertRaises(op.FieldValidationError, epm.zone.add, dict(name="a"*500))
+
+    def test_epm_record_to_json_data(self):
+        epm = op.Epm(check_length=False)
+        epm.zone.add(dict(name="zone1"))
+        epm.zone.add(dict(name="zone2"))
+        epm.zonelist.add(dict(
+            name="list1",
+            zone_1_name="zone1",
+            zone_2_name="zone2"
+        ))
+        self.assertEqual(
+            epm.zonelist.one().to_json_data(named_keys=True),
+            {'_comment': '', 'name': 'list1', 'zone_1_name': 'zone1', 'zone_2_name': 'zone2'}
+        )
+
