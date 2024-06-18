@@ -3,7 +3,7 @@ import logging
 import re
 
 from .field_descriptor import FieldDescriptor
-from .util import table_name_to_ref
+from .util import table_name_to_ref, get_field_attribute_extended_value
 
 logger = logging.getLogger(__name__)
 
@@ -261,11 +261,8 @@ class TableDescriptor:
         manages extensible names
         """
         field_descriptor = self.get_field_descriptor(index)
-        if self.extensible_info is None:
-            return field_descriptor.name
-        cycle_start, cycle_len, _ = self.extensible_info
-        cycle_num = (index - cycle_start) // cycle_len
-        return None if field_descriptor.name is None else field_descriptor.name.replace("1", str(cycle_num + 1))
+        return field_descriptor.name if self.extensible_info is None else get_field_attribute_extended_value(
+            field_descriptor.name, index, self.extensible_info)
 
     def get_extended_ref(self, index):
         """
@@ -284,11 +281,8 @@ class TableDescriptor:
         manages extensible refs
         """
         field_descriptor = self.get_field_descriptor(index)
-        if self.extensible_info is None:
-            return field_descriptor.ref
-        cycle_start, cycle_len, _ = self.extensible_info
-        cycle_num = (index - cycle_start) // cycle_len
-        return None if field_descriptor.ref is None else field_descriptor.ref.replace("1", str(cycle_num + 1))
+        return field_descriptor.ref if self.extensible_info is None else get_field_attribute_extended_value(
+            field_descriptor.ref, index, self.extensible_info)
 
     def get_info(self):
         """

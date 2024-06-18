@@ -30,3 +30,9 @@ def table_name_to_ref(name):
     str
     """
     return name.replace(":", "_")
+
+
+def get_field_attribute_extended_value(field_attribute, index, extensible_info):
+    cycle_start, cycle_len, _ = extensible_info
+    cycle_num = (index - cycle_start) // cycle_len
+    return None if field_attribute is None else field_attribute.replace("1", str(cycle_num + 1))
