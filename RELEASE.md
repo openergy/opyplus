@@ -4,7 +4,8 @@
     m: minor
     p: patch
 
-## next
+## 2.0.1
+* p: fix devops pypi publishing bug
 
 ## 2.0.0
 * M: officially supports python >=3.8,<3.13
