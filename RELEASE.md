@@ -5,7 +5,7 @@
     p: patch
 
 ## 2.0.4
-* p: fix documentation generation 
+* p: fix documentation generation bug
 
 ## 2.0.3
 * p: fix devops pypi publishing bug
