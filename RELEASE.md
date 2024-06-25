@@ -4,6 +4,8 @@
     m: minor
     p: patch
 
+## next
+
 ## 2.0.4
 * p: fix documentation generation bug
 
