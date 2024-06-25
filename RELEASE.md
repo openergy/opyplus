@@ -4,7 +4,8 @@
     m: minor
     p: patch
 
-## next
+## 2.0.6
+* p: fix devops pypi publishing bug
 
 ## 2.0.5
 * p: fix devops pypi publishing bug
