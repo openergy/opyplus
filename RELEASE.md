@@ -4,7 +4,8 @@
     m: minor
     p: patch
 
-## next
+## 2.0.7
+* p: fix heatpump_plantloop_eir_heating field in idd_debug.py 
 
 ## 2.0.6
 * p: fix devops pypi publishing bug

@@ -54,3 +54,9 @@ def correct_idd(idd):
         td = idd.table_descriptors["comfortviewfactorangles"]
         fd = td.get_field_descriptor(2)
         fd.append_tag("begin-extensible")
+        
+    # wrong "object-list" tag for heatpump_plantloop_eir_heating
+    fd = idd.table_descriptors["heatpump_plantloop_eir_heating"].get_field_descriptor(13)
+    del fd.tags["object-list"]
+    fd.append_tag("object-list", "BivariateFunctions")
+    
