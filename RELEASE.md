@@ -4,6 +4,8 @@
     m: minor
     p: patch
 
+## next
+
 ## 2.0.7
 * p: fix heatpump_plantloop_eir_heating field in idd_debug.py 
 
